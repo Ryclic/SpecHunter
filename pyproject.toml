@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spechunter"
+version = "0.1.0"
+description = "Reproducible CHIA security experiments for speculative hardware"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = []
+
+[project.optional-dependencies]
+chia = ["chialoops @ https://github.com/ucb-bar/chia/archive/16c35e92aaaf9511c6453bf94cd5cf589698f4e3.tar.gz"]
+vertex = ["google-genai>=1.64,<2"]
+
+[dependency-groups]
+dev = ["pytest>=8.3,<10", "ruff>=0.12,<1", "build>=1.2,<2"]
+
+[project.scripts]
+spechunter = "spechunter.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spechunter"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["rtl: requires iverilog and vvp", "chia: requires CHIA and a local Ray runtime"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
