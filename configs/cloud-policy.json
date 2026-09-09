@@ -1,0 +1,9 @@
+{
+  "project_id": "spechunter",
+  "credit_ceiling_usd": 300,
+  "billing_changes_allowed": false,
+  "preserve_free_trial": true,
+  "cloud_execution_enabled": false,
+  "automatic_provisioning_enabled": false,
+  "default_backend": "model"
+}

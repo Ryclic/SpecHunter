@@ -1,0 +1,68 @@
+import json
+import sys
+
+import pytest
+
+from spechunter.backends import Backend, BackendConfig
+from spechunter.cli import main
+from spechunter.domain import BENCHMARKS, Observation, Op, Program
+from spechunter.loop import validate
+from spechunter.process import ExecutionError, run
+
+
+def test_process_timeout_and_output_limit(tmp_path):
+    with pytest.raises(ExecutionError, match="deadline"):
+        run([sys.executable, "-c", "import time; time.sleep(10)"], tmp_path, timeout=0.05)
+    with pytest.raises(ExecutionError, match="output limit"):
+        run([sys.executable, "-c", "print('x' * 10000)"], tmp_path, max_output=100)
+
+
+def test_process_does_not_inherit_credentials(tmp_path, monkeypatch):
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", "private")
+    assert (
+        run(
+            [
+                sys.executable,
+                "-c",
+                "import os; print(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'))",
+            ],
+            tmp_path,
+        ).strip()
+        == "None"
+    )
+
+
+@pytest.mark.parametrize(
+    "change",
+    [{"completed": False}, {"probes": [True]}, {"events": "bad"}, {"architectural": [1.5]}],
+)
+def test_observation_schema(change):
+    data = {"architectural": [], "probes": [], "events": [], "completed": True} | change
+    with pytest.raises(ValueError):
+        Observation.from_dict(data)
+
+
+def test_boom_provenance_and_failure(tmp_path):
+    runner = tmp_path / "runner.py"
+    runner.write_text("""import json, sys
+r = json.load(open(sys.argv[1]))
+r.update(target="boom", observation={"architectural": [], "probes": [],
+                                    "events": [], "completed": True})
+print(json.dumps(r))
+""")
+    config = BackendConfig("boom", (sys.executable, str(runner)), target_revision="test-revision")
+    with Backend(config) as backend:
+        assert validate(backend, Program((Op.NOP,)), BENCHMARKS[0]).status == "clean"
+    runner.write_text("print('{}')")
+    with Backend(config) as backend:
+        assert validate(backend, Program((Op.NOP,)), BENCHMARKS[0]).status == "inconclusive"
+
+
+def test_cli_report(tmp_path, monkeypatch):
+    output = tmp_path / "report.json"
+    monkeypatch.setattr(
+        sys, "argv", ["spechunter", "compare", "--iterations", "2", "--output", str(output)]
+    )
+    assert main() == 0
+    reports = json.loads(output.read_text())
+    assert [r["strategy"] for r in reports] == ["guided", "random"]

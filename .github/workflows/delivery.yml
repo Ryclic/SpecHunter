@@ -1,0 +1,29 @@
+name: Deliver reviewed build
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: delivery-main
+  cancel-in-progress: true
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.7'
+          python-version: '3.12'
+      - run: uv sync --locked --group dev
+      - run: uv run pytest -q -m 'not rtl'
+      - run: uv build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reviewed-dist-${{ github.sha }}
+          path: dist/
+          retention-days: 7

@@ -1,0 +1,13 @@
+import pytest
+
+from spechunter.backends import BackendConfig
+
+
+@pytest.mark.chia
+def test_local_chia_node():
+    pytest.importorskip("chia")
+    from spechunter.chia_nodes import run_local
+
+    report = run_local(BackendConfig(), iterations=2)
+    assert report["metrics"]["discovered"] == 2
+    assert report["metrics"]["false_positives"] == 0
