@@ -26,7 +26,14 @@ fixture's supported abstract operations and are always evaluated by the simulato
 repair returns control to the attacker in the same outer recon cycle. A fixture repair
 is reported as verified only after at least one clean post-repair validation and the
 attacker subsequently reports that it has exhausted materially different candidates.
-All loops and LLM calls have independent CLI limits.
+All loops and LLM calls have independent CLI limits. `--llm-budget-usd` is enforced
+against the persistent `--llm-ledger` file. Each request reserves its UTF-8 input byte
+count as a conservative token upper bound plus the configured maximum output tokens;
+successful calls reconcile against Vertex usage metadata. Unknown failures keep their
+full reservation because billing status may be ambiguous. The provider refuses models
+without a pricing record verified from the official Vertex pricing page in the last 30
+days. This application guard complements cloud billing controls; it is not a statement
+of the final Google Cloud invoice.
 Adding `--chia` executes the same agent workflow through the optional local CHIA node;
 the node receives provider configuration and creates its own client on the worker.
 

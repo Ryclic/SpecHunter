@@ -14,19 +14,15 @@ class ScriptedProvider:
     def __init__(self):
         self.calls = 0
         self.repaired_attacks = 0
-        self.clean_retest_done = False
 
     def recon(self, benchmark, cycle, history):
         self.calls += 1
         return {"hypothesis": f"{benchmark.id}-{cycle}", "provider": self.name}
 
-    def attack(self, benchmark, hypothesis, history, repaired, required_retest):
+    def attack(self, benchmark, hypothesis, history, repaired):
         self.calls += 1
         if repaired:
             self.repaired_attacks += 1
-            if not self.clean_retest_done:
-                self.clean_retest_done = True
-                return AttackDecision("candidate", "retest original attack", required_retest)
             return AttackDecision("exhausted", "secure variant resists supported candidates")
         if benchmark.bug == "privilege":
             return AttackDecision("candidate", "try direct user read", LEAK)
@@ -56,7 +52,8 @@ def test_repair_returns_to_attacker_before_next_recon():
     ]
     assert result["repair"]["attacker_exhausted"]
     assert result["repair"]["verified"]
-    assert provider.repaired_attacks == 3
+    assert provider.repaired_attacks == 2
+    assert result["transcript"][4]["rationale"] == "mandatory minimized-exploit repair retest"
 
 
 def test_boom_repair_proposal_is_not_marked_verified():
@@ -71,3 +68,10 @@ def test_attack_decision_contract_rejects_missing_program():
 
     with pytest.raises(ValueError):
         AttackDecision("candidate", "missing program")
+
+
+def test_repair_contract_rejects_vulnerable_fixture_variant():
+    import pytest
+
+    with pytest.raises(ValueError):
+        RepairDecision("diagnosis", "bad repair", "privilege")

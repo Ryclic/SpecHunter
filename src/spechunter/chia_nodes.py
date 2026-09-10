@@ -1,5 +1,8 @@
 """Optional CHIA node; local invocation does not create a cluster."""
 
+from decimal import Decimal
+from pathlib import Path
+
 from chia.base.ChiaFunction import ChiaFunction
 
 from spechunter.agent_loop import agent_experiment
@@ -46,8 +49,21 @@ def run_agent_experiment(
     recon_cycles: int = 2,
     attack_limit: int = 8,
     repair_limit: int = 4,
+    budget_usd: Decimal = Decimal("1.00"),
+    ledger_path: Path = Path("artifacts/llm-cost.json"),
+    max_output_tokens: int = 2048,
+    retries: int = 2,
 ) -> dict:
-    provider = VertexAgentProvider(project, location, model, max_calls)
+    provider = VertexAgentProvider(
+        project,
+        location,
+        model,
+        max_calls,
+        budget_usd,
+        ledger_path,
+        max_output_tokens,
+        retries,
+    )
     return agent_experiment(provider, config, recon_cycles, attack_limit, repair_limit)
 
 
@@ -60,6 +76,10 @@ def run_agent_local(
     recon_cycles: int = 2,
     attack_limit: int = 8,
     repair_limit: int = 4,
+    budget_usd: Decimal = Decimal("1.00"),
+    ledger_path: Path = Path("artifacts/llm-cost.json"),
+    max_output_tokens: int = 2048,
+    retries: int = 2,
 ) -> dict:
     """Run the LLM workflow through a locally owned one-CPU Ray runtime."""
     import ray
@@ -82,6 +102,10 @@ def run_agent_local(
             recon_cycles,
             attack_limit,
             repair_limit,
+            budget_usd,
+            ledger_path,
+            max_output_tokens,
+            retries,
         )
     finally:
         if owned:

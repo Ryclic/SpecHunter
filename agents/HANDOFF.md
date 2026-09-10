@@ -19,3 +19,25 @@ trial. See docs/CLOUD.md before any paid work. The old proposal's $750 is obsole
 
 Next substantive work: docs/ROADMAP.md. Do not describe deterministic templates as
 LLM research, the toy fixture as BOOM, or secure-variant selection as an applied RTL patch.
+
+## Vertex cost guard and smoke validation
+
+`feat/vertex-cost-guard` adds a locked, atomic JSON cost ledger; conservative pre-call
+reservations; reconciliation from Vertex token metadata; a dated model-price allowlist;
+maximum output tokens; and bounded retries for recognized transient failures. The
+orchestrator now schedules the minimized exploit itself immediately after repair, so
+repair verification cannot depend on the model following a retest instruction. It also
+feeds correctable threat-model feedback back to the attacker instead of ending the case.
+
+Vertex AI was enabled in GCP project `spechunter`. Three bounded Gemini 2.5 Flash-Lite
+smoke runs used a shared $0.05 ledger and accounted for $0.0046509 in total. One early
+attacker schema was rejected by Vertex; its $0.0004514 reservation remains charged in
+the ledger conservatively. The successful calls prove live authentication, structured
+recon/attack/repair generation, usage reconciliation, and local simulator validation.
+One run found the transient seeded fixture and produced no false positive, but the small
+nondeterministic samples are integration evidence rather than an LLM evaluation.
+
+Validation: Ruff lint and format checks pass. `pytest -m 'not chia'` passes with 26
+tests, one skipped RTL test, and one deselected CHIA test. No Compute Engine or storage
+resources were created. Next reconcile delayed Cloud Billing costs and begin the pinned
+Chipyard/BOOM runner work.

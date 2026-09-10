@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+from decimal import Decimal
 from pathlib import Path
 
 from spechunter.backends import BackendConfig
@@ -28,6 +29,10 @@ def main() -> int:
     parser.add_argument("--llm-location", default="global")
     parser.add_argument("--llm-model", help="Vertex model name; required for --strategy llm")
     parser.add_argument("--llm-max-calls", type=int, default=64)
+    parser.add_argument("--llm-budget-usd", type=Decimal, default=Decimal("1.00"))
+    parser.add_argument("--llm-ledger", type=Path, default=Path("artifacts/llm-cost.json"))
+    parser.add_argument("--llm-max-output-tokens", type=int, default=2048)
+    parser.add_argument("--llm-retries", type=int, default=2)
     parser.add_argument("--recon-cycles", type=int, default=2)
     parser.add_argument("--attack-limit", type=int, default=8)
     parser.add_argument("--repair-limit", type=int, default=4)
@@ -62,13 +67,24 @@ def main() -> int:
                     args.recon_cycles,
                     args.attack_limit,
                     args.repair_limit,
+                    args.llm_budget_usd,
+                    args.llm_ledger,
+                    args.llm_max_output_tokens,
+                    args.llm_retries,
                 )
             else:
                 from spechunter.agent_loop import agent_experiment
                 from spechunter.agents import VertexAgentProvider
 
                 provider = VertexAgentProvider(
-                    args.llm_project, args.llm_location, args.llm_model, args.llm_max_calls
+                    args.llm_project,
+                    args.llm_location,
+                    args.llm_model,
+                    args.llm_max_calls,
+                    args.llm_budget_usd,
+                    args.llm_ledger,
+                    args.llm_max_output_tokens,
+                    args.llm_retries,
                 )
                 report = agent_experiment(
                     provider,

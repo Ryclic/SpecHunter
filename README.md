@@ -22,12 +22,14 @@ Install the optional Vertex dependency and select a model to run the agent loop:
 ```bash
 uv sync --extra vertex --group dev
 uv run spechunter run --strategy llm --llm-project spechunter \
-  --llm-location global --llm-model MODEL_NAME --output artifacts/llm.json
+  --llm-location global --llm-model gemini-2.5-flash-lite \
+  --llm-budget-usd 1.00 --output artifacts/llm.json
 ```
 
-This command makes paid model calls using Application Default Credentials. Limits for
-outer recon cycles, attacks, repairs, and total LLM calls default to small finite values
-and can be changed with the corresponding CLI flags.
+This command makes paid model calls using Application Default Credentials. A persistent
+ledger reserves a conservative maximum cost before each request and reconciles usage
+metadata afterward. Limits for cost, output tokens, retries, outer recon cycles, attacks,
+repairs, and total LLM calls default to small finite values and have corresponding flags.
 
 The default semantic backend requires no simulator, API key, or cloud spending.
 Install Icarus Verilog (`sudo apt-get install iverilog`) to run the executable RTL fixture:
