@@ -71,14 +71,16 @@ def attack(benchmark: Benchmark, strategy: str, rng: random.Random, iteration: i
     return Program.parse(["nop", "train", "enter_user", "load_secret", "encode", "squash", "probe"])
 
 
-def minimize(backend: Backend, program: Program, benchmark: Benchmark) -> Program:
+def minimize(
+    backend: Backend, program: Program, benchmark: Benchmark, bug: str | None = None
+) -> Program:
     """Deletion minimization to a 1-minimal witness, preserving the invariant."""
     changed = True
     while changed and len(program.ops) > 1:
         changed = False
         for i in range(len(program.ops)):
             candidate = Program(program.ops[:i] + program.ops[i + 1 :])
-            if validate(backend, candidate, benchmark).violation:
+            if validate(backend, candidate, benchmark, bug=bug).violation:
                 program, changed = candidate, True
                 break
     return program
