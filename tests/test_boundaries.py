@@ -66,3 +66,9 @@ def test_cli_report(tmp_path, monkeypatch):
     assert main() == 0
     reports = json.loads(output.read_text())
     assert [r["strategy"] for r in reports] == ["guided", "random"]
+
+
+def test_cli_llm_requires_explicit_model(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "run", "--strategy", "llm"])
+    assert main() == 2
+    assert "--llm-model is required" in capsys.readouterr().err

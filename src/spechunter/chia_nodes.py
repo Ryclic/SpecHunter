@@ -2,6 +2,8 @@
 
 from chia.base.ChiaFunction import ChiaFunction
 
+from spechunter.agent_loop import agent_experiment
+from spechunter.agents import VertexAgentProvider
 from spechunter.backends import BackendConfig
 from spechunter.loop import experiment
 
@@ -29,6 +31,58 @@ def run_local(
                 object_store_memory=80 * 1024 * 1024,
             )
         return run_experiment(config, strategy, iterations, seed)
+    finally:
+        if owned:
+            ray.shutdown()
+
+
+@ChiaFunction(num_cpus=1, max_retries=0)
+def run_agent_experiment(
+    config: BackendConfig,
+    project: str,
+    location: str,
+    model: str,
+    max_calls: int = 64,
+    recon_cycles: int = 2,
+    attack_limit: int = 8,
+    repair_limit: int = 4,
+) -> dict:
+    provider = VertexAgentProvider(project, location, model, max_calls)
+    return agent_experiment(provider, config, recon_cycles, attack_limit, repair_limit)
+
+
+def run_agent_local(
+    config: BackendConfig,
+    project: str,
+    location: str,
+    model: str,
+    max_calls: int = 64,
+    recon_cycles: int = 2,
+    attack_limit: int = 8,
+    repair_limit: int = 4,
+) -> dict:
+    """Run the LLM workflow through a locally owned one-CPU Ray runtime."""
+    import ray
+
+    owned = not ray.is_initialized()
+    try:
+        if owned:
+            ray.init(
+                address="local",
+                num_cpus=1,
+                include_dashboard=False,
+                object_store_memory=80 * 1024 * 1024,
+            )
+        return run_agent_experiment(
+            config,
+            project,
+            location,
+            model,
+            max_calls,
+            recon_cycles,
+            attack_limit,
+            repair_limit,
+        )
     finally:
         if owned:
             ray.shutdown()

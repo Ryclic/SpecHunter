@@ -14,6 +14,22 @@ installed. No cluster is provisioned by this project. See the official
 [ChiaFunction guide](https://docs.chialoops.ai/en/latest/user_guides/chia_function.html).
 Remote execution is an integration surface, not a validated cloud deployment.
 
+## LLM agent loop
+
+Install the `vertex` extra, configure Google Application Default Credentials, and pass
+an explicit model with `--strategy llm --llm-model MODEL_NAME`. The CLI defaults to the
+`spechunter` project and `global` location. This path can incur Vertex AI charges; no
+model call is made by installation, tests, or the default strategy.
+
+The LLM boundary accepts only schema-constrained data. Candidate programs contain the
+fixture's supported abstract operations and are always evaluated by the simulator. Each
+repair returns control to the attacker in the same outer recon cycle. A fixture repair
+is reported as verified only after at least one clean post-repair validation and the
+attacker subsequently reports that it has exhausted materially different candidates.
+All loops and LLM calls have independent CLI limits.
+Adding `--chia` executes the same agent workflow through the optional local CHIA node;
+the node receives provider configuration and creates its own client on the worker.
+
 Pull requests run lint, tests, model/RTL comparisons and package builds on Python
 3.12 and 3.13. Main builds deliver downloadable wheel/source artifacts. Configure
 repository rules to require CI and review before merge; workflows cannot themselves
