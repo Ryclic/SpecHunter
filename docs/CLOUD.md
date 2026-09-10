@@ -19,6 +19,13 @@ build and smoke evidence is recorded in `docs/evidence/boom-smoke-2026-09-10.jso
 No Compute Engine or Cloud Storage resources remain. GitHub workflows have no GCP
 credentials and deliver Python packages as workflow artifacts.
 
+A later privilege-gate run used another e2-standard-8 worker with the same 200 GB
+balanced boot disk from approximately 18:52 to 19:22 UTC on 2026-09-10. It rebuilt the
+pinned toolchain and simulator, ran the identical privilege payload on Spike and BOOM,
+and was explicitly deleted after the hash-bound evidence was recovered. The instance
+had no service account or API scopes and also carried a six-hour automatic deletion
+limit. No Compute Engine instance remained after deletion.
+
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;
 record region, machine/model, maximum duration/tokens, disk/storage costs and a

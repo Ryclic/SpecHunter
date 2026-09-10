@@ -67,3 +67,26 @@ Next: implement the trusted machine/user privilege and trap runtime, map abstrac
 operations to fixed reviewed instruction templates, run matched secret worlds on this
 simulator, and compare architectural outcomes with Spike. Do not call the current
 smoke result a privilege-isolation test or a vulnerability result.
+
+## BOOM privilege-boundary gate
+
+`feat/boom-privilege-smoke` adds a real RV64 machine/user transition and trap-return
+gate. The reviewed payload configures PMP to deny a 4 KiB secret page to user mode,
+enters user mode with `mret`, requires load-access-fault exception 5, advances `mepc`
+in the machine trap handler, and fails if the load value becomes architecturally visible
+or the expected trap does not occur. One compiled ELF must pass both Spike and the
+pinned SmallBoomV3 Verilator simulator. The runner bounds RTL execution to 10 million
+cycles and emits a manifest binding source, payload, tools, simulator, and logs by
+SHA-256.
+
+On 2026-09-10, the gate passed Spike and BOOM twice; the final evidence run took 150
+seconds. The manifest and raw logs are in `docs/evidence/boom-privilege-smoke-2026-09-10.*`,
+and their tracked hashes were independently verified. Local validation passes shell
+syntax, Ruff, and 31 tests with one skipped RTL test and one deselected CHIA test. The
+GCP e2-standard-8 worker was explicitly deleted after evidence recovery; no Compute
+Engine instance remains.
+
+Next: reuse this trusted transition substrate in the external BOOM runner, map abstract
+operations to fixed instruction templates, and add matched-secret public observations.
+This gate establishes architectural PMP behavior only; it is not a transient-leakage
+test or a BOOM vulnerability claim.
