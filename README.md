@@ -49,6 +49,8 @@ result and CLI exit code 2; a finding is a valid experiment result (exit code 0)
 - Guided deterministic candidate templates and a seeded random baseline.
 - Repeated secret-world comparison, deletion minimization, secure-variant regression checks.
 - Model and executable SystemVerilog fixtures, plus a strict external BOOM runner contract.
+- Pinned Chipyard 1.14/SmallBoomV3 build automation with a hash-evidenced, successfully
+  executed Verilator bare-metal smoke test.
 - Optional pinned CHIA node (`uv sync --extra chia`; `uv run spechunter run --chia`).
 - Optional Vertex agents with schema-constrained recon, attack, and repair responses.
 - Nested repair red-teaming: every repair returns to attacker → validator; a fixture

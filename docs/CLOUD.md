@@ -9,8 +9,15 @@ runs used Gemini 2.5 Flash-Lite under one persistent $0.05 application ledger. T
 ledger accounted for $0.0046509 across 35 entries, including one conservative $0.0004514
 reservation retained after Vertex rejected an early schema before generation. This is
 an application estimate; reconcile it with delayed Cloud Billing data before scaling.
-No Compute Engine or Cloud Storage resources have been created. GitHub workflows have
-no GCP credentials and deliver Python packages as workflow artifacts.
+
+The first BOOM build used one e2-standard-8 worker with a 200 GB balanced boot disk
+for about 42 minutes on 2026-09-10. A four-core standard-disk worker existed only for
+a few minutes during base-image diagnosis. Both were explicitly deleted, and no
+Compute Engine instances remained afterward. Billing data is delayed, so these resource
+times are operational records rather than a charged-cost claim. The resulting pinned
+build and smoke evidence is recorded in `docs/evidence/boom-smoke-2026-09-10.json`.
+No Compute Engine or Cloud Storage resources remain. GitHub workflows have no GCP
+credentials and deliver Python packages as workflow artifacts.
 
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;

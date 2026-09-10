@@ -1,0 +1,18 @@
+make: Entering directory '/opt/chipyard/sims/verilator'
+if [ "/opt/chipyard/tests/build/hello.riscv" != "none" ] && [ ! -f "/opt/chipyard/tests/build/hello.riscv" ]; then printf "\n\nBinary /opt/chipyard/tests/build/hello.riscv not found\n\n"; exit 1; fi
+(set -o pipefail &&  /opt/chipyard/sims/verilator/simulator-chipyard.harness-SmallBoomV3Config \
+	+permissive \
+	+dramsim +dramsim_ini_dir=/opt/chipyard/generators/testchipip/src/main/resources/dramsim2_ini +max-cycles=10000000     \
+	+permissive-off \
+	/opt/chipyard/tests/build/hello.riscv \
+	 \
+	</dev/null | tee /opt/chipyard/sims/verilator/output/chipyard.harness.TestHarness.SmallBoomV3Config/hello.log)
+== Loading device model file '/opt/chipyard/generators/testchipip/src/main/resources/dramsim2_ini/DDR3_micron_64M_8B_x4_sg15.ini' == 
+[UART] UART0 is here (stdin/stdout).
+== Loading system model file '/opt/chipyard/generators/testchipip/src/main/resources/dramsim2_ini/system.ini' == 
+===== MemorySystem 0 =====
+CH. 0 TOTAL_STORAGE : 4096MB | 1 Ranks | 16 Devices per rank
+DRAMSim2 Clock Frequency =666666666Hz, CPU Clock Frequency=500000000Hz
+Hello world from core 0, a sonicboom
+- /opt/chipyard/sims/verilator/generated-src/chipyard.harness.TestHarness.SmallBoomV3Config/gen-collateral/TestDriver.v:158: Verilog $finish
+make: Leaving directory '/opt/chipyard/sims/verilator'

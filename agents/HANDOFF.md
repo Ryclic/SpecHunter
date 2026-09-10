@@ -41,3 +41,29 @@ Validation: Ruff lint and format checks pass. `pytest -m 'not chia'` passes with
 tests, one skipped RTL test, and one deselected CHIA test. No Compute Engine or storage
 resources were created. Next reconcile delayed Cloud Billing costs and begin the pinned
 Chipyard/BOOM runner work.
+
+## Pinned BOOM build and execution evidence
+
+`feat/boom-runner-bootstrap` pins Chipyard 1.14 at
+`0acc1e1de2d3284bcd4d876956932a013ffe1949`, BOOM at
+`5223e44cfeb26f41380057a2eb4d651197475f69`, Miniforge by SHA-256, glibc 2.34,
+and Chipyard's stable `SmallBoomV3Config`. The initially proposed
+`SmallBoomConfig` does not exist as a Chipyard 1.14 generator target. Bootstrap
+rejects incompatible host ABIs and works around an upstream inline-comment parser
+bug so the reviewed lockfile is used instead of silently regenerated.
+
+On 2026-09-10, an e2-standard-8 GCP worker built the pinned Verilator simulator and
+ran Chipyard's bare-metal hello payload successfully. The final simulation took 84
+seconds. The hash-bound manifest and raw log are in `docs/evidence/`; they establish
+a real BOOM execution path, not a security finding. Local validation passes: shell
+syntax, Ruff, and 29 tests with one skipped RTL test and one deselected CHIA test.
+
+The eight-core worker ran from 07:33:43 UTC until deletion shortly after 08:15 UTC.
+A redundant four-core Rocky worker was deleted after a few minutes once the upstream
+parser bug was identified. No Compute Engine instances remain. Reconcile delayed Cloud
+Billing before the next scale-up.
+
+Next: implement the trusted machine/user privilege and trap runtime, map abstract
+operations to fixed reviewed instruction templates, run matched secret worlds on this
+simulator, and compare architectural outcomes with Spike. Do not call the current
+smoke result a privilege-isolation test or a vulnerability result.
