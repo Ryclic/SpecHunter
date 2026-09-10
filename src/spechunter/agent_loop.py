@@ -2,7 +2,7 @@
 
 from dataclasses import asdict
 
-from spechunter.agents import AgentProvider
+from spechunter.agents import AgentProvider, AttackDecision
 from spechunter.backends import Backend, BackendConfig
 from spechunter.domain import BENCHMARKS, Benchmark
 from spechunter.loop import minimize, validate
@@ -30,7 +30,12 @@ def _run_benchmark(
         repaired = active_variant != benchmark.bug
         exhausted = False
         for attempt in range(1, attack_limit + 1):
-            decision = provider.attack(benchmark, hypothesis, transcript, repaired, required_retest)
+            if required_retest is not None:
+                decision = AttackDecision(
+                    "candidate", "mandatory minimized-exploit repair retest", required_retest
+                )
+            else:
+                decision = provider.attack(benchmark, hypothesis, transcript, repaired)
             attack_event = {
                 "stage": "attacker",
                 "cycle": cycle,
@@ -61,6 +66,8 @@ def _run_benchmark(
                 {"stage": "validator", "cycle": cycle, "attempt": attempt, **asdict(result)}
             )
             if result.status == "inconclusive":
+                if result.reason == "secret load outside user threat model":
+                    continue
                 break
             if not result.violation:
                 if repaired and (
@@ -148,7 +155,7 @@ def agent_experiment(
         ]
         positives = [r for r in results if r["benchmark"]["positive"]]
         negatives = [r for r in results if not r["benchmark"]["positive"]]
-        return {
+        report = {
             "schema_version": 2,
             "strategy": "llm",
             "provider": provider.name,
@@ -173,3 +180,7 @@ def agent_experiment(
             },
             "results": results,
         }
+        cost_summary = getattr(provider, "cost_summary", None)
+        if cost_summary is not None:
+            report["cost"] = cost_summary
+        return report

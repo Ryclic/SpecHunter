@@ -4,15 +4,22 @@ Project: `spechunter`. Available credit: **$300 GCP free trial**, superseding th
 $750 request in the original proposal. Never upgrade, link/unlink, or otherwise
 change billing. The checked-in policy is documentation, not a GCP spending cap.
 
-This base implementation makes no paid API calls, enables no GCP services, and
-creates no cloud resources. GitHub workflows have no GCP credentials and deliver
-Python packages as workflow artifacts. There is no cloud deployment job.
+Vertex AI was enabled on 2026-09-10 for a bounded live integration check. Three smoke
+runs used Gemini 2.5 Flash-Lite under one persistent $0.05 application ledger. The
+ledger accounted for $0.0046509 across 35 entries, including one conservative $0.0004514
+reservation retained after Vertex rejected an early schema before generation. This is
+an application estimate; reconcile it with delayed Cloud Billing data before scaling.
+No Compute Engine or Cloud Storage resources have been created. GitHub workflows have
+no GCP credentials and deliver Python packages as workflow artifacts.
 
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;
 record region, machine/model, maximum duration/tokens, disk/storage costs and a
 conservative total estimate. Use a small initial experiment and reconcile actual
-usage before expanding. Do not treat budget alerts as hard spending limits.
+usage before expanding. The official Vertex pricing page listed standard Gemini 2.5
+Flash-Lite text prices on 2026-09-10 as $0.10 per million input tokens and $0.40 per
+million output tokens. Recheck after 30 days. Do not treat ordinary budget alerts as
+hard spending limits.
 Do not run `chia up` until its complete resource plan and cleanup behavior have
 been reviewed. Keep all paid integrations disabled until those checks are complete.
 
