@@ -151,6 +151,8 @@ paths. The patch applies cleanly to the exact pinned BOOM commit. `pins.env` rec
 SHA-256 of both the pristine and repaired LSU source. The trusted secure-control runner
 requires a pristine BOOM tree and exact pristine source digest so a patched or stale build
 cannot be mislabeled as baseline evidence.
+The hash-bound source audit is checked in as
+[`docs/evidence/boom-lsu-repair-audit-2026-09-11.json`](evidence/boom-lsu-repair-audit-2026-09-11.json).
 
 This patch is source-reviewed but unverified. It must not be described as a BOOM fix until
 a baseline violation is repeatable, a simulator is rebuilt from the patched source, the

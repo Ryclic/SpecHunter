@@ -105,7 +105,7 @@ remaining eligible to expose unsafe transient cache effects.
 The CLI now supports selecting one benchmark and defaults real BOOM runs to
 `secure-control` with a 900-second execution timeout. Seeded fixture variants remain
 rejected rather than being mislabeled as real BOOM mutations. Local validation passes
-Ruff, formatting, shell syntax, and 47 tests with one skipped RTL test and one deselected
+Ruff, formatting, shell syntax, and 49 tests with one skipped RTL test and one deselected
 CHIA test.
 
 `tools/boom/run_secure_matrix.py` now provides the pending empirical gate: two repetitions
@@ -120,6 +120,9 @@ verified with `git apply --check` against pristine commit `5223e44c`. Pins now i
 SHA-256 values for pristine and repaired LSU sources; the trusted baseline runner rejects
 dirty BOOM trees or a mismatched pristine source. This is a source-level hypothesis, not
 a validated vulnerability or repair, until before/after RTL evidence exists.
+`docs/evidence/boom-lsu-repair-audit-2026-09-11.json` binds the exact commit, pristine
+and repaired source digests, patch digest, gated signals/paths, and the false RTL-validation
+flag; a regression test prevents those audit fields from drifting.
 
 Live runner validation is pending because Application Default Credentials expired on
 2026-09-11 and `gcloud` requires an interactive `gcloud auth login`. After reauthentication,

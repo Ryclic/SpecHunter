@@ -1,3 +1,5 @@
+import hashlib
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
@@ -23,6 +25,20 @@ def test_candidate_boom_repair_is_minimal_and_fault_gated():
     patch = (ROOT / "tools/boom/patches/gate_faulting_loads.patch").read_text()
     assert patch.count("!ae_ld(w) && !pf_ld(w) && !ma_ld(w)") == 2
     assert patch.count("@@") == 2
+
+
+def test_boom_repair_audit_binds_patch_and_source_pins():
+    audit = json.loads((ROOT / "docs/evidence/boom-lsu-repair-audit-2026-09-11.json").read_text())
+    patch = ROOT / audit["patch_path"]
+    pins = dict(
+        line.split("=", 1)
+        for line in (ROOT / "tools/boom/pins.env").read_text().splitlines()
+        if line and not line.startswith("#")
+    )
+    assert hashlib.sha256(patch.read_bytes()).hexdigest() == audit["patch_sha256"]
+    assert audit["pristine_source_sha256"] == pins["BOOM_LSU_SHA256"]
+    assert audit["repaired_source_sha256"] == pins["BOOM_REPAIRED_LSU_SHA256"]
+    assert audit["rtl_before_after_validated"] is False
 
 
 def test_bootstrap_rejects_root_owned_build_flow():
