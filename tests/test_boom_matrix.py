@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 import sys
@@ -72,3 +73,23 @@ def test_matrix_rejects_runner_provenance_mismatch(tmp_path):
     runner.chmod(0o755)
     with pytest.raises(MATRIX.MatrixError, match="provenance mismatch"):
         MATRIX.run_request(runner, request_path)
+
+
+def test_live_matrix_evidence_remains_bound_to_runner_and_clean():
+    evidence = json.loads((ROOT / "docs/evidence/boom-secure-matrix-2026-09-11.json").read_text())
+    assert (
+        evidence["runner_sha256"]
+        == hashlib.sha256((ROOT / "tools/boom/trusted_runner.py").read_bytes()).hexdigest()
+    )
+    assert evidence["parallel_workers"] == MATRIX.MATRIX_WORKERS
+    assert {scenario["name"]: scenario["status"] for scenario in evidence["scenarios"]} == {
+        "architectural-denial": "clean",
+        "transient-window": "clean",
+    }
+    for scenario in evidence["scenarios"]:
+        assert scenario["deterministic"] is True
+        assert len(scenario["observations"]) == MATRIX.REPEATS * 2
+        assert all(
+            observation["events"] == ["load-access-fault"]
+            for observation in scenario["observations"]
+        )

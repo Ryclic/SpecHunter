@@ -147,11 +147,6 @@ def render_candidate(program: list[str], secret: int) -> str:
         ],
         "load_secret": [
             "  ld s1, 0(s2)",
-            "  la t0, architectural_value",
-            "  sd s1, 0(t0)",
-            "  la t0, architectural_visible",
-            "  li t1, 1",
-            "  sd t1, 0(t0)",
         ],
         "encode": [
             "  la t0, probe_lines",
@@ -175,30 +170,20 @@ def render_candidate(program: list[str], secret: int) -> str:
             "  rdcycle t4",
             "  sub t4, t4, t3",
             "  sltu t2, t2, t4",
-            "  la t0, probe_count",
-            "  ld t1, 0(t0)",
-            "  la t3, probe_results",
-            "  slli t4, t1, 3",
-            "  add t3, t3, t4",
-            "  sd t2, 0(t3)",
-            "  addi t1, t1, 1",
-            "  sd t1, 0(t0)",
+            "  mv s4, t2",
         ],
         "fence": ["  fence rw, rw", "  fence.i"],
     }
     lines = [
-        "  .section .text",
-        "  .align 2",
-        "  .globl spechunter_candidate",
-        "spechunter_candidate:",
-        "  addi sp, sp, -48",
-        "  sd ra, 40(sp)",
-        "  sd s1, 32(sp)",
-        "  sd s2, 24(sp)",
+        '#include "riscv_test.h"',
+        "RVTEST_RV64M",
+        "RVTEST_CODE_BEGIN",
         "  la s2, protected_secret",
         f"  li t0, {secret}",
         "  sd t0, 0(s2)",
         "  li s1, 0",
+        "  li s3, 0",
+        "  li s4, 0",
         "  srli t0, s2, 2",
         "  ori t0, t0, 0x1ff",
         "  csrw pmpaddr0, t0",
@@ -206,8 +191,6 @@ def render_candidate(program: list[str], secret: int) -> str:
         "  csrw pmpaddr1, t0",
         "  li t0, 0x1f18",
         "  csrw pmpcfg0, t0",
-        "  la t0, spechunter_trap_handler",
-        "  csrw mtvec, t0",
         "  li t0, 1",
         "  csrw mcounteren, t0",
         "  csrw scounteren, t0",
@@ -240,15 +223,35 @@ def render_candidate(program: list[str], secret: int) -> str:
             lines += ["  .globl spechunter_after_fault", "spechunter_after_fault:"]
     if load_index is None:
         lines += ["  .globl spechunter_after_fault", "spechunter_after_fault:"]
+    if load_index is not None:
+        lines += ["  li t0, 1", "  bne s3, t0, spechunter_failed"]
+    if "probe" in program:
+        lines += ["  beqz s4, spechunter_passed", "  li TESTNUM, 2", "  RVTEST_FAIL"]
     lines += [
-        "  ecall",
-        "  .globl spechunter_machine_resume",
-        "spechunter_machine_resume:",
-        "  ld s2, 24(sp)",
-        "  ld s1, 32(sp)",
-        "  ld ra, 40(sp)",
-        "  addi sp, sp, 48",
-        "  ret",
+        "spechunter_passed:",
+        "  RVTEST_PASS",
+        "spechunter_failed:",
+        "  li TESTNUM, 10",
+        "  RVTEST_FAIL",
+        "  .globl mtvec_handler",
+        "mtvec_handler:",
+        "spechunter_trap_handler:",
+        "  csrr t0, mcause",
+        "  li t1, 5",
+        "  bne t0, t1, spechunter_failed",
+        "  li s3, 1",
+        "  la t0, spechunter_after_fault",
+        "  csrw mepc, t0",
+        "  mret",
+        "RVTEST_CODE_END",
+        "RVTEST_DATA_BEGIN",
+        "  .balign 4096",
+        "protected_secret:",
+        "  .zero 4096",
+        "  .balign 64",
+        "probe_lines:",
+        "  .zero 128",
+        "RVTEST_DATA_END",
         "",
     ]
     return "\n".join(lines)
@@ -275,34 +278,31 @@ def run_bounded(argv: list[str], cwd: Path, env: dict[str, str], timeout: int) -
     return text
 
 
-def parse_observation(output: str) -> dict:
-    architectural: list[int] = []
-    probes: list[int] = []
-    events: list[str] = []
-    done = False
+def run_htif_observation(
+    argv: list[str],
+    cwd: Path,
+    env: dict[str, str],
+    timeout: int,
+    *,
+    has_load: bool,
+    has_probe: bool,
+) -> dict:
     try:
-        for line in output.splitlines():
-            if line.startswith("SPECHUNTER ARCH "):
-                architectural.append(int(line.removeprefix("SPECHUNTER ARCH ")))
-            elif line.startswith("SPECHUNTER PROBE "):
-                probes.append(int(line.removeprefix("SPECHUNTER PROBE ")))
-            elif line.startswith("SPECHUNTER EVENT "):
-                events.append(line.removeprefix("SPECHUNTER EVENT "))
-            elif line == "SPECHUNTER DONE":
-                done = True
-    except ValueError as exc:
-        raise RunnerError("executor emitted a non-integer observation") from exc
-    if (
-        not done
-        or len(architectural) > 1
-        or len(probes) > 1
-        or len(events) > 1
-        or any(value not in (0, 1) for value in architectural)
-        or any(value not in (0, 1) for value in probes)
-        or any(event != "load-access-fault" for event in events)
-    ):
-        raise RunnerError("executor did not emit a bounded complete observation")
-    return {"architectural": architectural, "probes": probes, "events": events, "completed": True}
+        result = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RunnerError(f"executor failed: {exc}") from exc
+    output = result.stdout + result.stderr
+    if len(output) > MAX_OUTPUT:
+        raise RunnerError("executor output limit exceeded")
+    if result.returncode not in ({0, 2} if has_probe else {0}):
+        text = output.decode(errors="replace")
+        raise RunnerError(f"executor exited {result.returncode}: {text[-2000:]}")
+    return {
+        "architectural": [],
+        "probes": [int(result.returncode == 2)] if has_probe else [],
+        "events": ["load-access-fault"] if has_load else [],
+        "completed": True,
+    }
 
 
 def validate_repair_build(
@@ -333,7 +333,6 @@ def validate_repair_build(
 def execute(
     request: dict, config: str, chipyard: Path = CHIPYARD, pins: dict[str, str] | None = None
 ) -> dict:
-    script_dir = Path(__file__).resolve().parent
     riscv = chipyard / ".conda-env/riscv-tools"
     env = {
         "PATH": f"{riscv / 'bin'}:/usr/bin:/bin",
@@ -356,19 +355,22 @@ def execute(
         payload = work / "candidate.riscv"
         candidate.write_text(render_candidate(request["program"], request["secret"]))
         compiler = riscv / "bin/riscv64-unknown-elf-gcc"
+        test_environment = chipyard / "toolchains/riscv-tools/riscv-tests/env"
         run_bounded(
             [
                 str(compiler),
                 "-march=rv64imafd_zicsr_zifencei",
                 "-mabi=lp64d",
                 "-mcmodel=medany",
-                "-O2",
+                "-nostdlib",
+                "-nostartfiles",
                 "-static",
-                "-specs=htif_nano.specs",
+                "-I",
+                str(test_environment / "p"),
+                "-I",
+                str(test_environment),
                 "-T",
-                "htif.ld",
-                str(script_dir / "runtime.c"),
-                str(script_dir / "runtime.S"),
+                str(test_environment / "p/link.ld"),
                 str(candidate),
                 "-o",
                 str(payload),
@@ -377,10 +379,18 @@ def execute(
             env,
             60,
         )
-        spike_output = run_bounded([str(riscv / "bin/spike"), str(payload)], work, env, 60)
-        spike = parse_observation(spike_output)
+        has_load = "load_secret" in request["program"]
+        has_probe = "probe" in request["program"]
+        spike = run_htif_observation(
+            [str(riscv / "bin/spike"), str(payload)],
+            work,
+            env,
+            60,
+            has_load=has_load,
+            has_probe=has_probe,
+        )
         dramsim = chipyard / "generators/testchipip/src/main/resources/dramsim2_ini"
-        boom_output = run_bounded(
+        boom = run_htif_observation(
             [
                 str(simulators[0]),
                 "+permissive",
@@ -393,8 +403,9 @@ def execute(
             work,
             env,
             900,
+            has_load=has_load,
+            has_probe=has_probe,
         )
-        boom = parse_observation(boom_output)
         if (spike["architectural"], spike["events"]) != (
             boom["architectural"],
             boom["events"],

@@ -2,6 +2,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -84,26 +85,29 @@ def test_candidate_is_fixed_instruction_translation():
     assert "sltu t2, t2, t4" in assembly
 
 
-def test_observation_parser_ignores_executor_noise_and_requires_done():
-    output = "noise\nSPECHUNTER EVENT load-access-fault\nSPECHUNTER PROBE 1\nSPECHUNTER DONE\n"
-    assert RUNNER.parse_observation(output) == {
-        "architectural": [],
-        "probes": [1],
-        "events": ["load-access-fault"],
-        "completed": True,
-    }
-    with pytest.raises(RUNNER.RunnerError):
-        RUNNER.parse_observation("SPECHUNTER PROBE 1\n")
-    for invalid in ("SPECHUNTER PROBE 17", "SPECHUNTER ARCH nope", "SPECHUNTER EVENT other"):
-        with pytest.raises(RUNNER.RunnerError):
-            RUNNER.parse_observation(f"{invalid}\nSPECHUNTER DONE\n")
-
-
 def test_runner_requires_complete_pin_set(tmp_path):
     pins = tmp_path / "pins.env"
     pins.write_text("CHIPYARD_REVISION=abc\nBOOM_CONFIG=SmallBoomV3Config\n")
     with pytest.raises(RUNNER.RunnerError):
         RUNNER.load_pins(pins)
+
+
+def test_htif_exit_code_is_a_bounded_probe_observation(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        RUNNER.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=2, stdout=b"", stderr=b""),
+    )
+    assert RUNNER.run_htif_observation(
+        ["executor"], tmp_path, {}, 1, has_load=True, has_probe=True
+    ) == {
+        "architectural": [],
+        "probes": [1],
+        "events": ["load-access-fault"],
+        "completed": True,
+    }
+    with pytest.raises(RUNNER.RunnerError, match="exited 2"):
+        RUNNER.run_htif_observation(["executor"], tmp_path, {}, 1, has_load=True, has_probe=False)
 
 
 def test_repaired_build_manifest_binds_simulator(tmp_path):
@@ -147,11 +151,11 @@ def test_execute_requires_spike_boom_architecture_and_trap_agreement(tmp_path, m
     simulator.chmod(0o755)
     outputs = iter(
         [
-            "",
-            "SPECHUNTER EVENT load-access-fault\nSPECHUNTER DONE\n",
-            "SPECHUNTER ARCH 1\nSPECHUNTER DONE\n",
+            {"architectural": [], "probes": [0], "events": ["load-access-fault"]},
+            {"architectural": [1], "probes": [0], "events": ["load-access-fault"]},
         ]
     )
-    monkeypatch.setattr(RUNNER, "run_bounded", lambda *args, **kwargs: next(outputs))
+    monkeypatch.setattr(RUNNER, "run_bounded", lambda *args, **kwargs: "")
+    monkeypatch.setattr(RUNNER, "run_htif_observation", lambda *args, **kwargs: next(outputs))
     with pytest.raises(RUNNER.RunnerError, match="observations or traps disagree"):
         RUNNER.execute(request(), "SmallBoomV3Config", chipyard)

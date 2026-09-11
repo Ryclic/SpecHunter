@@ -1,13 +1,10 @@
 # Research work beyond the base implementation
 
-1. Empirically run the trusted BOOM runner's checked-in two-scenario, repeated-secret
-   matrix on the pinned SmallBoomV3 simulator. The request compiler, Spike comparison,
-   pin enforcement, bounded runner, determinism classifier, and evidence manifest are
-   implemented.
-2. Calibrate and repeat the binary relative-cache probe across secure-control seeds, then
-   evaluate the source-reviewed faulting-load gate patch against any repeatable baseline
-   violation. If baseline is clean, add an explicitly pinned inverse mutation benchmark
-   for positive-case evaluation without mislabeling it as an upstream vulnerability.
+1. Add an explicitly pinned inverse mutation benchmark as a positive control for the live
+   runner. The 2026-09-11 repeated-secret baseline was clean, so the source-reviewed load
+   gate was correctly left unapplied and unverified.
+2. Calibrate and repeat the binary relative-cache probe across more attack programs and
+   seeds, then evaluate the candidate repair only if a repeatable baseline violation exists.
 3. Reconcile the first Vertex smoke ledger with delayed Cloud Billing data, then improve
    hypothesis quality and evaluate stronger model/configuration choices. Persistent cost
    reservations, dated price verification, output limits, and bounded transport retries

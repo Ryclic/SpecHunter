@@ -100,14 +100,15 @@ assembles `candidate.S` supplied by an agent. It accepts only the unmodified
 `secure-control` target (`variant: "none"`), verifies the top-level Chipyard and BOOM
 submodule pins, compiles one ELF, and executes it with both Spike and SmallBoomV3.
 
-The generated runtime reserves an aligned 4 KiB protected page, configures PMP, enables
-user access to the cycle counter, installs a machine trap handler, and enters user mode.
+The generated assembly uses the pinned `riscv_test.h` reset and HTIF termination
+substrate, reserves an aligned 4 KiB protected page, configures PMP, enables user access
+to the cycle counter, installs a machine trap handler, and enters user mode.
 A denied load and its younger encode/squash window are skipped architecturally after the
 fault. The fixed probe always times the same two public cache lines in the same order and
 returns whether line zero was faster; neither the probe addresses nor its control flow
 depend on the secret. Spike and BOOM must agree on architectural output and trap events
-before the BOOM observation is returned. Probe results are restricted to the binary
-relative-latency contract. Executor failures, unexpected traps, malformed output, timeouts,
+before the BOOM observation is returned. The bounded HTIF exit word carries the binary
+probe result; all other nonzero codes are errors. Executor failures, unexpected traps, timeouts,
 unsupported variants, and provenance mismatches are inconclusive.
 
 After the pinned simulator is built, invoke the real backend with a per-execution timeout
@@ -127,8 +128,9 @@ they are not real BOOM configurations or applied RTL mutations.
 
 For the review gate, run the fixed two-scenario matrix. It executes architectural denial
 and a load/encode/squash transient window twice in each secret world, rejects
-nondeterministic repetitions, verifies every runner response echo, and hashes the runner,
-both runtime sources, and simulator into one evidence file:
+nondeterministic repetitions, verifies every runner response echo, runs four isolated
+simulators concurrently in stable input order, and hashes the runner and simulator into one
+evidence file:
 
 ```bash
 tools/boom/run_secure_matrix.py /tmp/boom-secure-matrix.json
@@ -136,6 +138,11 @@ tools/boom/run_secure_matrix.py /tmp/boom-secure-matrix.json
 
 The command returns zero only when both secure-control scenarios are repeatable and have
 identical architectural and binary probe observations across the two secret worlds.
+The 2026-09-11 live run passed both scenarios on the pinned SmallBoomV3 simulator; all
+eight executions reported the expected load-access fault, no architectural value, and
+probe bit zero. The evidence is in
+[`docs/evidence/boom-secure-matrix-2026-09-11.json`](evidence/boom-secure-matrix-2026-09-11.json).
+This exhausts these two attacker programs but does not prove the absence of other attacks.
 
 ## Candidate LSU repair
 
@@ -158,6 +165,8 @@ This patch is source-reviewed but unverified. It must not be described as a BOOM
 a baseline violation is repeatable, a simulator is rebuilt from the patched source, the
 original witness becomes clean, attacker-generated variants are exhausted, and functional
 regressions pass.
+The clean baseline matrix did not trigger that repair gate, so no patched simulator was
+built and the candidate remains unapplied and unverified.
 
 Build the repair in a separate checkout so baseline evidence remains immutable:
 

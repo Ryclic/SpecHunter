@@ -9,10 +9,12 @@ import os
 import subprocess
 import sys
 import tempfile
-from datetime import UTC, datetime
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from pathlib import Path
 
 REPEATS = 2
+MATRIX_WORKERS = 4
 SCENARIOS = {
     "architectural-denial": ["enter_user", "load_secret", "probe"],
     "transient-window": [
@@ -137,7 +139,7 @@ def main() -> int:
         with tempfile.TemporaryDirectory(prefix="spechunter-matrix-") as temporary:
             work = Path(temporary)
             for name, program in SCENARIOS.items():
-                observations = []
+                requests = []
                 for repeat in range(REPEATS):
                     for secret in (0, 1):
                         request = {
@@ -150,7 +152,11 @@ def main() -> int:
                         }
                         request_path = work / f"{name}-{repeat}-{secret}.json"
                         request_path.write_text(json.dumps(request) + "\n")
-                        observations.append(run_request(runner, request_path))
+                        requests.append(request_path)
+                with ThreadPoolExecutor(max_workers=MATRIX_WORKERS) as executor:
+                    observations = list(
+                        executor.map(lambda path: run_request(runner, path), requests)
+                    )
                 scenarios.append(
                     {
                         "name": name,
@@ -172,12 +178,11 @@ def main() -> int:
             "boom_revision": pins["BOOM_REVISION"],
             "config": pins["BOOM_CONFIG"],
             "repeats": REPEATS,
+            "parallel_workers": MATRIX_WORKERS,
             "runner_sha256": digest(runner),
-            "runtime_c_sha256": digest(script_dir / "runtime.c"),
-            "runtime_assembly_sha256": digest(script_dir / "runtime.S"),
             "simulator_sha256": digest(simulators[0]),
             "scenarios": scenarios,
-            "completed_at": datetime.now(UTC).isoformat(),
+            "completed_at": datetime.now(timezone.utc).isoformat(),  # noqa: UP017 (Python 3.10)
         }
         temporary_evidence = evidence_path.with_suffix(evidence_path.suffix + ".tmp")
         temporary_evidence.write_text(json.dumps(evidence, indent=2) + "\n")

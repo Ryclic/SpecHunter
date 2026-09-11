@@ -26,6 +26,14 @@ and was explicitly deleted after the hash-bound evidence was recovered. The inst
 had no service account or API scopes and also carried a six-hour automatic deletion
 limit. No Compute Engine instance remained after deletion.
 
+The trusted-runner validation used an e2-standard-8 worker with a 200 GB balanced boot
+disk from 04:33 to 05:51 UTC on 2026-09-11. It rebuilt the pinned simulator, exposed and
+fixed the initial runtime integration, and ran the final eight-case matrix with four
+parallel Verilator processes. The final baseline was clean. Evidence was recovered and
+hash-verified before the worker and disk were explicitly deleted. No repaired simulator
+was built because the baseline produced no repeatable violation. No Compute Engine
+instance remained after deletion.
+
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;
 record region, machine/model, maximum duration/tokens, disk/storage costs and a
