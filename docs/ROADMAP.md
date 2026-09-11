@@ -5,7 +5,9 @@
    pin enforcement, bounded runner, determinism classifier, and evidence manifest are
    implemented.
 2. Calibrate and repeat the binary relative-cache probe across secure-control seeds, then
-   add an explicitly pinned BOOM RTL mutation benchmark for positive-case evaluation.
+   evaluate the source-reviewed faulting-load gate patch against any repeatable baseline
+   violation. If baseline is clean, add an explicitly pinned inverse mutation benchmark
+   for positive-case evaluation without mislabeling it as an upstream vulnerability.
 3. Reconcile the first Vertex smoke ledger with delayed Cloud Billing data, then improve
    hypothesis quality and evaluate stronger model/configuration choices. Persistent cost
    reservations, dated price verification, output limits, and bounded transport retries

@@ -15,6 +15,14 @@ def test_boom_inputs_are_pinned():
     assert len(pins["MINIFORGE_SHA256"]) == 64
     assert pins["BOOM_CONFIG"] == "SmallBoomV3Config"
     assert len(pins["BOOM_REVISION"]) == 40
+    assert len(pins["BOOM_LSU_SHA256"]) == 64
+    assert len(pins["BOOM_REPAIRED_LSU_SHA256"]) == 64
+
+
+def test_candidate_boom_repair_is_minimal_and_fault_gated():
+    patch = (ROOT / "tools/boom/patches/gate_faulting_loads.patch").read_text()
+    assert patch.count("!ae_ld(w) && !pf_ld(w) && !ma_ld(w)") == 2
+    assert patch.count("@@") == 2
 
 
 def test_bootstrap_rejects_root_owned_build_flow():

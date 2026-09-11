@@ -113,6 +113,14 @@ per secret for both architectural-denial and transient-window programs, strict r
 provenance checks, repeatability/leakage classification, atomic evidence output, and
 SHA-256 binding of the runner, runtime sources, and simulator.
 
+Review of pinned BOOM v3 `lsu.scala` found that incoming/retried D-cache requests are not
+gated by same-cycle `ae_ld`, `pf_ld`, or `ma_ld` signals. The minimal candidate patch in
+`tools/boom/patches/gate_faulting_loads.patch` adds all three gates to both paths and was
+verified with `git apply --check` against pristine commit `5223e44c`. Pins now include
+SHA-256 values for pristine and repaired LSU sources; the trusted baseline runner rejects
+dirty BOOM trees or a mismatched pristine source. This is a source-level hypothesis, not
+a validated vulnerability or repair, until before/after RTL evidence exists.
+
 Live runner validation is pending because Application Default Credentials expired on
 2026-09-11 and `gcloud` requires an interactive `gcloud auth login`. After reauthentication,
 provision one six-hour-capped worker, rebuild the pinned simulator, execute repeated

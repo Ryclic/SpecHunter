@@ -137,6 +137,26 @@ tools/boom/run_secure_matrix.py /tmp/boom-secure-matrix.json
 The command returns zero only when both secure-control scenarios are repeatable and have
 identical architectural and binary probe observations across the two secret worlds.
 
+## Candidate LSU repair
+
+Source review at the pinned BOOM commit identified that incoming and retried loads can
+assert `dmem_req.valid` when translation is complete even when the same DTLB response
+reports a load access fault, page fault, or misalignment. Architectural exception handling
+still prevents retirement, so this observation alone is not proof of leakage. It does
+identify the D-cache request boundary exercised by the transient-window matrix.
+
+[`tools/boom/patches/gate_faulting_loads.patch`](../tools/boom/patches/gate_faulting_loads.patch)
+is a minimal candidate repair that adds those three fault predicates to both load request
+paths. The patch applies cleanly to the exact pinned BOOM commit. `pins.env` records the
+SHA-256 of both the pristine and repaired LSU source. The trusted secure-control runner
+requires a pristine BOOM tree and exact pristine source digest so a patched or stale build
+cannot be mislabeled as baseline evidence.
+
+This patch is source-reviewed but unverified. It must not be described as a BOOM fix until
+a baseline violation is repeatable, a simulator is rebuilt from the patched source, the
+original witness becomes clean, attacker-generated variants are exhausted, and functional
+regressions pass.
+
 `tools/boom/gcp_worker.sh create` provisions the corresponding official Rocky Linux 9
 image with no service account or API scopes. It has a six-hour maximum runtime and is
 deleted automatically at the limit. Install the listed host packages and copy the two

@@ -29,10 +29,34 @@ def load_pins(path: Path) -> dict[str, str]:
             if not separator or not key or not value:
                 raise RunnerError("invalid pins.env")
             pins[key] = value
-    for key in ("CHIPYARD_REVISION", "BOOM_REVISION", "BOOM_CONFIG"):
+    for key in ("CHIPYARD_REVISION", "BOOM_REVISION", "BOOM_CONFIG", "BOOM_LSU_SHA256"):
         if key not in pins:
             raise RunnerError(f"missing pin: {key}")
     return pins
+
+
+def validate_install(chipyard: Path, pins: dict[str, str]) -> str:
+    boom = chipyard / "generators/boom"
+
+    def git_output(directory: Path, *arguments: str) -> str:
+        return subprocess.run(
+            ["git", "-c", f"safe.directory={directory}", "-C", str(directory), *arguments],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        ).stdout.strip()
+
+    chipyard_revision = git_output(chipyard, "rev-parse", "HEAD")
+    boom_revision = git_output(boom, "rev-parse", "HEAD")
+    if chipyard_revision != pins["CHIPYARD_REVISION"] or boom_revision != pins["BOOM_REVISION"]:
+        raise RunnerError("installed Chipyard/BOOM revisions do not match pins.env")
+    if git_output(boom, "status", "--porcelain", "--untracked-files=all"):
+        raise RunnerError("BOOM source tree is not pristine")
+    lsu = boom / "src/main/scala/v3/lsu/lsu.scala"
+    if hashlib.sha256(lsu.read_bytes()).hexdigest() != pins["BOOM_LSU_SHA256"]:
+        raise RunnerError("BOOM LSU source does not match its reviewed digest")
+    return chipyard_revision
 
 
 def validate_request(path: Path, target_revision: str) -> dict:
@@ -322,30 +346,7 @@ def main() -> int:
             raise RunnerError("usage: trusted_runner.py /ABSOLUTE/request.json")
         script_dir = Path(__file__).resolve().parent
         pins = load_pins(script_dir / "pins.env")
-        target_revision = subprocess.run(
-            ["git", "-c", f"safe.directory={CHIPYARD}", "-C", str(CHIPYARD), "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=True,
-        ).stdout.strip()
-        boom_revision = subprocess.run(
-            [
-                "git",
-                "-c",
-                f"safe.directory={CHIPYARD / 'generators/boom'}",
-                "-C",
-                str(CHIPYARD / "generators/boom"),
-                "rev-parse",
-                "HEAD",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=True,
-        ).stdout.strip()
-        if target_revision != pins["CHIPYARD_REVISION"] or boom_revision != pins["BOOM_REVISION"]:
-            raise RunnerError("installed Chipyard/BOOM revisions do not match pins.env")
+        target_revision = validate_install(CHIPYARD, pins)
         request = validate_request(Path(sys.argv[1]), target_revision)
         observation = execute(request, pins["BOOM_CONFIG"])
         response = {
