@@ -91,6 +91,39 @@ records a successful Spike and SmallBoomV3 run of this gate. It demonstrates the
 architectural PMP denial and trap-return substrate needed by later experiments. It does
 not test transient leakage or establish that BOOM is free of speculative attacks.
 
+## Trusted experiment runner
+
+`tools/boom/trusted_runner.py` implements the external backend contract for the pinned
+checkout at `/opt/spechunter/chipyard`. It parses the request as data and translates
+only the eight supported operations into reviewed instruction snippets; it never
+assembles `candidate.S` supplied by an agent. It accepts only the unmodified
+`secure-control` target (`variant: "none"`), verifies the top-level Chipyard and BOOM
+submodule pins, compiles one ELF, and executes it with both Spike and SmallBoomV3.
+
+The generated runtime reserves an aligned 4 KiB protected page, configures PMP, enables
+user access to the cycle counter, installs a machine trap handler, and enters user mode.
+A denied load and its younger encode/squash window are skipped architecturally after the
+fault. The fixed probe always times the same two public cache lines in the same order and
+returns whether line zero was faster; neither the probe addresses nor its control flow
+depend on the secret. Spike and BOOM must agree on architectural output before the BOOM
+observation is returned. Executor failures, unexpected traps, malformed output, timeouts,
+unsupported variants, and provenance mismatches are inconclusive.
+
+After the pinned simulator is built, invoke the real backend with a per-execution timeout
+large enough for Spike plus RTL simulation:
+
+```bash
+uv run spechunter run --backend boom \
+  --runner "$PWD/tools/boom/trusted_runner.py" \
+  --target-revision 0acc1e1de2d3284bcd4d876956932a013ffe1949 \
+  --benchmark secure-control --timeout 900 \
+  --output artifacts/boom-secure-control.json
+```
+
+BOOM defaults to `secure-control` and a 900-second timeout when those flags are omitted.
+The seeded `privilege` and `transient` fixture variants are intentionally rejected because
+they are not real BOOM configurations or applied RTL mutations.
+
 `tools/boom/gcp_worker.sh create` provisions the corresponding official Rocky Linux 9
 image with no service account or API scopes. It has a six-hour maximum runtime and is
 deleted automatically at the limit. Install the listed host packages and copy the two

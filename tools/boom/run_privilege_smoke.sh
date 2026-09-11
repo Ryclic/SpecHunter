@@ -61,8 +61,13 @@ grep -Fq "Verilog \$finish" "$boom_log" || {
 export EVIDENCE_FILE="$evidence_file" BOOM_LOG="$boom_log" SPIKE_LOG="$spike_log"
 export PAYLOAD="$payload" SIMULATOR="$simulator" SOURCE="$script_directory/privilege_smoke.S"
 export START_SECONDS="$start_seconds" CHIPYARD_REVISION BOOM_CONFIG
-export BOOM_REVISION="$(git -c safe.directory="$chipyard_directory/generators/boom" \
+actual_boom_revision="$(git -c safe.directory="$chipyard_directory/generators/boom" \
   -C "$chipyard_directory/generators/boom" rev-parse HEAD)"
+[[ "$actual_boom_revision" == "$BOOM_REVISION" ]] || {
+  echo "BOOM revision does not match pins.env" >&2
+  exit 2
+}
+export BOOM_REVISION
 export VERILATOR_VERSION="$(verilator --version)" SPIKE_EXECUTABLE="$(command -v spike)"
 python - <<'PY'
 import hashlib

@@ -13,13 +13,21 @@ from spechunter.loop import experiment
 
 @ChiaFunction(num_cpus=1, max_retries=0)
 def run_experiment(
-    config: BackendConfig, strategy: str = "guided", iterations: int = 16, seed: int = 0
+    config: BackendConfig,
+    strategy: str = "guided",
+    iterations: int = 16,
+    seed: int = 0,
+    benchmark_id: str | None = None,
 ) -> dict:
-    return experiment(config, strategy, iterations, seed)
+    return experiment(config, strategy, iterations, seed, benchmark_id)
 
 
 def run_local(
-    config: BackendConfig, strategy: str = "guided", iterations: int = 16, seed: int = 0
+    config: BackendConfig,
+    strategy: str = "guided",
+    iterations: int = 16,
+    seed: int = 0,
+    benchmark_id: str | None = None,
 ) -> dict:
     """Own a one-CPU local Ray runtime; never attach to a cloud cluster."""
     import ray
@@ -33,7 +41,7 @@ def run_local(
                 include_dashboard=False,
                 object_store_memory=80 * 1024 * 1024,
             )
-        return run_experiment(config, strategy, iterations, seed)
+        return run_experiment(config, strategy, iterations, seed, benchmark_id)
     finally:
         if owned:
             ray.shutdown()
@@ -53,6 +61,7 @@ def run_agent_experiment(
     ledger_path: Path = Path("artifacts/llm-cost.json"),
     max_output_tokens: int = 2048,
     retries: int = 2,
+    benchmark_id: str | None = None,
 ) -> dict:
     provider = VertexAgentProvider(
         project,
@@ -64,7 +73,9 @@ def run_agent_experiment(
         max_output_tokens,
         retries,
     )
-    return agent_experiment(provider, config, recon_cycles, attack_limit, repair_limit)
+    return agent_experiment(
+        provider, config, recon_cycles, attack_limit, repair_limit, benchmark_id
+    )
 
 
 def run_agent_local(
@@ -80,6 +91,7 @@ def run_agent_local(
     ledger_path: Path = Path("artifacts/llm-cost.json"),
     max_output_tokens: int = 2048,
     retries: int = 2,
+    benchmark_id: str | None = None,
 ) -> dict:
     """Run the LLM workflow through a locally owned one-CPU Ray runtime."""
     import ray
@@ -106,6 +118,7 @@ def run_agent_local(
             ledger_path,
             max_output_tokens,
             retries,
+            benchmark_id,
         )
     finally:
         if owned:

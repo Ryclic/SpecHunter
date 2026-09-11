@@ -7,6 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from spechunter.backends import BackendConfig
+from spechunter.domain import BENCHMARKS
 from spechunter.loop import experiment
 
 
@@ -22,7 +23,10 @@ def main() -> int:
         "--runner", type=Path, help="Trusted BOOM runner executable (absolute path)"
     )
     parser.add_argument("--target-revision", default="")
-    parser.add_argument("--timeout", type=int, default=30)
+    parser.add_argument(
+        "--timeout", type=int, help="per-execution seconds (default: 900 for BOOM, 30 otherwise)"
+    )
+    parser.add_argument("--benchmark", choices=[benchmark.id for benchmark in BENCHMARKS])
     parser.add_argument("--chia", action="store_true", help="Run through optional local CHIA node")
     parser.add_argument("--llm-provider", choices=["vertex"], default="vertex")
     parser.add_argument("--llm-project", default="spechunter")
@@ -40,12 +44,18 @@ def main() -> int:
     try:
         if args.runner and not args.runner.is_absolute():
             raise ValueError("runner must be an absolute executable path")
+        timeout = (
+            args.timeout if args.timeout is not None else (900 if args.backend == "boom" else 30)
+        )
         config = BackendConfig(
             args.backend,
             (str(args.runner),) if args.runner else (),
-            args.timeout,
+            timeout,
             args.target_revision,
         )
+        benchmark_id = args.benchmark
+        if args.backend == "boom" and benchmark_id is None:
+            benchmark_id = "secure-control"
         execute = experiment
         if args.chia:
             from spechunter.chia_nodes import run_local
@@ -71,6 +81,7 @@ def main() -> int:
                     args.llm_ledger,
                     args.llm_max_output_tokens,
                     args.llm_retries,
+                    benchmark_id,
                 )
             else:
                 from spechunter.agent_loop import agent_experiment
@@ -92,11 +103,13 @@ def main() -> int:
                     args.recon_cycles,
                     args.attack_limit,
                     args.repair_limit,
+                    benchmark_id,
                 )
             reports = [report]
         else:
             reports = [
-                execute(config, strategy, args.iterations, args.seed) for strategy in strategies
+                execute(config, strategy, args.iterations, args.seed, benchmark_id)
+                for strategy in strategies
             ]
         args.output.parent.mkdir(parents=True, exist_ok=True)
         temporary = args.output.with_suffix(args.output.suffix + ".tmp")

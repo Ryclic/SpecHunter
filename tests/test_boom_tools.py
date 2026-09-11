@@ -14,6 +14,7 @@ def test_boom_inputs_are_pinned():
     assert pins["CHIPYARD_GLIBC"] == "2.34"
     assert len(pins["MINIFORGE_SHA256"]) == 64
     assert pins["BOOM_CONFIG"] == "SmallBoomV3Config"
+    assert len(pins["BOOM_REVISION"]) == 40
 
 
 def test_bootstrap_rejects_root_owned_build_flow():

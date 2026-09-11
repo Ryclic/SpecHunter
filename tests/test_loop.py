@@ -40,6 +40,13 @@ def test_no_observation_is_not_a_finding():
         assert validate(backend, Program((Op.NOP,)), BENCHMARKS[0]).status == "clean"
 
 
+def test_experiment_can_select_one_real_target_benchmark():
+    report = experiment(iterations=1, benchmark_id="secure-control")
+    assert [result["benchmark"]["id"] for result in report["results"]] == ["secure-control"]
+    with pytest.raises(ValueError, match="unknown benchmark"):
+        experiment(benchmark_id="missing")
+
+
 def test_nondeterminism_is_inconclusive():
     class Unstable:
         calls = 0

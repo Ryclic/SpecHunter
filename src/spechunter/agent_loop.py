@@ -140,6 +140,7 @@ def agent_experiment(
     recon_cycles: int = 2,
     attack_limit: int = 8,
     repair_limit: int = 4,
+    benchmark_id: str | None = None,
 ) -> dict:
     for value, name, maximum in (
         (recon_cycles, "recon cycles", 100),
@@ -148,10 +149,15 @@ def agent_experiment(
     ):
         if not 1 <= value <= maximum:
             raise ValueError(f"{name} must be 1..{maximum}")
+    benchmarks = BENCHMARKS
+    if benchmark_id is not None:
+        benchmarks = tuple(benchmark for benchmark in BENCHMARKS if benchmark.id == benchmark_id)
+        if not benchmarks:
+            raise ValueError("unknown benchmark")
     with Backend(config or BackendConfig()) as backend:
         results = [
             _run_benchmark(backend, provider, benchmark, recon_cycles, attack_limit, repair_limit)
-            for benchmark in BENCHMARKS
+            for benchmark in benchmarks
         ]
         positives = [r for r in results if r["benchmark"]["positive"]]
         negatives = [r for r in results if not r["benchmark"]["positive"]]
