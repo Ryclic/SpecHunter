@@ -83,6 +83,8 @@ def minimize(
         changed = False
         for i in range(len(program.ops)):
             candidate = Program(program.ops[:i] + program.ops[i + 1 :])
+            if benchmark.id == "boom-positive-control" and Op.LOAD_SECRET not in candidate.ops:
+                continue
             if validate(backend, candidate, benchmark, bug=bug).violation:
                 program, changed = candidate, True
                 break

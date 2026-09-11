@@ -101,6 +101,12 @@ def test_positive_control_seeds_cache_only_in_explicit_mutated_variant():
     assert mutated.count("lbu zero, 0(t0)") == repaired.count("lbu zero, 0(t0)") + 1
 
 
+def test_positive_control_requires_protected_load_and_probe(tmp_path):
+    for program in (["enter_user", "probe"], ["enter_user", "load_secret"]):
+        with pytest.raises(RUNNER.RunnerError, match="protected load and probe"):
+            validate(tmp_path, request(program, variant="seeded-cache-leak"))
+
+
 def test_runner_requires_complete_pin_set(tmp_path):
     pins = tmp_path / "pins.env"
     pins.write_text("CHIPYARD_REVISION=abc\nBOOM_CONFIG=SmallBoomV3Config\n")
