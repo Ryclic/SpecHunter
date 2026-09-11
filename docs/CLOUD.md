@@ -41,6 +41,15 @@ and produced deterministic violation-to-clean evidence. The recovered simulator 
 matched the prior privilege and secure-control evidence. The worker and 200 GB disk were
 explicitly deleted after hash verification; no Compute Engine instance remained.
 
+The live Vertex-agent demonstration used one identically constrained worker from
+approximately 17:53 to 18:34 UTC on 2026-09-11. It rebuilt the pinned simulator, passed
+the BOOM smoke test, and served the trusted runner for the discovery, minimization, repair
+retest, and attacker-exhaustion loop. The successful evidence run made four Gemini 2.5
+Flash-Lite calls accounting for $0.0006038 and 28 BOOM executions. Development for this
+gate made 17 Vertex calls accounting for $0.0023706 in total, including preflights and one
+failed-closed transport attempt. The worker and its 200 GB disk were explicitly deleted
+after the evidence was sealed, and no Compute Engine instance remained.
+
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;
 record region, machine/model, maximum duration/tokens, disk/storage costs and a

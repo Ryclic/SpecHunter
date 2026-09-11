@@ -1,5 +1,7 @@
 import importlib.util
+import json
 from copy import deepcopy
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -15,12 +17,16 @@ SPEC.loader.exec_module(SEAL)
 def fixtures():
     transcript = [
         {"stage": "recon"},
-        {"stage": "attacker"},
-        {"stage": "validator"},
+        {"stage": "attacker", "outcome": "candidate"},
+        {"stage": "validator", "status": "violation"},
         {"stage": "repair", "repair_id": "remove-seeded-cache-leak"},
-        {"stage": "attacker"},
-        {"stage": "validator"},
-        {"stage": "attacker"},
+        {
+            "stage": "attacker",
+            "rationale": "mandatory minimized-exploit repair retest",
+            "program": ["enter_user", "load_secret", "probe"],
+        },
+        {"stage": "validator", "status": "clean"},
+        {"stage": "attacker", "outcome": "exhausted"},
     ]
     report = {
         "schema_version": 2,
@@ -34,7 +40,12 @@ def fixtures():
         "results": [
             {
                 "benchmark": {"id": "boom-positive-control"},
-                "findings": [{"sha256": "witness"}],
+                "findings": [
+                    {
+                        "sha256": "witness",
+                        "program": ["enter_user", "load_secret", "probe"],
+                    }
+                ],
                 "transcript": transcript,
                 "repair": {
                     "attempted": True,
@@ -45,11 +56,12 @@ def fixtures():
                 },
             }
         ],
-        "metrics": {"repairs_attacker_exhausted": 1},
+        "metrics": {"repairs_attacker_exhausted": 1, "llm_calls": 1},
+        "cost": {"accounted_usd": "0.0001", "calls": 1},
     }
     ledger = {
         "schema_version": 1,
-        "entries": [{"state": "settled", "outcome": "success"}],
+        "entries": [{"state": "settled", "outcome": "success", "amount_usd": "0.0001"}],
     }
     control = {
         "classification": "intentional-harness-mutation-not-upstream-boom-vulnerability",
@@ -76,3 +88,22 @@ def test_seal_rejects_unsettled_cost_or_simulator_drift():
     drifted["simulator_sha256"] = "other"
     with pytest.raises(SEAL.SealError, match="simulator provenance"):
         SEAL.validate(report, ledger, drifted)
+
+
+def test_live_vertex_boom_evidence_is_hash_bound_and_complete():
+    evidence = ROOT / "docs/evidence"
+    seal = json.loads((evidence / "vertex-boom-demo-seal-2026-09-11.json").read_text())
+    report_path = evidence / seal["report"]
+    ledger_path = evidence / seal["cost_ledger"]
+    control_path = evidence / seal["positive_control"]
+    for path, field in (
+        (report_path, "report_sha256"),
+        (ledger_path, "cost_ledger_sha256"),
+        (control_path, "positive_control_sha256"),
+    ):
+        assert sha256(path.read_bytes()).hexdigest() == seal[field]
+    SEAL.validate(
+        json.loads(report_path.read_text()),
+        json.loads(ledger_path.read_text()),
+        json.loads(control_path.read_text()),
+    )

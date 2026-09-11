@@ -183,7 +183,7 @@ validation now passes Ruff, formatting, and 58 tests with one skipped RTL test a
 deselected CHIA test. Next: execute a bounded live Vertex-driven agent loop against this
 positive control and preserve its transcript and cost evidence.
 
-## Vertex-to-BOOM live demo (in progress)
+## Vertex-to-BOOM live demo
 
 `feat/vertex-boom-demo` adds a trusted local-to-GCP runner transport. It validates the
 exact request envelope, restricts GCP identifiers, uploads only JSON under a UUID path,
@@ -198,5 +198,24 @@ experiment and records the hash in report provenance. `tools/boom/seal_vertex_de
 requires a real Vertex/BOOM report with a finding, the closed positive-control repair,
 mandatory retest, attacker exhaustion, matching live-control simulator hash, and a fully
 settled cost ledger before producing final demo evidence. Local boundary tests are in
-place. Next: provision one capped worker, run the bounded Vertex loop, seal the transcript,
-recover evidence, and delete the worker.
+place.
+
+On 2026-09-11, the bounded live loop succeeded against the rebuilt pinned SmallBoomV3
+simulator. Gemini proposed a six-operation candidate, BOOM confirmed the intentional
+seeded leak, and the minimizer retained the causal protected-user-load witness
+`enter_user, load_secret, probe`. The repair agent selected only the closed
+`remove-seeded-cache-leak` repair; the orchestrator retested the identical witness clean,
+returned to the attacker, and recorded exhaustion. The final report has 28 BOOM executions,
+four Vertex calls, zero inconclusive cases, and $0.0006038 accounted cost. Its report,
+settled ledger, and hash seal are checked into `docs/evidence/`.
+
+The live run exposed two integration defects before final evidence: minimization could
+remove the protected load from a positive-control witness, and the sanitized subprocess
+home caused concurrent gcloud sessions to race while creating SSH keys. The minimizer and
+trusted runner now require the protected load, and the transport requires an explicit
+existing SSH identity. Both failures were closed and covered by regression tests. The
+worker ran from approximately 17:53 to 18:34 UTC with no service account/scopes and a
+six-hour deletion cap, then was explicitly deleted. No Compute Engine instance remains.
+Local validation passes Ruff, formatting, and 67 tests with one skipped RTL test and one
+deselected CHIA test. Next: package the live transcript into a concise hackathon demo view
+and expand the bounded attacker corpus beyond the positive control.

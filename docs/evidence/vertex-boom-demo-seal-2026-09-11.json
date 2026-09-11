@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "experiment": "vertex-agent-boom-discovery-repair-red-team-loop",
+  "classification": "intentional-harness-mutation-not-upstream-boom-vulnerability",
+  "report": "vertex-boom-demo-2026-09-11.json",
+  "report_sha256": "0633c08ba9c242588babde4eb6941233397bc0255d0c87f7b33d77ea91ef2af4",
+  "cost_ledger": "vertex-boom-demo-cost-2026-09-11.json",
+  "cost_ledger_sha256": "c2a946fc94da4fc0ffc4095ba8249a8e0343a2509a74794f77fbbc003f86dfa2",
+  "positive_control": "boom-positive-control.json",
+  "positive_control_sha256": "ba36634474064712c66bd7816859afdd7bcbdb0b0b843fb086c61bbcd8cebd24",
+  "provider": "vertex",
+  "model": "gemini-2.5-flash-lite",
+  "llm_calls": 4,
+  "accounted_usd": "0.0006038",
+  "target_revision": "0acc1e1de2d3284bcd4d876956932a013ffe1949",
+  "completed_at": "2026-09-11T18:35:11.572561+00:00"
+}

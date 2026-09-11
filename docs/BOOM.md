@@ -234,6 +234,20 @@ contains discovery, the closed repair selection, mandatory witness retest, retur
 attacker, exhaustion, matching positive-control simulator provenance, and a fully settled
 cost ledger.
 
+The live 2026-09-11 run completed this loop with Gemini 2.5 Flash-Lite and the pinned
+SmallBoomV3 simulator. The model proposed a six-operation attack; real BOOM validation
+confirmed the seeded leak, and empirical minimization reduced it to
+`enter_user, load_secret, probe`. The closed harness repair made that identical witness
+clean, after which control returned to the attacker and it reported exhaustion. The run
+used 28 BOOM executions and four Vertex calls, accounting for $0.0006038 under the local
+ledger. The report, settled ledger, and seal are
+[`docs/evidence/vertex-boom-demo-2026-09-11.json`](evidence/vertex-boom-demo-2026-09-11.json),
+[`docs/evidence/vertex-boom-demo-cost-2026-09-11.json`](evidence/vertex-boom-demo-cost-2026-09-11.json),
+and
+[`docs/evidence/vertex-boom-demo-seal-2026-09-11.json`](evidence/vertex-boom-demo-seal-2026-09-11.json).
+This demonstrates the complete agent workflow on an intentional harness mutation; it is
+not an upstream BOOM vulnerability claim.
+
 Build the repair in a separate checkout so baseline evidence remains immutable:
 
 ```bash

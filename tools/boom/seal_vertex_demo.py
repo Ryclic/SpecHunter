@@ -7,6 +7,7 @@ import hashlib
 import json
 import sys
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 
@@ -47,6 +48,13 @@ def validate(report: dict, ledger: dict, positive_control: dict) -> None:
     repair = result.get("repair", {})
     if not isinstance(findings, list) or not findings:
         raise SealError("Vertex did not produce a validated finding")
+    witness = findings[0].get("program")
+    if (
+        not isinstance(witness, list)
+        or not all(operation in witness for operation in ("enter_user", "load_secret", "probe"))
+        or not witness.index("enter_user") < witness.index("load_secret") < witness.index("probe")
+    ):
+        raise SealError("finding does not preserve the protected user load")
     if repair != {
         "attempted": True,
         "attacker_exhausted": True,
@@ -66,6 +74,19 @@ def validate(report: dict, ledger: dict, positive_control: dict) -> None:
     repair_events = [event for event in transcript if event.get("stage") == "repair"]
     if not repair_events or repair_events[-1].get("repair_id") != "remove-seeded-cache-leak":
         raise SealError("Vertex did not select the closed positive-control repair")
+    repair_index = max(i for i, event in enumerate(transcript) if event.get("stage") == "repair")
+    post_repair = transcript[repair_index + 1 :]
+    if (
+        len(post_repair) < 3
+        or post_repair[0].get("stage") != "attacker"
+        or post_repair[0].get("rationale") != "mandatory minimized-exploit repair retest"
+        or post_repair[0].get("program") != witness
+        or post_repair[1].get("stage") != "validator"
+        or post_repair[1].get("status") != "clean"
+        or post_repair[-1].get("stage") != "attacker"
+        or post_repair[-1].get("outcome") != "exhausted"
+    ):
+        raise SealError("repair was not followed by mandatory clean retest and attacker exhaustion")
     if report.get("metrics", {}).get("repairs_attacker_exhausted") != 1:
         raise SealError("report metrics do not record attacker exhaustion")
     entries = ledger.get("entries")
@@ -79,6 +100,19 @@ def validate(report: dict, ledger: dict, positive_control: dict) -> None:
         )
     ):
         raise SealError("cost ledger is missing or unsettled")
+    metrics = report.get("metrics", {})
+    cost = report.get("cost", {})
+    try:
+        accounted = sum(Decimal(entry["amount_usd"]) for entry in entries)
+        reported = Decimal(cost["accounted_usd"])
+    except (InvalidOperation, KeyError, TypeError) as exc:
+        raise SealError("cost accounting is invalid") from exc
+    if (
+        len(entries) != metrics.get("llm_calls")
+        or len(entries) != cost.get("calls")
+        or accounted != reported
+    ):
+        raise SealError("report and settled ledger cost totals differ")
     if positive_control.get("classification") != (
         "intentional-harness-mutation-not-upstream-boom-vulnerability"
     ):
@@ -100,6 +134,8 @@ def main() -> int:
         report = read_json(report_path)
         ledger = read_json(ledger_path)
         control = read_json(control_path)
+        if Path(report.get("cost", {}).get("ledger", "")).name != ledger_path.name:
+            raise SealError("report does not reference the sealed cost ledger")
         validate(report, ledger, control)
         seal = {
             "schema_version": 1,

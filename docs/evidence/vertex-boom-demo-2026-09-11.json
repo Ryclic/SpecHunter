@@ -1,0 +1,276 @@
+{
+  "schema_version": 2,
+  "strategy": "llm",
+  "provider": "vertex",
+  "limits": {
+    "recon_cycles": 1,
+    "attacks_per_cycle": 4,
+    "repairs_per_benchmark": 1
+  },
+  "provenance": {
+    "kind": "boom",
+    "target_revision": "0acc1e1de2d3284bcd4d876956932a013ffe1949",
+    "fixture_sha256": null,
+    "command": [
+      "/tmp/spechunter-boom-runner/tools/boom/gcp_runner.py",
+      "--project=spechunter",
+      "--zone=us-central1-a",
+      "--instance=spechunter-boom-agent-1",
+      "--gcloud-config=/home/ryclic/.config/gcloud",
+      "--ssh-key-file=/home/ryclic/.ssh/google_compute_engine"
+    ],
+    "is_boom_evidence": true,
+    "simulator_sha256": "230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8"
+  },
+  "metrics": {
+    "discovered": 1,
+    "positive_cases": 1,
+    "false_positives": 0,
+    "inconclusive_cases": 0,
+    "repairs_attacker_exhausted": 1,
+    "executions": 28,
+    "llm_calls": 4
+  },
+  "results": [
+    {
+      "benchmark": {
+        "id": "boom-positive-control",
+        "description": "A seeded cache-state mutation exposes the protected secret on real BOOM",
+        "bug": "seeded-cache-leak",
+        "invariant": "observable-isolation",
+        "positive": true
+      },
+      "transcript": [
+        {
+          "stage": "recon",
+          "cycle": 1,
+          "output": {
+            "hypothesis": "A transient load of the secret, followed by encoding its value into the cache, and then a subsequent fence operation, will allow the secret to be observed via the probe.",
+            "rationale": "The invariant is observable isolation. The benchmark is a seeded cache-state mutation exposing the protected secret. The bug is a seeded cache leak. The positive control indicates that the secret should be observable. The hypothesis leverages the supported operations to achieve this. Specifically, `train` is used to set up a misprediction, `load_secret` attempts to transiently access the protected data, `encode` maps the loaded secret value to observable cache lines, and `probe` measures the resulting cache state. A `fence` is included to ensure that the speculative execution path leading to the secret leak is properly managed before observation, although the core leak mechanism relies on transient execution bypassing the fence's protection for the load itself. The `enter_user` operation is not strictly necessary for this hypothesis as the initial state is assumed to be capable of initiating speculative execution that can access the secret, and the focus is on the transient leak, not privilege escalation.",
+            "provider": "vertex",
+            "scope": "agent-generated"
+          }
+        },
+        {
+          "stage": "attacker",
+          "cycle": 1,
+          "attempt": 1,
+          "testing_repair": false,
+          "outcome": "candidate",
+          "rationale": "The previous hypothesis was a good starting point, but it did not explicitly include the `enter_user` operation before `load_secret` as required by the benchmark constraints. This new candidate incorporates `enter_user` to satisfy the constraint, while maintaining the core logic of training the predictor, loading the secret transiently, encoding its value, and probing the cache. The `fence` is kept to ensure proper state management, although the transient load is expected to bypass its protection for the leak itself.",
+          "program": [
+            "enter_user",
+            "train",
+            "load_secret",
+            "encode",
+            "fence",
+            "probe"
+          ]
+        },
+        {
+          "stage": "validator",
+          "cycle": 1,
+          "attempt": 1,
+          "status": "violation",
+          "reason": "secret-dependent observer output",
+          "observations": [
+            {
+              "architectural": [],
+              "probes": [
+                1
+              ],
+              "events": [
+                "load-access-fault"
+              ],
+              "completed": true
+            },
+            {
+              "architectural": [],
+              "probes": [
+                0
+              ],
+              "events": [
+                "load-access-fault"
+              ],
+              "completed": true
+            },
+            {
+              "architectural": [],
+              "probes": [
+                1
+              ],
+              "events": [
+                "load-access-fault"
+              ],
+              "completed": true
+            },
+            {
+              "architectural": [],
+              "probes": [
+                0
+              ],
+              "events": [
+                "load-access-fault"
+              ],
+              "completed": true
+            }
+          ]
+        },
+        {
+          "stage": "repair",
+          "round": 1,
+          "status": "trusted-candidate-repair",
+          "diagnosis": "The validation failed because the secret-dependent observer output was observed. This indicates that the secret value was successfully leaked and observed through the probes. The history shows that the attacker attempted to exploit a transient load of the secret, encode its value into the cache, and then probe the cache state. The `enter_user` operation was included to satisfy benchmark constraints, and a `fence` was used for state management, though the transient load is expected to bypass its protection for the leak itself.",
+          "proposal": "The `remove-seeded-cache-leak` repair is the most appropriate for this benchmark. It directly addresses the bug by removing the explicitly seeded cache-state injection from the BOOM positive-control harness, which is the root cause of the observed violation. This repair is specifically designed for the `boom-positive-control` benchmark.",
+          "repair_id": "remove-seeded-cache-leak",
+          "active_variant": "remove-seeded-cache-leak",
+          "rtl_patch_applied": false
+        },
+        {
+          "stage": "attacker",
+          "cycle": 1,
+          "attempt": 2,
+          "testing_repair": true,
+          "outcome": "candidate",
+          "rationale": "mandatory minimized-exploit repair retest",
+          "program": [
+            "enter_user",
+            "load_secret",
+            "probe"
+          ]
+        },
+        {
+          "stage": "validator",
+          "cycle": 1,
+          "attempt": 2,
+          "status": "clean",
+          "reason": "observer outputs agree",
+          "observations": [
+            {
+              "architectural": [],
+              "probes": [
+                0
+              ],
+              "events": [
+                "load-access-fault"
+              ],
+              "completed": true
+            },
+            {
+              "architectural": [],
+              "probes": [
+                0
+              ],
+              "events": [
+                "load-access-fault"
+              ],
+              "completed": true
+            },
+            {
+              "architectural": [],
+              "probes": [
+                0
+              ],
+              "events": [
+                "load-access-fault"
+              ],
+              "completed": true
+            },
+            {
+              "architectural": [],
+              "probes": [
+                0
+              ],
+              "events": [
+                "load-access-fault"
+              ],
+              "completed": true
+            }
+          ]
+        },
+        {
+          "stage": "attacker",
+          "cycle": 1,
+          "attempt": 3,
+          "testing_repair": true,
+          "outcome": "exhausted",
+          "rationale": "The previous candidate was a repair attempt that successfully passed validation. Since the goal is to propose a *new* attack candidate, and no further materially different candidates can be generated from the history, the agent is exhausted.",
+          "program": null
+        }
+      ],
+      "findings": [
+        {
+          "cycle": 1,
+          "program": [
+            "enter_user",
+            "load_secret",
+            "probe"
+          ],
+          "sha256": "13227cb44a11fcfdabf177ae739b689589599f091ca6b6ef1fccbd4ed23da544",
+          "assembly": "# RV64 harness-linked candidate; see docs/BOOM.md.\n.section .text\n.globl spechunter_candidate\nspechunter_candidate:\n  addi sp, sp, -16\n  sd ra, 8(sp)\n  call spechunter_enter_user\n  call spechunter_load_secret\n  call spechunter_probe\n  ld ra, 8(sp)\n  addi sp, sp, 16\n  ret\n",
+          "validation": {
+            "status": "violation",
+            "reason": "secret-dependent observer output",
+            "observations": [
+              {
+                "architectural": [],
+                "probes": [
+                  1
+                ],
+                "events": [
+                  "load-access-fault"
+                ],
+                "completed": true
+              },
+              {
+                "architectural": [],
+                "probes": [
+                  0
+                ],
+                "events": [
+                  "load-access-fault"
+                ],
+                "completed": true
+              },
+              {
+                "architectural": [],
+                "probes": [
+                  1
+                ],
+                "events": [
+                  "load-access-fault"
+                ],
+                "completed": true
+              },
+              {
+                "architectural": [],
+                "probes": [
+                  0
+                ],
+                "events": [
+                  "load-access-fault"
+                ],
+                "completed": true
+              }
+            ]
+          },
+          "variant": "seeded-cache-leak"
+        }
+      ],
+      "repair": {
+        "attempted": true,
+        "attacker_exhausted": true,
+        "verified": true,
+        "final_variant": "remove-seeded-cache-leak",
+        "rtl_patch_applied": false
+      }
+    }
+  ],
+  "cost": {
+    "budget_usd": "0.02",
+    "accounted_usd": "0.0006038",
+    "remaining_usd": "0.0193962",
+    "calls": 4,
+    "ledger": "vertex-boom-demo-cost-2026-09-11.json"
+  }
+}
