@@ -233,6 +233,13 @@ class VertexAgentProvider:
         history: list[dict],
         repaired: bool,
     ) -> AttackDecision:
+        benchmark_constraints = []
+        if benchmark.id == "boom-positive-control":
+            benchmark_constraints = [
+                "Every candidate must contain enter_user before load_secret.",
+                "Every candidate must contain load_secret and a later probe.",
+                "Do not return exhausted merely because an earlier candidate violated these constraints.",
+            ]
         data = self._generate(
             "attacker",
             {
@@ -245,6 +252,7 @@ class VertexAgentProvider:
                 "testing_repair": repaired,
                 "supported_operations": [op.value for op in Op],
                 "operation_semantics": OPERATION_SEMANTICS,
+                "benchmark_constraints": benchmark_constraints,
                 "history": history,
             },
             {
