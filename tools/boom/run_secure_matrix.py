@@ -100,6 +100,7 @@ def run_request(runner: Path, request: Path) -> dict:
                 "variant",
                 "target",
                 "observation",
+                "simulator_sha256",
             }
             or response["schema_version"] != expected["schema_version"]
             or response["target_revision"] != expected["target_revision"]
@@ -107,9 +108,11 @@ def run_request(runner: Path, request: Path) -> dict:
             or response["secret"] != expected["secret"]
             or response["variant"] != expected["variant"]
             or response["target"] != "boom"
+            or not isinstance(response["simulator_sha256"], str)
+            or len(response["simulator_sha256"]) != 64
         ):
             raise MatrixError("runner response provenance mismatch")
-        return response["observation"]
+        return response
     except (UnicodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
         raise MatrixError(f"invalid runner response: {exc}") from exc
 
@@ -141,6 +144,7 @@ def main() -> int:
         scenarios = []
         with tempfile.TemporaryDirectory(prefix="spechunter-matrix-") as temporary:
             work = Path(temporary)
+            observed_simulator_hashes = set()
             for name, program in SCENARIOS.items():
                 requests = []
                 for repeat in range(REPEATS):
@@ -157,9 +161,12 @@ def main() -> int:
                         request_path.write_text(json.dumps(request) + "\n")
                         requests.append(request_path)
                 with ThreadPoolExecutor(max_workers=MATRIX_WORKERS) as executor:
-                    observations = list(
-                        executor.map(lambda path: run_request(runner, path), requests)
-                    )
+                    responses = list(executor.map(lambda path: run_request(runner, path), requests))
+                observations = [response["observation"] for response in responses]
+                simulator_hashes = {response["simulator_sha256"] for response in responses}
+                if len(simulator_hashes) != 1:
+                    raise MatrixError("runner simulator provenance changed within matrix")
+                observed_simulator_hashes.update(simulator_hashes)
                 scenarios.append(
                     {
                         "name": name,
@@ -173,6 +180,9 @@ def main() -> int:
         simulators = list((chipyard / "sims/verilator").glob(f"simulator-*-{pins['BOOM_CONFIG']}"))
         if len(simulators) != 1:
             raise MatrixError("cannot identify the pinned simulator for evidence")
+        simulator_sha256 = digest(simulators[0])
+        if observed_simulator_hashes != {simulator_sha256}:
+            raise MatrixError("runner simulator provenance does not match installed binary")
         evidence = {
             "schema_version": 1,
             "experiment": "boom-secure-control-matched-secret-matrix",
@@ -183,7 +193,7 @@ def main() -> int:
             "repeats": REPEATS,
             "parallel_workers": MATRIX_WORKERS,
             "runner_sha256": digest(runner),
-            "simulator_sha256": digest(simulators[0]),
+            "simulator_sha256": simulator_sha256,
             "scenarios": scenarios,
             "completed_at": datetime.now(timezone.utc).isoformat(),  # noqa: UP017 (Python 3.10)
         }

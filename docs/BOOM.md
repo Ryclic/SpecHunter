@@ -200,6 +200,39 @@ value. Both halves used simulator SHA-256 `230de62a46a82fc5f9c92aaf2f6e80893d137
 which is also the independently validated privilege-gate binary. The manifest is
 [`docs/evidence/boom-positive-control.json`](evidence/boom-positive-control.json).
 
+## Vertex-to-GCP runner transport
+
+`tools/boom/gcp_runner.py` lets the local Vertex agent loop use an isolated Compute Engine
+worker without copying cloud credentials onto it. The wrapper accepts one bounded JSON
+request, validates its exact envelope, uploads it under an unguessable name, invokes the
+fixed remote trusted runner, bounds all `gcloud` calls and output, and removes the request
+in a `finally` path. GCP resource identifiers are restricted before they enter the fixed
+remote command. The local `gcloud` configuration is supplied explicitly to this trusted
+wrapper; it is not inherited by candidate processes or sent to the worker.
+
+The CLI accepts repeatable `--runner-arg=VALUE` options before the generated request path.
+For example:
+
+```bash
+uv run --extra vertex spechunter run --backend boom --strategy llm \
+  --runner "$PWD/tools/boom/gcp_runner.py" \
+  --runner-arg=--project=spechunter \
+  --runner-arg=--zone=us-central1-a \
+  --runner-arg=--instance=spechunter-boom-agent-1 \
+  --runner-arg=--gcloud-config="$HOME/.config/gcloud" \
+  --target-revision 0acc1e1de2d3284bcd4d876956932a013ffe1949 \
+  --benchmark boom-positive-control --llm-model gemini-2.5-flash-lite \
+  --recon-cycles 1 --attack-limit 4 --repair-limit 1 --timeout 1100
+```
+
+Real BOOM validation submits the four repeated-secret executions concurrently and retains
+their input order. Each runner response now includes the simulator SHA-256; the backend
+requires one stable hash for the entire experiment and records it in report provenance.
+`tools/boom/seal_vertex_demo.py` rejects the final artifact unless the Vertex transcript
+contains discovery, the closed repair selection, mandatory witness retest, return to the
+attacker, exhaustion, matching positive-control simulator provenance, and a fully settled
+cost ledger.
+
 Build the repair in a separate checkout so baseline evidence remains immutable:
 
 ```bash

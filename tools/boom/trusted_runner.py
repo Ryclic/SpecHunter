@@ -459,6 +459,10 @@ def main() -> int:
             )
         }
         response.update(target="boom", observation=observation)
+        simulators = list((chipyard / "sims/verilator").glob(f"simulator-*-{pins['BOOM_CONFIG']}"))
+        if len(simulators) != 1:
+            raise RunnerError("cannot bind simulator provenance")
+        response["simulator_sha256"] = hashlib.sha256(simulators[0].read_bytes()).hexdigest()
         print(json.dumps(response, separators=(",", ":")))
         return 0
     except (RunnerError, subprocess.SubprocessError) as exc:

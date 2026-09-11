@@ -22,6 +22,12 @@ def main() -> int:
     parser.add_argument(
         "--runner", type=Path, help="Trusted BOOM runner executable (absolute path)"
     )
+    parser.add_argument(
+        "--runner-arg",
+        action="append",
+        default=[],
+        help="Argument passed to the trusted runner before the request path (repeatable)",
+    )
     parser.add_argument("--target-revision", default="")
     parser.add_argument(
         "--timeout", type=int, help="per-execution seconds (default: 900 for BOOM, 30 otherwise)"
@@ -44,12 +50,14 @@ def main() -> int:
     try:
         if args.runner and not args.runner.is_absolute():
             raise ValueError("runner must be an absolute executable path")
+        if args.runner_arg and not args.runner:
+            raise ValueError("--runner-arg requires --runner")
         timeout = (
             args.timeout if args.timeout is not None else (900 if args.backend == "boom" else 30)
         )
         config = BackendConfig(
             args.backend,
-            (str(args.runner),) if args.runner else (),
+            (str(args.runner), *args.runner_arg) if args.runner else (),
             timeout,
             args.target_revision,
         )

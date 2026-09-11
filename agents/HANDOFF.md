@@ -182,3 +182,20 @@ account/scopes, and 200 GB disk. It was explicitly deleted after evidence recove
 validation now passes Ruff, formatting, and 58 tests with one skipped RTL test and one
 deselected CHIA test. Next: execute a bounded live Vertex-driven agent loop against this
 positive control and preserve its transcript and cost evidence.
+
+## Vertex-to-BOOM live demo (in progress)
+
+`feat/vertex-boom-demo` adds a trusted local-to-GCP runner transport. It validates the
+exact request envelope, restricts GCP identifiers, uploads only JSON under a UUID path,
+executes the fixed remote runner, bounds output/time, and cleans the remote request. The
+CLI supports repeated runner arguments so project, zone, instance, and an explicit local
+gcloud configuration can be supplied without placing credentials on the worker.
+
+BOOM validation now executes four secret worlds concurrently in stable order. Each trusted
+runner response binds the simulator SHA-256; `Backend` rejects a hash change within an
+experiment and records the hash in report provenance. `tools/boom/seal_vertex_demo.py`
+requires a real Vertex/BOOM report with a finding, the closed positive-control repair,
+mandatory retest, attacker exhaustion, matching live-control simulator hash, and a fully
+settled cost ledger before producing final demo evidence. Local boundary tests are in
+place. Next: provision one capped worker, run the bounded Vertex loop, seal the transcript,
+recover evidence, and delete the worker.

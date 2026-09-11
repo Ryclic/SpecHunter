@@ -47,7 +47,8 @@ def test_boom_provenance_and_failure(tmp_path):
     runner.write_text("""import json, sys
 r = json.load(open(sys.argv[1]))
 r.update(target="boom", observation={"architectural": [], "probes": [],
-                                    "events": [], "completed": True})
+                                    "events": [], "completed": True},
+         simulator_sha256="0" * 64)
 print(json.dumps(r))
 """)
     config = BackendConfig("boom", (sys.executable, str(runner)), target_revision="test-revision")
@@ -78,7 +79,9 @@ def test_cli_boom_defaults_to_secure_control_and_long_timeout(tmp_path, monkeypa
     captured = {}
 
     def fake_experiment(config, strategy, iterations, seed, benchmark_id):
-        captured.update(timeout=config.timeout_seconds, benchmark=benchmark_id)
+        captured.update(
+            timeout=config.timeout_seconds, benchmark=benchmark_id, command=config.command
+        )
         return {"strategy": strategy, "metrics": {"inconclusive_cases": 0}}
 
     runner = tmp_path / "runner"
@@ -94,6 +97,7 @@ def test_cli_boom_defaults_to_secure_control_and_long_timeout(tmp_path, monkeypa
             "boom",
             "--runner",
             str(runner),
+            "--runner-arg=--project=spechunter",
             "--target-revision",
             "revision",
             "--output",
@@ -101,4 +105,20 @@ def test_cli_boom_defaults_to_secure_control_and_long_timeout(tmp_path, monkeypa
         ],
     )
     assert main() == 0
-    assert captured == {"timeout": 900, "benchmark": "secure-control"}
+    assert captured == {
+        "timeout": 900,
+        "benchmark": "secure-control",
+        "command": (str(runner), "--project=spechunter"),
+    }
+
+
+def test_parallel_boom_execution_preserves_secret_order(monkeypatch):
+    def fake_boom(self, program, secret, bug):
+        return Observation((), (secret,), ())
+
+    monkeypatch.setattr(Backend, "_boom", fake_boom)
+    config = BackendConfig("boom", ("/trusted/runner",), target_revision="revision")
+    with Backend(config) as backend:
+        observations = backend.execute_many(Program((Op.NOP,)), [0, 1, 0, 1], "none")
+        assert [observation.probes for observation in observations] == [(0,), (1,), (0,), (1,)]
+        assert backend.executions == 4
