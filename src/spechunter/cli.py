@@ -9,16 +9,19 @@ from pathlib import Path
 from spechunter.backends import BackendConfig
 from spechunter.domain import BENCHMARKS
 from spechunter.loop import experiment
+from spechunter.presentation import render
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["run", "compare"])
+    parser.add_argument("command", choices=["run", "compare", "present"])
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
     parser.add_argument("--strategy", choices=["guided", "random", "llm"], default="guided")
     parser.add_argument("--iterations", type=int, default=16)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output", type=Path, default=Path("artifacts/run.json"))
+    parser.add_argument("--input", type=Path, help="Sealed experiment report for present")
+    parser.add_argument("--seal", type=Path, help="Evidence seal for present")
     parser.add_argument(
         "--runner", type=Path, help="Trusted BOOM runner executable (absolute path)"
     )
@@ -48,6 +51,11 @@ def main() -> int:
     parser.add_argument("--repair-limit", type=int, default=4)
     args = parser.parse_args()
     try:
+        if args.command == "present":
+            if args.input is None or args.seal is None:
+                raise ValueError("present requires --input and --seal")
+            print(json.dumps(render(args.input, args.seal, args.output), indent=2))
+            return 0
         if args.runner and not args.runner.is_absolute():
             raise ValueError("runner must be an absolute executable path")
         if args.runner_arg and not args.runner:

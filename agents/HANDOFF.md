@@ -217,5 +217,16 @@ existing SSH identity. Both failures were closed and covered by regression tests
 worker ran from approximately 17:53 to 18:34 UTC with no service account/scopes and a
 six-hour deletion cap, then was explicitly deleted. No Compute Engine instance remains.
 Local validation passes Ruff, formatting, and 67 tests with one skipped RTL test and one
-deselected CHIA test. Next: package the live transcript into a concise hackathon demo view
-and expand the bounded attacker corpus beyond the positive control.
+deselected CHIA test.
+
+## Sealed evidence presentation
+
+`feat/evidence-demo` adds `spechunter present`, which verifies the live report against its
+SHA-256 seal before rendering a self-contained HTML artifact. The page shows the measured
+BOOM/Vertex cost metrics, protected-load witness, complete recon → attacker → validator →
+repair → attacker → validator → attacker timeline, and report/simulator hashes. It embeds
+the full escaped report for inspection and makes no network requests. Tampered evidence is
+rejected, and model text is HTML-escaped. `docs/demo.html` is generated from the checked-in
+live artifacts for direct judge review. Local validation passes Ruff, formatting, and 71
+tests with one skipped RTL test and one deselected CHIA test. Next: expand the bounded
+attacker corpus and add evaluation metrics across held-out attack families.
