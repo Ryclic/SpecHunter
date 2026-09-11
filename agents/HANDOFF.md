@@ -105,8 +105,13 @@ remaining eligible to expose unsafe transient cache effects.
 The CLI now supports selecting one benchmark and defaults real BOOM runs to
 `secure-control` with a 900-second execution timeout. Seeded fixture variants remain
 rejected rather than being mislabeled as real BOOM mutations. Local validation passes
-Ruff, formatting, shell syntax, and 44 tests with one skipped RTL test and one deselected
+Ruff, formatting, shell syntax, and 47 tests with one skipped RTL test and one deselected
 CHIA test.
+
+`tools/boom/run_secure_matrix.py` now provides the pending empirical gate: two repetitions
+per secret for both architectural-denial and transient-window programs, strict response
+provenance checks, repeatability/leakage classification, atomic evidence output, and
+SHA-256 binding of the runner, runtime sources, and simulator.
 
 Live runner validation is pending because Application Default Credentials expired on
 2026-09-11 and `gcloud` requires an interactive `gcloud auth login`. After reauthentication,

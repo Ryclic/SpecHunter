@@ -125,6 +125,18 @@ BOOM defaults to `secure-control` and a 900-second timeout when those flags are 
 The seeded `privilege` and `transient` fixture variants are intentionally rejected because
 they are not real BOOM configurations or applied RTL mutations.
 
+For the review gate, run the fixed two-scenario matrix. It executes architectural denial
+and a load/encode/squash transient window twice in each secret world, rejects
+nondeterministic repetitions, verifies every runner response echo, and hashes the runner,
+both runtime sources, and simulator into one evidence file:
+
+```bash
+tools/boom/run_secure_matrix.py /tmp/boom-secure-matrix.json
+```
+
+The command returns zero only when both secure-control scenarios are repeatable and have
+identical architectural and binary probe observations across the two secret worlds.
+
 `tools/boom/gcp_worker.sh create` provisions the corresponding official Rocky Linux 9
 image with no service account or API scopes. It has a six-hour maximum runtime and is
 deleted automatically at the limit. Install the listed host packages and copy the two

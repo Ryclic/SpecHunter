@@ -1,8 +1,9 @@
 # Research work beyond the base implementation
 
-1. Empirically validate the trusted BOOM runner's generated privilege/trap runtime and
-   fixed matched-secret cache observer on the pinned SmallBoomV3 simulator. The request
-   compiler, Spike comparison, pin enforcement, and bounded runner are implemented.
+1. Empirically run the trusted BOOM runner's checked-in two-scenario, repeated-secret
+   matrix on the pinned SmallBoomV3 simulator. The request compiler, Spike comparison,
+   pin enforcement, bounded runner, determinism classifier, and evidence manifest are
+   implemented.
 2. Calibrate and repeat the binary relative-cache probe across secure-control seeds, then
    add an explicitly pinned BOOM RTL mutation benchmark for positive-case evaluation.
 3. Reconcile the first Vertex smoke ledger with delayed Cloud Billing data, then improve
