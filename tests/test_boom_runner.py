@@ -38,6 +38,12 @@ def test_request_validation_accepts_only_pinned_secure_control(tmp_path):
     assert validate(tmp_path, request(variant="gate-faulting-loads"))["variant"] == (
         "gate-faulting-loads"
     )
+    assert validate(tmp_path, request(variant="seeded-cache-leak"))["variant"] == (
+        "seeded-cache-leak"
+    )
+    assert validate(tmp_path, request(variant="remove-seeded-cache-leak"))["variant"] == (
+        "remove-seeded-cache-leak"
+    )
     for change in (
         {"variant": "transient"},
         {"target_revision": "other"},
@@ -83,6 +89,16 @@ def test_candidate_is_fixed_instruction_translation():
     assert assembly.index("spechunter_after_fault:") < assembly.index("rdcycle")
     assert "lbu zero, 64(t0)" in assembly
     assert "sltu t2, t2, t4" in assembly
+
+
+def test_positive_control_seeds_cache_only_in_explicit_mutated_variant():
+    program = ["enter_user", "load_secret", "probe"]
+    mutated = RUNNER.render_candidate(program, 1, "seeded-cache-leak")
+    repaired = RUNNER.render_candidate(program, 1, "remove-seeded-cache-leak")
+    marker = "Explicit positive-control mutation"
+    assert marker in mutated
+    assert marker not in repaired
+    assert mutated.count("lbu zero, 0(t0)") == repaired.count("lbu zero, 0(t0)") + 1
 
 
 def test_runner_requires_complete_pin_set(tmp_path):

@@ -54,6 +54,8 @@ def model(program: Program, secret: int, bug: str) -> Observation:
         elif op == Op.SQUASH:
             speculative = valid = trained = False
         elif op == Op.PROBE and user:
+            if bug == "seeded-cache-leak":
+                cache.add(secret)
             # Observer always probes the SAME public line in both secret worlds.
             probes.append(1 if 0 in cache else 10)
         elif op == Op.FENCE:
@@ -81,6 +83,8 @@ class Backend:
             "privilege",
             "transient",
             "gate-faulting-loads",
+            "seeded-cache-leak",
+            "remove-seeded-cache-leak",
         }:
             raise ValueError("invalid fixture parameters")
         self.executions += 1
@@ -104,7 +108,14 @@ class Backend:
             )
         program_file = self.directory / "program.hex"
         program_file.write_text("\n".join(f"{OP_CODES[x]:02x}" for x in program.ops) + "\n")
-        bug_code = {"none": 0, "privilege": 1, "transient": 2}[bug]
+        bug_code = {
+            "none": 0,
+            "privilege": 1,
+            "transient": 2,
+            "seeded-cache-leak": 3,
+            "remove-seeded-cache-leak": 0,
+            "gate-faulting-loads": 0,
+        }[bug]
         output = run(
             [
                 "vvp",

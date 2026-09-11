@@ -1,8 +1,8 @@
 # Research work beyond the base implementation
 
-1. Add an explicitly pinned inverse mutation benchmark as a positive control for the live
-   runner. The 2026-09-11 repeated-secret baseline was clean, so the source-reviewed load
-   gate was correctly left unapplied and unverified.
+1. Empirically validate the explicitly labeled `seeded-cache-leak` positive control and
+   `remove-seeded-cache-leak` harness repair on the pinned BOOM simulator. The paired,
+   hash-bound evidence driver is implemented.
 2. Calibrate and repeat the binary relative-cache probe across more attack programs and
    seeds, then evaluate the candidate repair only if a repeatable baseline violation exists.
 3. Reconcile the first Vertex smoke ledger with delayed Cloud Billing data, then improve

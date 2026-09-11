@@ -124,3 +124,54 @@ def test_trusted_boom_repair_returns_to_attacker_and_can_be_verified(monkeypatch
         "final_variant": "gate-faulting-loads",
         "rtl_patch_applied": True,
     }
+
+
+def test_boom_positive_control_repairs_then_returns_to_attacker(monkeypatch):
+    class PositiveControlProvider(ScriptedProvider):
+        def attack(self, benchmark, hypothesis, history, repaired):
+            self.calls += 1
+            if repaired:
+                self.repaired_attacks += 1
+                return AttackDecision("exhausted", "seeded cache injection is gone")
+            return AttackDecision("candidate", "probe the seeded cache line", LEAK)
+
+        def repair(self, benchmark, program, validation, history):
+            self.calls += 1
+            return RepairDecision(
+                "positive-control harness seeds secret-selected cache state",
+                "remove the seeded cache access",
+                None,
+                "remove-seeded-cache-leak",
+            )
+
+    def fake_boom(self, program, secret, bug):
+        probe = secret if bug == "seeded-cache-leak" else 0
+        return Observation((), (probe,), ("load-access-fault",))
+
+    monkeypatch.setattr(Backend, "_boom", fake_boom)
+    provider = PositiveControlProvider()
+    report = agent_experiment(
+        provider,
+        BackendConfig("boom", ("/trusted/runner",), target_revision="revision"),
+        recon_cycles=1,
+        attack_limit=4,
+        repair_limit=1,
+        benchmark_id="boom-positive-control",
+    )
+    result = report["results"][0]
+    assert [event["stage"] for event in result["transcript"]] == [
+        "recon",
+        "attacker",
+        "validator",
+        "repair",
+        "attacker",
+        "validator",
+        "attacker",
+    ]
+    assert result["repair"] == {
+        "attempted": True,
+        "attacker_exhausted": True,
+        "verified": True,
+        "final_variant": "remove-seeded-cache-leak",
+        "rtl_patch_applied": False,
+    }

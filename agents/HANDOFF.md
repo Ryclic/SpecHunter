@@ -148,3 +148,24 @@ service account or scopes, and a six-hour deletion cap. Evidence hashes were ver
 before the worker and disk were explicitly deleted. Next: add a clearly labeled inverse
 mutation as a positive control, expand attacker programs, and only build a repaired target
 after a repeatable baseline violation exists.
+
+## BOOM seeded positive control (in progress)
+
+`feat/boom-positive-control` adds an intentionally vulnerable harness variant,
+`seeded-cache-leak`, which accesses a secret-selected public cache line before entering
+user mode. It preserves the real PMP-denied load and fixed observer while guaranteeing a
+discoverable cache-state signal on the real simulator. This is explicitly classified as a
+positive control, not an upstream BOOM vulnerability or RTL mutation.
+
+The closed repair ID `remove-seeded-cache-leak` removes that access on the same pristine
+simulator. It is accepted only for `boom-positive-control`; it never sets
+`rtl_patch_applied`. The real agent loop validates the witness, applies the trusted harness
+repair, mandates an identical witness retest, returns to the attacker, and requires
+attacker exhaustion before verification. The model and Icarus fixture implement equivalent
+semantics for fast testing.
+
+`tools/boom/run_positive_control.py` runs paired mutated and repaired matrices, requires
+repeatable violations followed by repeatable clean results, cross-checks source/simulator/
+program provenance, and binds both child evidence files. Local validation passes Ruff,
+formatting, and 57 tests with one skipped RTL test and one deselected CHIA test. Next:
+execute the paired gate on a fresh capped GCP worker, recover evidence, and update the PR.

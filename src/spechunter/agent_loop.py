@@ -93,7 +93,17 @@ def _run_benchmark(
                 break
             repair_round += 1
             repair = provider.repair(benchmark, reduced, result, transcript)
-            if backend.config.kind == "boom" and repair.repair_id:
+            trusted_repair = repair.repair_id and (
+                (
+                    benchmark.id == "boom-positive-control"
+                    and repair.repair_id == "remove-seeded-cache-leak"
+                )
+                or (
+                    benchmark.id != "boom-positive-control"
+                    and repair.repair_id == "gate-faulting-loads"
+                )
+            )
+            if backend.config.kind == "boom" and trusted_repair:
                 active_variant = repair.repair_id
                 status = "trusted-candidate-repair"
             elif backend.config.kind == "boom":
@@ -132,7 +142,10 @@ def _run_benchmark(
             "attempted": repair_round > 0,
             "attacker_exhausted": repair_verified,
             "verified": repair_verified
-            and (backend.config.kind != "boom" or active_variant == "gate-faulting-loads"),
+            and (
+                backend.config.kind != "boom"
+                or active_variant in {"gate-faulting-loads", "remove-seeded-cache-leak"}
+            ),
             "final_variant": active_variant,
             "rtl_patch_applied": active_variant == "gate-faulting-loads",
         },

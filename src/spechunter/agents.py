@@ -45,7 +45,11 @@ class RepairDecision:
     def __post_init__(self):
         if self.fixture_variant not in {None, "none"}:
             raise ValueError("invalid fixture repair variant")
-        if self.repair_id not in {None, "gate-faulting-loads"}:
+        if self.repair_id not in {
+            None,
+            "gate-faulting-loads",
+            "remove-seeded-cache-leak",
+        }:
             raise ValueError("invalid trusted repair id")
 
 
@@ -282,7 +286,11 @@ class VertexAgentProvider:
                     "gate-faulting-loads": (
                         "Block incoming and retried D-cache requests when ae_ld, pf_ld, or "
                         "ma_ld is asserted. Select only when the trace supports this LSU boundary."
-                    )
+                    ),
+                    "remove-seeded-cache-leak": (
+                        "Remove the explicitly seeded cache-state injection from the BOOM "
+                        "positive-control harness. Select only for benchmark boom-positive-control."
+                    ),
                 },
             },
             {
@@ -296,7 +304,11 @@ class VertexAgentProvider:
                     },
                     "repair_id": {
                         "type": ["string", "null"],
-                        "enum": ["gate-faulting-loads", None],
+                        "enum": [
+                            "gate-faulting-loads",
+                            "remove-seeded-cache-leak",
+                            None,
+                        ],
                     },
                 },
                 "required": ["diagnosis", "proposal", "fixture_variant", "repair_id"],

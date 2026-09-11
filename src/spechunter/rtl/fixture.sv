@@ -10,7 +10,7 @@ module fixture;
         !$value$plusargs("LENGTH=%d", length) ||
         !$value$plusargs("SECRET=%d", secret) ||
         !$value$plusargs("BUG=%d", bug)) $fatal(1, "missing inputs");
-    if (length < 1 || length > 128 || secret < 0 || secret > 1 || bug < 0 || bug > 2)
+    if (length < 1 || length > 128 || secret < 0 || secret > 1 || bug < 0 || bug > 3)
       $fatal(1, "invalid inputs");
     $readmemh(program_path, ops, 0, length-1);
     user_mode = 0; trained = 0; speculative = 0; valid = 0;
@@ -33,6 +33,7 @@ module fixture;
         4: if (valid && (!speculative || bug == 2)) cache_lines[value] = 1;
         5: begin speculative = 0; valid = 0; trained = 0; end
         6: if (user_mode) begin
+          if (bug == 3) cache_lines[secret] = 1;
           if (cache_lines[0]) $display("PROBE 1");
           else $display("PROBE 10");
         end

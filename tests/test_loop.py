@@ -10,7 +10,7 @@ from spechunter.loop import attack, experiment, minimize, validate
 
 def test_guided_discovers_seeded_bugs_and_rejects_control():
     report = experiment(iterations=3)
-    assert report["metrics"]["discovered"] == 2
+    assert report["metrics"]["discovered"] == 3
     assert report["metrics"]["false_positives"] == 0
     assert report["metrics"]["inconclusive_cases"] == 0
     assert not report["provenance"]["is_boom_evidence"]
