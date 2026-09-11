@@ -126,6 +126,28 @@ def test_htif_exit_code_is_a_bounded_probe_observation(tmp_path, monkeypatch):
         RUNNER.run_htif_observation(["executor"], tmp_path, {}, 1, has_load=True, has_probe=False)
 
 
+def test_boom_htif_probe_one_requires_exact_failure_markers(tmp_path, monkeypatch):
+    output = b"*** FAILED *** (exit code =          2)\n*** FAILED *** (tohost = 2)\n"
+    monkeypatch.setattr(
+        RUNNER.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=255, stdout=output, stderr=b""),
+    )
+    observation = RUNNER.run_htif_observation(
+        ["executor"], tmp_path, {}, 1, has_load=True, has_probe=True
+    )
+    assert observation["probes"] == [1]
+    monkeypatch.setattr(
+        RUNNER.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=255, stdout=b"*** FAILED *** (exit code = 10)\n", stderr=b""
+        ),
+    )
+    with pytest.raises(RUNNER.RunnerError, match="exited 255"):
+        RUNNER.run_htif_observation(["executor"], tmp_path, {}, 1, has_load=True, has_probe=True)
+
+
 def test_repaired_build_manifest_binds_simulator(tmp_path):
     chipyard = tmp_path / "chipyard-repaired"
     simulator = chipyard / "sims/verilator/simulator-test-SmallBoomV3Config"

@@ -1,4 +1,6 @@
+import hashlib
 import importlib.util
+import json
 from copy import deepcopy
 from pathlib import Path
 
@@ -53,3 +55,27 @@ def test_positive_control_rejects_provenance_or_program_drift():
     drifted["scenarios"][0]["program_sha256"] = "other"
     with pytest.raises(CONTROL.PositiveControlError, match="program differs"):
         CONTROL.validate_pair(mutated, drifted)
+
+
+def test_live_positive_control_evidence_is_hash_bound_and_labeled():
+    evidence_dir = ROOT / "docs/evidence"
+    manifest = json.loads((evidence_dir / "boom-positive-control.json").read_text())
+    assert manifest["classification"] == (
+        "intentional-harness-mutation-not-upstream-boom-vulnerability"
+    )
+    assert (
+        manifest["trusted_runner_sha256"]
+        == hashlib.sha256((ROOT / "tools/boom/trusted_runner.py").read_bytes()).hexdigest()
+    )
+    assert (
+        manifest["matrix_runner_sha256"]
+        == hashlib.sha256((ROOT / "tools/boom/run_secure_matrix.py").read_bytes()).hexdigest()
+    )
+    for prefix, expected in (("mutated", "violation"), ("repaired", "clean")):
+        child = evidence_dir / manifest[f"{prefix}_evidence"]
+        assert (
+            manifest[f"{prefix}_evidence_sha256"] == hashlib.sha256(child.read_bytes()).hexdigest()
+        )
+        child_evidence = json.loads(child.read_text())
+        assert all(scenario["status"] == expected for scenario in child_evidence["scenarios"])
+        assert child_evidence["simulator_sha256"] == manifest["simulator_sha256"]

@@ -149,7 +149,7 @@ before the worker and disk were explicitly deleted. Next: add a clearly labeled 
 mutation as a positive control, expand attacker programs, and only build a repaired target
 after a repeatable baseline violation exists.
 
-## BOOM seeded positive control (in progress)
+## BOOM seeded positive control
 
 `feat/boom-positive-control` adds an intentionally vulnerable harness variant,
 `seeded-cache-leak`, which accesses a secret-selected public cache line before entering
@@ -166,6 +166,19 @@ semantics for fast testing.
 
 `tools/boom/run_positive_control.py` runs paired mutated and repaired matrices, requires
 repeatable violations followed by repeatable clean results, cross-checks source/simulator/
-program provenance, and binds both child evidence files. Local validation passes Ruff,
-formatting, and 57 tests with one skipped RTL test and one deselected CHIA test. Next:
-execute the paired gate on a fresh capped GCP worker, recover evidence, and update the PR.
+program provenance, and binds both child evidence files.
+
+On 2026-09-11, the paired live gate passed. Both fixed programs produced deterministic
+probe sequences `[1], [0], [1], [0]` under the seeded mutation and `[0], [0], [0], [0]`
+after repair, with the expected load-access fault and no architectural value in every run.
+All 16 executions used the same pristine SmallBoomV3 simulator, whose hash matches the
+earlier privilege and baseline evidence. The three bound artifacts are in `docs/evidence/`.
+The first live attempt also revealed that BOOM reports HTIF probe bit one as process code
+255 plus exact exit-code/tohost markers while Spike returns code 2; the runner now accepts
+only that exact marker pair and fails closed for other code-255 errors.
+
+The e2-standard-8 worker ran from 06:01 to 06:31 UTC with the same six-hour cap, no service
+account/scopes, and 200 GB disk. It was explicitly deleted after evidence recovery. Local
+validation now passes Ruff, formatting, and 58 tests with one skipped RTL test and one
+deselected CHIA test. Next: execute a bounded live Vertex-driven agent loop against this
+positive control and preserve its transcript and cost evidence.

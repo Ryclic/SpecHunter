@@ -193,6 +193,13 @@ variant and deterministic clean results under the repaired variant. It cross-che
 Chipyard revision, BOOM revision, configuration, simulator hash, repeat count, and program
 hashes, then binds both child matrices into one manifest.
 
+The live 2026-09-11 gate passed all requirements. In both scenarios, the mutated secret
+worlds repeated `[1], [0], [1], [0]`; after repair they repeated `[0], [0], [0], [0]`.
+Every execution retained the expected protected-load fault and no architectural secret
+value. Both halves used simulator SHA-256 `230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8`,
+which is also the independently validated privilege-gate binary. The manifest is
+[`docs/evidence/boom-positive-control.json`](evidence/boom-positive-control.json).
+
 Build the repair in a separate checkout so baseline evidence remains immutable:
 
 ```bash

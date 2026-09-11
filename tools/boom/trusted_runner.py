@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -310,12 +311,17 @@ def run_htif_observation(
     output = result.stdout + result.stderr
     if len(output) > MAX_OUTPUT:
         raise RunnerError("executor output limit exceeded")
-    if result.returncode not in ({0, 2} if has_probe else {0}):
+    boom_probe_one = result.returncode == 255 and bool(
+        re.search(rb"\*\*\* FAILED \*\*\* \(exit code =\s*2\)", output)
+        and re.search(rb"\*\*\* FAILED \*\*\* \(tohost = 2\)", output)
+    )
+    probe_one = result.returncode == 2 or boom_probe_one
+    if result.returncode != 0 and not (has_probe and probe_one):
         text = output.decode(errors="replace")
         raise RunnerError(f"executor exited {result.returncode}: {text[-2000:]}")
     return {
         "architectural": [],
-        "probes": [int(result.returncode == 2)] if has_probe else [],
+        "probes": [int(probe_one)] if has_probe else [],
         "events": ["load-access-fault"] if has_load else [],
         "completed": True,
     }
