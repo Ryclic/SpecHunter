@@ -105,7 +105,7 @@ remaining eligible to expose unsafe transient cache effects.
 The CLI now supports selecting one benchmark and defaults real BOOM runs to
 `secure-control` with a 900-second execution timeout. Seeded fixture variants remain
 rejected rather than being mislabeled as real BOOM mutations. Local validation passes
-Ruff, formatting, shell syntax, and 43 tests with one skipped RTL test and one deselected
+Ruff, formatting, shell syntax, and 44 tests with one skipped RTL test and one deselected
 CHIA test.
 
 Live runner validation is pending because Application Default Credentials expired on

@@ -222,16 +222,27 @@ def parse_observation(output: str) -> dict:
     probes: list[int] = []
     events: list[str] = []
     done = False
-    for line in output.splitlines():
-        if line.startswith("SPECHUNTER ARCH "):
-            architectural.append(int(line.removeprefix("SPECHUNTER ARCH ")))
-        elif line.startswith("SPECHUNTER PROBE "):
-            probes.append(int(line.removeprefix("SPECHUNTER PROBE ")))
-        elif line.startswith("SPECHUNTER EVENT "):
-            events.append(line.removeprefix("SPECHUNTER EVENT "))
-        elif line == "SPECHUNTER DONE":
-            done = True
-    if not done or len(architectural) > MAX_OPS or len(probes) > MAX_OPS or len(events) > MAX_OPS:
+    try:
+        for line in output.splitlines():
+            if line.startswith("SPECHUNTER ARCH "):
+                architectural.append(int(line.removeprefix("SPECHUNTER ARCH ")))
+            elif line.startswith("SPECHUNTER PROBE "):
+                probes.append(int(line.removeprefix("SPECHUNTER PROBE ")))
+            elif line.startswith("SPECHUNTER EVENT "):
+                events.append(line.removeprefix("SPECHUNTER EVENT "))
+            elif line == "SPECHUNTER DONE":
+                done = True
+    except ValueError as exc:
+        raise RunnerError("executor emitted a non-integer observation") from exc
+    if (
+        not done
+        or len(architectural) > 1
+        or len(probes) > 1
+        or len(events) > 1
+        or any(value not in (0, 1) for value in architectural)
+        or any(value not in (0, 1) for value in probes)
+        or any(event != "load-access-fault" for event in events)
+    ):
         raise RunnerError("executor did not emit a bounded complete observation")
     return {"architectural": architectural, "probes": probes, "events": events, "completed": True}
 
@@ -297,8 +308,11 @@ def execute(request: dict, config: str, chipyard: Path = CHIPYARD) -> dict:
             900,
         )
         boom = parse_observation(boom_output)
-        if spike["architectural"] != boom["architectural"]:
-            raise RunnerError("Spike/BOOM architectural observations disagree")
+        if (spike["architectural"], spike["events"]) != (
+            boom["architectural"],
+            boom["events"],
+        ):
+            raise RunnerError("Spike/BOOM architectural observations or traps disagree")
         return boom
 
 

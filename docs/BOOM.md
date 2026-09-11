@@ -105,8 +105,9 @@ user access to the cycle counter, installs a machine trap handler, and enters us
 A denied load and its younger encode/squash window are skipped architecturally after the
 fault. The fixed probe always times the same two public cache lines in the same order and
 returns whether line zero was faster; neither the probe addresses nor its control flow
-depend on the secret. Spike and BOOM must agree on architectural output before the BOOM
-observation is returned. Executor failures, unexpected traps, malformed output, timeouts,
+depend on the secret. Spike and BOOM must agree on architectural output and trap events
+before the BOOM observation is returned. Probe results are restricted to the binary
+relative-latency contract. Executor failures, unexpected traps, malformed output, timeouts,
 unsupported variants, and provenance mismatches are inconclusive.
 
 After the pinned simulator is built, invoke the real backend with a per-execution timeout
