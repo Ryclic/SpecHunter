@@ -47,6 +47,7 @@ def main() -> int:
     parser.add_argument("--zone", required=True)
     parser.add_argument("--instance", required=True)
     parser.add_argument("--gcloud-config", type=Path, required=True)
+    parser.add_argument("--ssh-key-file", type=Path, required=True)
     parser.add_argument("request", type=Path)
     try:
         args = parser.parse_args()
@@ -58,6 +59,8 @@ def main() -> int:
             raise TransportError("invalid GCP resource identifier")
         if not args.gcloud_config.is_absolute() or not args.gcloud_config.is_dir():
             raise TransportError("gcloud config must be an existing absolute directory")
+        if not args.ssh_key_file.is_absolute() or not args.ssh_key_file.is_file():
+            raise TransportError("SSH key must be an existing absolute file")
         if not args.request.is_absolute() or args.request.stat().st_size > MAX_REQUEST:
             raise TransportError("request must be an absolute bounded file")
         request = json.loads(args.request.read_text())
@@ -74,7 +77,15 @@ def main() -> int:
         env["CLOUDSDK_CONFIG"] = str(args.gcloud_config)
         remote = f"/tmp/spechunter-request-{uuid4().hex}.json"
         destination = f"{args.instance}:{remote}"
-        common = ["--project", args.project, "--zone", args.zone, "--quiet"]
+        common = [
+            "--project",
+            args.project,
+            "--zone",
+            args.zone,
+            "--ssh-key-file",
+            str(args.ssh_key_file),
+            "--quiet",
+        ]
         copy = bounded([gcloud, "compute", "scp", str(args.request), destination, *common], env, 90)
         if copy.returncode:
             raise TransportError(

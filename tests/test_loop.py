@@ -37,9 +37,7 @@ def test_witness_is_one_minimal():
 
 def test_positive_control_minimizer_preserves_protected_load():
     benchmark = next(item for item in BENCHMARKS if item.id == "boom-positive-control")
-    program = Program.parse(
-        ["train", "enter_user", "load_secret", "encode", "fence", "probe"]
-    )
+    program = Program.parse(["train", "enter_user", "load_secret", "encode", "fence", "probe"])
     with Backend(BackendConfig()) as backend:
         reduced = minimize(backend, program, benchmark)
     assert Op.LOAD_SECRET in reduced.ops

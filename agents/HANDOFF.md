@@ -188,8 +188,9 @@ positive control and preserve its transcript and cost evidence.
 `feat/vertex-boom-demo` adds a trusted local-to-GCP runner transport. It validates the
 exact request envelope, restricts GCP identifiers, uploads only JSON under a UUID path,
 executes the fixed remote runner, bounds output/time, and cleans the remote request. The
-CLI supports repeated runner arguments so project, zone, instance, and an explicit local
-gcloud configuration can be supplied without placing credentials on the worker.
+CLI supports repeated runner arguments so project, zone, instance, an explicit local
+gcloud configuration, and an existing SSH key can be supplied without placing credentials
+on the worker.
 
 BOOM validation now executes four secret worlds concurrently in stable order. Each trusted
 runner response binds the simulator SHA-256; `Backend` rejects a hash change within an

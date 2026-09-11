@@ -238,7 +238,10 @@ class VertexAgentProvider:
             benchmark_constraints = [
                 "Every candidate must contain enter_user before load_secret.",
                 "Every candidate must contain load_secret and a later probe.",
-                "Do not return exhausted merely because an earlier candidate violated these constraints.",
+                (
+                    "Do not return exhausted merely because an earlier candidate violated "
+                    "these constraints."
+                ),
             ]
         data = self._generate(
             "attacker",

@@ -15,6 +15,8 @@ SPEC.loader.exec_module(TRANSPORT)
 def test_transport_uploads_executes_and_always_cleans(tmp_path, monkeypatch, capsys):
     config = tmp_path / "gcloud"
     config.mkdir()
+    ssh_key = tmp_path / "google_compute_engine"
+    ssh_key.write_text("test key")
     request = tmp_path / "request.json"
     request.write_text(
         json.dumps(
@@ -50,6 +52,8 @@ def test_transport_uploads_executes_and_always_cleans(tmp_path, monkeypatch, cap
             "boom-worker",
             "--gcloud-config",
             str(config),
+            "--ssh-key-file",
+            str(ssh_key),
             str(request),
         ],
     )
@@ -65,3 +69,4 @@ def test_transport_uploads_executes_and_always_cleans(tmp_path, monkeypatch, cap
     assert remote in calls[1][0][-1]
     assert calls[2][0][-1] == f"rm -f -- {remote}"
     assert all(call[1]["CLOUDSDK_CONFIG"] == str(config) for call in calls)
+    assert all(str(ssh_key) in call[0] for call in calls)

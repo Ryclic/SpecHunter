@@ -220,6 +220,7 @@ uv run --extra vertex spechunter run --backend boom --strategy llm \
   --runner-arg=--zone=us-central1-a \
   --runner-arg=--instance=spechunter-boom-agent-1 \
   --runner-arg=--gcloud-config="$HOME/.config/gcloud" \
+  --runner-arg=--ssh-key-file="$HOME/.ssh/google_compute_engine" \
   --target-revision 0acc1e1de2d3284bcd4d876956932a013ffe1949 \
   --benchmark boom-positive-control --llm-model gemini-2.5-flash-lite \
   --recon-cycles 1 --attack-limit 4 --repair-limit 1 --timeout 1100
