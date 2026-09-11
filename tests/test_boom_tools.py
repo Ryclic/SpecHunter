@@ -56,6 +56,15 @@ def test_gcp_worker_has_hard_lifetime_and_no_cloud_identity():
     assert "--image-family=rocky-linux-9-optimized-gcp" in script
 
 
+def test_repair_builder_is_isolated_and_emits_bound_manifest():
+    script = (ROOT / "tools/boom/build_repair_variant.sh").read_text()
+    assert "cp -a --reflink=auto" in script
+    assert '[[ ! -e "$repaired" ]]' in script
+    assert "gate_faulting_loads.patch" in script
+    assert 'CONFIG="$BOOM_CONFIG" clean' in script
+    assert '"simulator_sha256"' in script
+
+
 def test_smoke_requires_pinned_revision_and_real_payload_output():
     script = (ROOT / "tools/boom/build_and_smoke.sh").read_text()
     assert '== "$CHIPYARD_REVISION"' in script

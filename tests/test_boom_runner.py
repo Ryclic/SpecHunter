@@ -34,6 +34,9 @@ def validate(tmp_path, value):
 
 def test_request_validation_accepts_only_pinned_secure_control(tmp_path):
     assert validate(tmp_path, request())["secret"] == 1
+    assert validate(tmp_path, request(variant="gate-faulting-loads"))["variant"] == (
+        "gate-faulting-loads"
+    )
     for change in (
         {"variant": "transient"},
         {"target_revision": "other"},
@@ -101,6 +104,39 @@ def test_runner_requires_complete_pin_set(tmp_path):
     pins.write_text("CHIPYARD_REVISION=abc\nBOOM_CONFIG=SmallBoomV3Config\n")
     with pytest.raises(RUNNER.RunnerError):
         RUNNER.load_pins(pins)
+
+
+def test_repaired_build_manifest_binds_simulator(tmp_path):
+    chipyard = tmp_path / "chipyard-repaired"
+    simulator = chipyard / "sims/verilator/simulator-test-SmallBoomV3Config"
+    simulator.parent.mkdir(parents=True)
+    simulator.write_bytes(b"simulator")
+    pins = {
+        "CHIPYARD_REVISION": "chipyard",
+        "BOOM_REVISION": "boom",
+        "BOOM_CONFIG": "SmallBoomV3Config",
+        "BOOM_REPAIRED_LSU_SHA256": "source",
+        "BOOM_LOAD_GATE_PATCH_SHA256": "patch",
+    }
+    manifest = {
+        "schema_version": 1,
+        "variant": "gate-faulting-loads",
+        "chipyard_revision": "chipyard",
+        "boom_revision": "boom",
+        "config": "SmallBoomV3Config",
+        "lsu_source_sha256": "source",
+        "patch_sha256": "patch",
+        "simulator_sha256": hashlib.sha256(b"simulator").hexdigest(),
+    }
+    (simulator.parent / "spechunter-build-gate-faulting-loads.json").write_text(
+        json.dumps(manifest)
+    )
+    RUNNER.validate_repair_build(request(variant="gate-faulting-loads"), simulator, chipyard, pins)
+    simulator.write_bytes(b"stale")
+    with pytest.raises(RUNNER.RunnerError, match="does not match"):
+        RUNNER.validate_repair_build(
+            request(variant="gate-faulting-loads"), simulator, chipyard, pins
+        )
 
 
 def test_execute_requires_spike_boom_architecture_and_trap_agreement(tmp_path, monkeypatch):

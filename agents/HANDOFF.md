@@ -105,7 +105,7 @@ remaining eligible to expose unsafe transient cache effects.
 The CLI now supports selecting one benchmark and defaults real BOOM runs to
 `secure-control` with a 900-second execution timeout. Seeded fixture variants remain
 rejected rather than being mislabeled as real BOOM mutations. Local validation passes
-Ruff, formatting, shell syntax, and 49 tests with one skipped RTL test and one deselected
+Ruff, formatting, shell syntax, and 52 tests with one skipped RTL test and one deselected
 CHIA test.
 
 `tools/boom/run_secure_matrix.py` now provides the pending empirical gate: two repetitions
@@ -123,6 +123,16 @@ a validated vulnerability or repair, until before/after RTL evidence exists.
 `docs/evidence/boom-lsu-repair-audit-2026-09-11.json` binds the exact commit, pristine
 and repaired source digests, patch digest, gated signals/paths, and the false RTL-validation
 flag; a regression test prevents those audit fields from drifting.
+
+The repair is now wired as the closed ID `gate-faulting-loads`. Vertex may select this ID
+but cannot emit executable patch content. `tools/boom/build_repair_variant.sh` copies the
+pinned baseline into a separate checkout, applies the exact patch, cleans/rebuilds BOOM,
+and writes a source/patch/simulator-bound manifest. The trusted runner maps the repair ID
+to that isolated checkout and rejects an altered diff, source digest, manifest, or binary.
+The secure matrix accepts the same repair ID for before/after evidence. In the agent loop,
+a real repaired-target clean retest returns to attacker iteration; attacker exhaustion then
+marks the BOOM repair verified and `rtl_patch_applied`. Unit coverage exercises this whole
+state transition with a controlled backend. Live repaired RTL remains unvalidated.
 
 Live runner validation is pending because Application Default Credentials expired on
 2026-09-11 and `gcloud` requires an interactive `gcloud auth login`. After reauthentication,

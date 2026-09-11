@@ -15,6 +15,8 @@ OPS = {"nop", "train", "enter_user", "load_secret", "encode", "squash", "probe",
 MAX_OPS = 128
 MAX_OUTPUT = 1_048_576
 CHIPYARD = Path("/opt/spechunter/chipyard")
+REPAIRED_CHIPYARD = Path("/opt/spechunter/chipyard-gate-faulting-loads")
+REPAIR_VARIANT = "gate-faulting-loads"
 
 
 class RunnerError(RuntimeError):
@@ -29,13 +31,20 @@ def load_pins(path: Path) -> dict[str, str]:
             if not separator or not key or not value:
                 raise RunnerError("invalid pins.env")
             pins[key] = value
-    for key in ("CHIPYARD_REVISION", "BOOM_REVISION", "BOOM_CONFIG", "BOOM_LSU_SHA256"):
+    for key in (
+        "CHIPYARD_REVISION",
+        "BOOM_REVISION",
+        "BOOM_CONFIG",
+        "BOOM_LSU_SHA256",
+        "BOOM_REPAIRED_LSU_SHA256",
+        "BOOM_LOAD_GATE_PATCH_SHA256",
+    ):
         if key not in pins:
             raise RunnerError(f"missing pin: {key}")
     return pins
 
 
-def validate_install(chipyard: Path, pins: dict[str, str]) -> str:
+def validate_install(chipyard: Path, pins: dict[str, str], variant: str) -> str:
     boom = chipyard / "generators/boom"
 
     def git_output(directory: Path, *arguments: str) -> str:
@@ -51,11 +60,36 @@ def validate_install(chipyard: Path, pins: dict[str, str]) -> str:
     boom_revision = git_output(boom, "rev-parse", "HEAD")
     if chipyard_revision != pins["CHIPYARD_REVISION"] or boom_revision != pins["BOOM_REVISION"]:
         raise RunnerError("installed Chipyard/BOOM revisions do not match pins.env")
-    if git_output(boom, "status", "--porcelain", "--untracked-files=all"):
-        raise RunnerError("BOOM source tree is not pristine")
     lsu = boom / "src/main/scala/v3/lsu/lsu.scala"
-    if hashlib.sha256(lsu.read_bytes()).hexdigest() != pins["BOOM_LSU_SHA256"]:
-        raise RunnerError("BOOM LSU source does not match its reviewed digest")
+    source_digest = hashlib.sha256(lsu.read_bytes()).hexdigest()
+    status = git_output(boom, "status", "--porcelain", "--untracked-files=all")
+    if variant == "none":
+        if status or source_digest != pins["BOOM_LSU_SHA256"]:
+            raise RunnerError("baseline BOOM tree is not pristine reviewed source")
+    elif variant == REPAIR_VARIANT:
+        repair_diff = subprocess.run(
+            [
+                "git",
+                "-c",
+                f"safe.directory={boom}",
+                "-C",
+                str(boom),
+                "diff",
+                "--",
+                "src/main/scala/v3/lsu/lsu.scala",
+            ],
+            capture_output=True,
+            timeout=10,
+            check=True,
+        ).stdout
+        if (
+            status != " M src/main/scala/v3/lsu/lsu.scala"
+            or source_digest != pins["BOOM_REPAIRED_LSU_SHA256"]
+            or hashlib.sha256(repair_diff).hexdigest() != pins["BOOM_LOAD_GATE_PATCH_SHA256"]
+        ):
+            raise RunnerError("repaired BOOM tree does not match the reviewed load-gate patch")
+    else:
+        raise RunnerError("unsupported BOOM source variant")
     return chipyard_revision
 
 
@@ -86,8 +120,8 @@ def validate_request(path: Path, target_revision: str) -> dict:
         raise RunnerError("program digest mismatch")
     if type(request["secret"]) is not int or request["secret"] not in (0, 1):
         raise RunnerError("secret must be 0 or 1")
-    if request["variant"] != "none":
-        raise RunnerError("real BOOM runner supports only the unmodified secure-control variant")
+    if request["variant"] not in {"none", REPAIR_VARIANT}:
+        raise RunnerError("unsupported BOOM source variant")
     if request["target_revision"] != target_revision:
         raise RunnerError("target revision mismatch")
     if program.count("enter_user") != 1:
@@ -271,7 +305,34 @@ def parse_observation(output: str) -> dict:
     return {"architectural": architectural, "probes": probes, "events": events, "completed": True}
 
 
-def execute(request: dict, config: str, chipyard: Path = CHIPYARD) -> dict:
+def validate_repair_build(
+    request: dict, simulator: Path, chipyard: Path, pins: dict[str, str]
+) -> None:
+    if request["variant"] != REPAIR_VARIANT:
+        return
+    manifest_path = chipyard / "sims/verilator/spechunter-build-gate-faulting-loads.json"
+    try:
+        manifest = json.loads(manifest_path.read_text())
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise RunnerError(f"cannot read repaired build manifest: {exc}") from exc
+    expected = {
+        "schema_version": 1,
+        "variant": REPAIR_VARIANT,
+        "chipyard_revision": pins["CHIPYARD_REVISION"],
+        "boom_revision": pins["BOOM_REVISION"],
+        "config": pins["BOOM_CONFIG"],
+        "lsu_source_sha256": pins["BOOM_REPAIRED_LSU_SHA256"],
+        "patch_sha256": pins["BOOM_LOAD_GATE_PATCH_SHA256"],
+    }
+    if any(manifest.get(key) != value for key, value in expected.items()):
+        raise RunnerError("repaired build manifest provenance mismatch")
+    if hashlib.sha256(simulator.read_bytes()).hexdigest() != manifest.get("simulator_sha256"):
+        raise RunnerError("repaired simulator does not match its build manifest")
+
+
+def execute(
+    request: dict, config: str, chipyard: Path = CHIPYARD, pins: dict[str, str] | None = None
+) -> dict:
     script_dir = Path(__file__).resolve().parent
     riscv = chipyard / ".conda-env/riscv-tools"
     env = {
@@ -286,6 +347,8 @@ def execute(request: dict, config: str, chipyard: Path = CHIPYARD) -> dict:
     simulators = list((chipyard / "sims/verilator").glob(f"simulator-*-{config}"))
     if len(simulators) != 1 or not os.access(simulators[0], os.X_OK):
         raise RunnerError(f"expected exactly one executable {config} simulator")
+    if pins is not None:
+        validate_repair_build(request, simulators[0], chipyard, pins)
     with tempfile.TemporaryDirectory(prefix="spechunter-boom-") as temp:
         work = Path(temp)
         env["HOME"] = str(work)
@@ -346,9 +409,10 @@ def main() -> int:
             raise RunnerError("usage: trusted_runner.py /ABSOLUTE/request.json")
         script_dir = Path(__file__).resolve().parent
         pins = load_pins(script_dir / "pins.env")
-        target_revision = validate_install(CHIPYARD, pins)
-        request = validate_request(Path(sys.argv[1]), target_revision)
-        observation = execute(request, pins["BOOM_CONFIG"])
+        request = validate_request(Path(sys.argv[1]), pins["CHIPYARD_REVISION"])
+        chipyard = REPAIRED_CHIPYARD if request["variant"] == REPAIR_VARIANT else CHIPYARD
+        validate_install(chipyard, pins, request["variant"])
+        observation = execute(request, pins["BOOM_CONFIG"], chipyard, pins)
         response = {
             key: request[key]
             for key in (

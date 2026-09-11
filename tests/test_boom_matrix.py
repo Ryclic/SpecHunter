@@ -45,6 +45,10 @@ def test_matrix_uses_two_fixed_scenarios_and_secret_independent_programs():
         assert program.count("enter_user") == 1
         assert "load_secret" in program
         assert program[-1] == "probe"
+    assert MATRIX.VARIANTS == {
+        "none": Path("/opt/spechunter/chipyard"),
+        "gate-faulting-loads": Path("/opt/spechunter/chipyard-gate-faulting-loads"),
+    }
 
 
 def test_matrix_rejects_runner_provenance_mismatch(tmp_path):

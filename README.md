@@ -53,6 +53,8 @@ result and CLI exit code 2; a finding is a valid experiment result (exit code 0)
   executed Verilator bare-metal smoke test.
 - A strict trusted BOOM request compiler with pinned Spike comparison, PMP/trap runtime,
   fixed secret-independent cache probes, bounded execution, and structured observations.
+- A closed trusted repair catalog: the LLM may select a source-audited load-gate patch,
+  which is rebuilt in an isolated checkout and returned to attacker retesting.
 - Optional pinned CHIA node (`uv sync --extra chia`; `uv run spechunter run --chia`).
 - Optional Vertex agents with schema-constrained recon, attack, and repair responses.
 - Nested repair red-teaming: every repair returns to attacker → validator; a fixture

@@ -76,7 +76,12 @@ class Backend:
         self._temp.cleanup()
 
     def execute(self, program: Program, secret: int, bug: str) -> Observation:
-        if secret not in (0, 1) or bug not in {"none", "privilege", "transient"}:
+        if secret not in (0, 1) or bug not in {
+            "none",
+            "privilege",
+            "transient",
+            "gate-faulting-loads",
+        }:
             raise ValueError("invalid fixture parameters")
         self.executions += 1
         if self.config.kind == "model":

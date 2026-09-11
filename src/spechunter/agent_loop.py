@@ -93,7 +93,10 @@ def _run_benchmark(
                 break
             repair_round += 1
             repair = provider.repair(benchmark, reduced, result, transcript)
-            if backend.config.kind == "boom":
+            if backend.config.kind == "boom" and repair.repair_id:
+                active_variant = repair.repair_id
+                status = "trusted-candidate-repair"
+            elif backend.config.kind == "boom":
                 active_variant = benchmark.bug
                 status = "proposal-only"
             else:
@@ -110,8 +113,9 @@ def _run_benchmark(
                     "status": status,
                     "diagnosis": repair.diagnosis,
                     "proposal": repair.proposal,
+                    "repair_id": repair.repair_id,
                     "active_variant": active_variant,
-                    "rtl_patch_applied": False,
+                    "rtl_patch_applied": active_variant == "gate-faulting-loads",
                 }
             )
             # Deliberately continue this same loop at attacker after every repair.
@@ -127,9 +131,10 @@ def _run_benchmark(
         "repair": {
             "attempted": repair_round > 0,
             "attacker_exhausted": repair_verified,
-            "verified": repair_verified and backend.config.kind != "boom",
+            "verified": repair_verified
+            and (backend.config.kind != "boom" or active_variant == "gate-faulting-loads"),
             "final_variant": active_variant,
-            "rtl_patch_applied": False,
+            "rtl_patch_applied": active_variant == "gate-faulting-loads",
         },
     }
 

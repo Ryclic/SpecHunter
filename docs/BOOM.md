@@ -159,6 +159,26 @@ a baseline violation is repeatable, a simulator is rebuilt from the patched sour
 original witness becomes clean, attacker-generated variants are exhausted, and functional
 regressions pass.
 
+Build the repair in a separate checkout so baseline evidence remains immutable:
+
+```bash
+tools/boom/build_repair_variant.sh \
+  /opt/spechunter/chipyard \
+  /opt/spechunter/chipyard-gate-faulting-loads \
+  /tmp/boom-load-gate-build.json
+tools/boom/run_secure_matrix.py \
+  /tmp/boom-load-gate-matrix.json gate-faulting-loads
+```
+
+The builder refuses an existing destination, copies the pinned baseline, applies only the
+reviewed patch, cleans and rebuilds the simulator, and emits a manifest binding the source,
+patch, and new simulator hashes. The trusted runner accepts the repair ID only from that
+separate path and verifies both the exact dirty-source diff and build manifest before use.
+An LLM repair response can select this closed repair ID; it cannot provide executable patch
+text. After selection, the orchestrator retests the minimized witness on the repaired target
+and returns control to the attacker until it reports exhaustion. BOOM repair verification is
+true only after those real repaired-target executions succeed.
+
 `tools/boom/gcp_worker.sh create` provisions the corresponding official Rocky Linux 9
 image with no service account or API scopes. It has a six-hour maximum runtime and is
 deleted automatically at the limit. Install the listed host packages and copy the two

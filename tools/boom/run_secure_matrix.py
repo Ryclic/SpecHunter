@@ -25,6 +25,10 @@ SCENARIOS = {
     ],
 }
 MAX_RUNNER_OUTPUT = 1_048_576
+VARIANTS = {
+    "none": Path("/opt/spechunter/chipyard"),
+    "gate-faulting-loads": Path("/opt/spechunter/chipyard-gate-faulting-loads"),
+}
 
 
 class MatrixError(RuntimeError):
@@ -108,9 +112,16 @@ def run_request(runner: Path, request: Path) -> dict:
 
 def main() -> int:
     try:
-        if len(sys.argv) != 2 or not Path(sys.argv[1]).is_absolute():
-            raise MatrixError("usage: run_secure_matrix.py /ABSOLUTE/evidence.json")
+        if (
+            len(sys.argv) not in (2, 3)
+            or not Path(sys.argv[1]).is_absolute()
+            or (len(sys.argv) == 3 and sys.argv[2] not in VARIANTS)
+        ):
+            raise MatrixError(
+                "usage: run_secure_matrix.py /ABSOLUTE/evidence.json [none|gate-faulting-loads]"
+            )
         evidence_path = Path(sys.argv[1])
+        variant = sys.argv[2] if len(sys.argv) == 3 else "none"
         evidence_path.parent.mkdir(parents=True, exist_ok=True)
         script_dir = Path(__file__).resolve().parent
         runner = script_dir / "trusted_runner.py"
@@ -134,7 +145,7 @@ def main() -> int:
                             "program": program,
                             "program_sha256": program_digest(program),
                             "secret": secret,
-                            "variant": "none",
+                            "variant": variant,
                             "target_revision": target_revision,
                         }
                         request_path = work / f"{name}-{repeat}-{secret}.json"
@@ -149,13 +160,14 @@ def main() -> int:
                         **classify(observations),
                     }
                 )
-        chipyard = Path("/opt/spechunter/chipyard")
+        chipyard = VARIANTS[variant]
         simulators = list((chipyard / "sims/verilator").glob(f"simulator-*-{pins['BOOM_CONFIG']}"))
         if len(simulators) != 1:
             raise MatrixError("cannot identify the pinned simulator for evidence")
         evidence = {
             "schema_version": 1,
             "experiment": "boom-secure-control-matched-secret-matrix",
+            "variant": variant,
             "chipyard_revision": pins["CHIPYARD_REVISION"],
             "boom_revision": pins["BOOM_REVISION"],
             "config": pins["BOOM_CONFIG"],
