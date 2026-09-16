@@ -1,5 +1,7 @@
 import importlib.util
+import json
 from copy import deepcopy
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -45,3 +47,14 @@ def test_scorecard_requires_every_mutation_detected_and_repair_clean():
     broken[0]["repaired"]["status"] = "violation"
     with pytest.raises(CORPUS.CorpusError, match="repair did not remain clean"):
         CORPUS.validate_results(broken)
+
+
+def test_checked_in_live_corpus_has_stable_provenance_and_complete_scorecard():
+    evidence = json.loads((ROOT / "docs/evidence/boom-attack-corpus-2026-09-16.json").read_text())
+    control = json.loads((ROOT / "docs/evidence/boom-positive-control.json").read_text())
+    assert evidence["classification"] == (
+        "intentional-harness-mutation-not-upstream-boom-vulnerability"
+    )
+    assert evidence["simulator_sha256"] == control["simulator_sha256"]
+    assert evidence["corpus_runner_sha256"] == sha256(SCRIPT.read_bytes()).hexdigest()
+    assert evidence["scorecard"] == CORPUS.validate_results(evidence["results"])

@@ -4,8 +4,11 @@
    positive control and preserve a cost-bound transcript showing discovery, repair
    selection, mandatory retest, and attacker exhaustion. The sealed evidence and
    self-contained demo are checked in under `docs/`.
-2. Calibrate and repeat the binary relative-cache probe across more attack programs and
-   seeds, then evaluate the candidate repair only if a repeatable baseline violation exists.
+2. **Completed for the positive control 2026-09-16:** repeat the binary relative-cache
+   probe across eight held-out attack programs, two secrets, and two repetitions before
+   and after repair. The 64-execution scorecard is sealed to the live Vertex evidence.
+   Calibrating more timing seeds and evaluating the candidate RTL repair still require a
+   repeatable baseline violation.
 3. Reconcile the first Vertex smoke ledger with delayed Cloud Billing data, then improve
    hypothesis quality and evaluate stronger model/configuration choices. Persistent cost
    reservations, dated price verification, output limits, and bounded transport retries

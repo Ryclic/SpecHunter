@@ -53,3 +53,20 @@ def test_seal_rejects_scorecard_or_simulator_drift(tmp_path):
     write(control, {"simulator_sha256": "b" * 64})
     with pytest.raises(SEAL.SealError, match="different simulators"):
         SEAL.create_seal(corpus, control, report)
+
+
+def test_checked_in_seal_binds_live_artifacts():
+    evidence = ROOT / "docs/evidence"
+    seal = json.loads((evidence / "boom-attack-corpus-seal-2026-09-16.json").read_text())
+    for name, hash_field in (
+        (seal["attack_corpus"], "attack_corpus_sha256"),
+        (seal["positive_control"], "positive_control_sha256"),
+        (seal["vertex_report"], "vertex_report_sha256"),
+    ):
+        assert SEAL.digest(evidence / name) == seal[hash_field]
+    recreated = SEAL.create_seal(
+        evidence / seal["attack_corpus"],
+        evidence / seal["positive_control"],
+        evidence / seal["vertex_report"],
+    )
+    assert recreated == seal

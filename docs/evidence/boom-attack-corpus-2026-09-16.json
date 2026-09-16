@@ -1,0 +1,868 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-held-out-attack-corpus-repair-evaluation",
+  "classification": "intentional-harness-mutation-not-upstream-boom-vulnerability",
+  "chipyard_revision": "0acc1e1de2d3284bcd4d876956932a013ffe1949",
+  "boom_revision": "5223e44cfeb26f41380057a2eb4d651197475f69",
+  "config": "SmallBoomV3Config",
+  "simulator_sha256": "230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8",
+  "runner_sha256": "0d34ad861411f28df37972bc9bc1b399986ab6cbfb60b1d07ddd0c0c8a9290c1",
+  "corpus_runner_sha256": "c5cd5337c047cbfa9ad4e795e1484bca91b3570c7e435d9d1e1d4082a65114a5",
+  "repeats": 2,
+  "parallel_workers": 4,
+  "scorecard": {
+    "attack_programs": 8,
+    "mutation_detection_rate": 1.0,
+    "repair_clean_rate": 1.0,
+    "inconclusive_programs": 0,
+    "simulator_executions": 64
+  },
+  "results": [
+    {
+      "name": "minimal-denied-load",
+      "program": [
+        "enter_user",
+        "load_secret",
+        "probe"
+      ],
+      "program_sha256": "13227cb44a11fcfdabf177ae739b689589599f091ca6b6ef1fccbd4ed23da544",
+      "mutated": {
+        "variant": "seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "violation"
+      },
+      "repaired": {
+        "variant": "remove-seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "clean"
+      }
+    },
+    {
+      "name": "trained-denied-load",
+      "program": [
+        "train",
+        "enter_user",
+        "load_secret",
+        "probe"
+      ],
+      "program_sha256": "984e7cfb4d9de560faf169a3884b1a2fe9725bb5f230138cabf4facdb520036e",
+      "mutated": {
+        "variant": "seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "violation"
+      },
+      "repaired": {
+        "variant": "remove-seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "clean"
+      }
+    },
+    {
+      "name": "encode-window",
+      "program": [
+        "train",
+        "enter_user",
+        "load_secret",
+        "encode",
+        "probe"
+      ],
+      "program_sha256": "8e40941166cab864783cef5f3da711d0ee0efd9abf608c06bb1eb64032f454d9",
+      "mutated": {
+        "variant": "seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "violation"
+      },
+      "repaired": {
+        "variant": "remove-seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "clean"
+      }
+    },
+    {
+      "name": "squashed-window",
+      "program": [
+        "train",
+        "enter_user",
+        "load_secret",
+        "encode",
+        "squash",
+        "probe"
+      ],
+      "program_sha256": "5ecd5af8513427fb26ee5f96984868d4c5052d028b4a85b079b528b24b346dde",
+      "mutated": {
+        "variant": "seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "violation"
+      },
+      "repaired": {
+        "variant": "remove-seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "clean"
+      }
+    },
+    {
+      "name": "fence-before-load",
+      "program": [
+        "train",
+        "enter_user",
+        "fence",
+        "load_secret",
+        "probe"
+      ],
+      "program_sha256": "6b56268e30584f6a0036bb375d58af4317b0af54f363bfd83dbebe122e9fee52",
+      "mutated": {
+        "variant": "seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "violation"
+      },
+      "repaired": {
+        "variant": "remove-seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "clean"
+      }
+    },
+    {
+      "name": "fence-before-probe",
+      "program": [
+        "train",
+        "enter_user",
+        "load_secret",
+        "encode",
+        "fence",
+        "probe"
+      ],
+      "program_sha256": "47e3bb6c77247deb7ab9aafcc1ff817ec68d58a58fb57c17695f29389e0e04b5",
+      "mutated": {
+        "variant": "seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "violation"
+      },
+      "repaired": {
+        "variant": "remove-seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "clean"
+      }
+    },
+    {
+      "name": "squash-then-encode",
+      "program": [
+        "train",
+        "enter_user",
+        "load_secret",
+        "squash",
+        "encode",
+        "probe"
+      ],
+      "program_sha256": "327f89c87890109b0ce6046be4888412bd8328f834e46beeb31de9b222c43405",
+      "mutated": {
+        "variant": "seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "violation"
+      },
+      "repaired": {
+        "variant": "remove-seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "clean"
+      }
+    },
+    {
+      "name": "noise-padded-window",
+      "program": [
+        "nop",
+        "train",
+        "enter_user",
+        "nop",
+        "load_secret",
+        "encode",
+        "squash",
+        "fence",
+        "nop",
+        "probe"
+      ],
+      "program_sha256": "c2a80d998b8c9d99917f16ae428428964167df0168d20327687e80e19680ed8a",
+      "mutated": {
+        "variant": "seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              1
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "violation"
+      },
+      "repaired": {
+        "variant": "remove-seeded-cache-leak",
+        "observations": [
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          },
+          {
+            "architectural": [],
+            "probes": [
+              0
+            ],
+            "events": [
+              "load-access-fault"
+            ],
+            "completed": true
+          }
+        ],
+        "deterministic": true,
+        "status": "clean"
+      }
+    }
+  ],
+  "completed_at": "2026-09-16T04:37:52.015571+00:00"
+}

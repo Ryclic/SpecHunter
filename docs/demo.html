@@ -28,6 +28,13 @@ footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:v
 </section>
 <section><h2>Minimal validated witness</h2><div class="card"><p class="witness">enter_user → load_secret → probe</p><p>The protected user load remains in the minimized experiment. The finding is explicitly classified as an intentional harness mutation used to prove the end-to-end workflow, not an upstream BOOM vulnerability.</p></div></section>
 <section><h2>Agent and validator timeline</h2><ol class="timeline"><li class="stage stage-recon"><span class="step">01</span><div><strong>Recon</strong><p>A transient load of the secret, followed by encoding its value into the cache, and then a subsequent fence operation, will allow the secret to be observed via the probe.</p></div></li><li class="stage stage-attacker"><span class="step">02</span><div><strong>Attacker</strong><p>Candidate: enter_user → train → load_secret → encode → fence → probe</p></div></li><li class="stage stage-validator"><span class="step">03</span><div><strong>Validator</strong><p>Violation: secret-dependent observer output</p></div></li><li class="stage stage-repair"><span class="step">04</span><div><strong>Repair</strong><p>Selected closed repair: remove-seeded-cache-leak</p></div></li><li class="stage stage-attacker"><span class="step">05</span><div><strong>Attacker</strong><p>Candidate: enter_user → load_secret → probe</p></div></li><li class="stage stage-validator"><span class="step">06</span><div><strong>Validator</strong><p>Clean: observer outputs agree</p></div></li><li class="stage stage-attacker"><span class="step">07</span><div><strong>Attacker</strong><p>No materially different supported attack remained.</p></div></li></ol></section>
+<section><h2>Held-out repair gate</h2>
+<p>The same repair was challenged with eight distinct supported programs on the identical simulator.</p>
+<div class="grid"><div class="card"><b>8</b><span>Attack programs</span></div>
+<div class="card"><b>64</b><span>BOOM executions</span></div>
+<div class="card"><b>100%</b><span>Mutation detection</span></div>
+<div class="card"><b>100%</b><span>Repair clean</span></div></div>
+<div class="card"><span>Corpus SHA-256</span><code>0e3ce817cdf65df5c052860c8c61b98ce5f6fa990ae8f0fe61ed9323fc15659d</code></div></section>
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>0633c08ba9c242588babde4eb6941233397bc0255d0c87f7b33d77ea91ef2af4</code></div><div class="card"><span>Simulator SHA-256</span><code>230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{
   &quot;schema_version&quot;: 2,
