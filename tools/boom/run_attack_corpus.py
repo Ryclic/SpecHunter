@@ -112,7 +112,9 @@ def validate_results(results: list[dict]) -> dict:
     }
 
 
-def make_requests(work: Path, name: str, program: list[str], variant: str) -> list[Path]:
+def make_requests(
+    work: Path, name: str, program: list[str], variant: str, target_revision: str
+) -> list[Path]:
     requests = []
     for repeat in range(REPEATS):
         for secret in (0, 1):
@@ -122,7 +124,7 @@ def make_requests(work: Path, name: str, program: list[str], variant: str) -> li
                 "program_sha256": program_digest(program),
                 "secret": secret,
                 "variant": variant,
-                "target_revision": PINS["CHIPYARD_REVISION"],
+                "target_revision": target_revision,
             }
             path = work / f"{name}-{variant}-{repeat}-{secret}.json"
             path.write_text(json.dumps(request) + "\n")
@@ -139,9 +141,6 @@ def observe(matrix, runner: Path, requests: list[Path]) -> tuple[list[dict], str
     return [response["observation"] for response in responses], hashes.pop()
 
 
-PINS: dict[str, str] = {}
-
-
 def main() -> int:
     try:
         if len(sys.argv) != 2 or not Path(sys.argv[1]).is_absolute():
@@ -151,12 +150,13 @@ def main() -> int:
         script_dir = Path(__file__).resolve().parent
         runner = script_dir / "trusted_runner.py"
         matrix = load_matrix_module(script_dir)
+        pins = {}
         for line in (script_dir / "pins.env").read_text().splitlines():
             if line and not line.startswith("#"):
                 key, separator, value = line.partition("=")
                 if not separator:
                     raise CorpusError("invalid pins.env")
-                PINS[key] = value
+                pins[key] = value
         results = []
         simulator_hashes = set()
         with tempfile.TemporaryDirectory(prefix="spechunter-corpus-") as temporary:
@@ -165,7 +165,9 @@ def main() -> int:
                 variants = {}
                 for variant, label in ((MUTATED, "mutated"), (REPAIRED, "repaired")):
                     observations, simulator_hash = observe(
-                        matrix, runner, make_requests(work, name, program, variant)
+                        matrix,
+                        runner,
+                        make_requests(work, name, program, variant, pins["CHIPYARD_REVISION"]),
                     )
                     simulator_hashes.add(simulator_hash)
                     variants[label] = {
@@ -186,7 +188,7 @@ def main() -> int:
         simulator_hash = simulator_hashes.pop()
         simulators = list(
             Path("/opt/spechunter/chipyard/sims/verilator").glob(
-                f"simulator-*-{PINS['BOOM_CONFIG']}"
+                f"simulator-*-{pins['BOOM_CONFIG']}"
             )
         )
         if len(simulators) != 1 or digest(simulators[0]) != simulator_hash:
@@ -196,9 +198,9 @@ def main() -> int:
             "schema_version": 1,
             "experiment": "boom-held-out-attack-corpus-repair-evaluation",
             "classification": "intentional-harness-mutation-not-upstream-boom-vulnerability",
-            "chipyard_revision": PINS["CHIPYARD_REVISION"],
-            "boom_revision": PINS["BOOM_REVISION"],
-            "config": PINS["BOOM_CONFIG"],
+            "chipyard_revision": pins["CHIPYARD_REVISION"],
+            "boom_revision": pins["BOOM_REVISION"],
+            "config": pins["BOOM_CONFIG"],
             "simulator_sha256": simulator_hash,
             "runner_sha256": digest(runner),
             "corpus_runner_sha256": digest(Path(__file__)),
