@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "experiment": "vertex-agent-loop-through-chia",
+  "classification": "model-fixture-chia-integration-not-real-boom-evidence",
+  "report": "chia-vertex-loop-2026-09-16.json",
+  "report_sha256": "d699c2b421f245e9abf88ec7a87d80346ba7789587e14d42919cdab9322e43a6",
+  "cost_ledger": "chia-vertex-loop-cost-2026-09-16.json",
+  "cost_ledger_sha256": "0ac3632b0349c983f76285209ee832e30b88afa9e4b873a7f3aecc019f427a3c",
+  "chia_nodes_sha256": "4e0fa4900cd734a75ddc579b9f02edd11fd1de229d0f3421040f0e62f56f75f8",
+  "orchestration": {
+    "engine": "chia",
+    "execution": "local-ray",
+    "node": "run_agent_experiment",
+    "chialoops_version": "1.0.1",
+    "ray_version": "2.54.0"
+  },
+  "accounted_usd": "0.0005130"
+}

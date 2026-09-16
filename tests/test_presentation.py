@@ -95,6 +95,22 @@ def test_renderer_adds_sealed_vertex_repeatability(tmp_path):
     assert result["repeatability_sha256"]
 
 
+def test_renderer_adds_sealed_chia_execution(tmp_path):
+    output = tmp_path / "demo.html"
+    result = render(
+        EVIDENCE / "vertex-boom-demo-2026-09-11.json",
+        EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+        output,
+        chia_path=EVIDENCE / "chia-vertex-loop-2026-09-16.json",
+        chia_seal_path=EVIDENCE / "chia-vertex-loop-seal-2026-09-16.json",
+    )
+    page = output.read_text()
+    assert "Executed through CHIA" in page
+    assert "1.0.1" in page
+    assert "2.54.0" in page
+    assert result["chia_evidence_sha256"]
+
+
 def test_renderer_rejects_tampered_report(tmp_path):
     report = json.loads((EVIDENCE / "vertex-boom-demo-2026-09-11.json").read_text())
     report["metrics"]["executions"] = 0

@@ -32,6 +32,8 @@ def main() -> int:
         "--repeatability", type=Path, help="Optional sealed Vertex repeatability evidence"
     )
     parser.add_argument("--repeatability-seal", type=Path, help="Seal for --repeatability")
+    parser.add_argument("--chia-evidence", type=Path, help="Optional sealed CHIA/Vertex evidence")
+    parser.add_argument("--chia-seal", type=Path, help="Seal for --chia-evidence")
     parser.add_argument(
         "--runner", type=Path, help="Trusted BOOM runner executable (absolute path)"
     )
@@ -72,6 +74,8 @@ def main() -> int:
                 raise ValueError(
                     "present requires --repeatability and --repeatability-seal together"
                 )
+            if (args.chia_evidence is None) != (args.chia_seal is None):
+                raise ValueError("present requires --chia-evidence and --chia-seal together")
             print(
                 json.dumps(
                     render(
@@ -84,6 +88,8 @@ def main() -> int:
                         evaluation_seal_path=args.evaluation_seal,
                         repeatability_path=args.repeatability,
                         repeatability_seal_path=args.repeatability_seal,
+                        chia_path=args.chia_evidence,
+                        chia_seal_path=args.chia_seal,
                     ),
                     indent=2,
                 )

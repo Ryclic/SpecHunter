@@ -26,6 +26,10 @@ mandatory retest, and attacker-exhaustion loop successfully. The 40 calls and co
 transcripts are sealed with their settled $0.0053752 cost ledger. This measures LLM-loop
 repeatability; it does not replace the live BOOM run.
 
+The Vertex loop has also executed through the pinned CHIA 1.0.1 node on a locally owned
+Ray 2.54.0 runtime. Its four-call discovery-and-repair transcript, CHIA provenance, and
+$0.0005130 settled ledger are sealed as a separate integration artifact.
+
 Generate the presentation locally from its sealed evidence:
 
 ```bash
@@ -38,6 +42,8 @@ uv run spechunter present \
   --evaluation-seal docs/evidence/fixture-guided-vs-random-seal-2026-09-16.json \
   --repeatability docs/evidence/vertex-fixture-repeatability-2026-09-16.json \
   --repeatability-seal docs/evidence/vertex-fixture-repeatability-seal-2026-09-16.json \
+  --chia-evidence docs/evidence/chia-vertex-loop-2026-09-16.json \
+  --chia-seal docs/evidence/chia-vertex-loop-seal-2026-09-16.json \
   --output artifacts/demo.html
 ```
 

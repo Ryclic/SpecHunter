@@ -262,6 +262,18 @@ and $0.0053752 accounted cost under a shared $0.05 ledger. A verifier checks eve
 state and ledger entry before sealing both artifacts. The offline demo presents this as
 LLM orchestration repeatability, explicitly separate from live BOOM evidence.
 
+## CHIA-to-Vertex live integration
+
+`feat/chia-vertex-evidence` makes local CHIA execution self-identifying in reports and
+preserves a live Vertex agent loop through the decorated `run_agent_experiment` node.
+The 2026-09-16 run used CHIA 1.0.1 and Ray 2.54.0, discovered the model positive control,
+selected the closed repair, passed mandatory retesting, returned to the attacker, and
+reached exhaustion. It used four Gemini calls, 28 fixture executions, and $0.0005130;
+every ledger entry settled successfully. The seal validates the exact nested transcript,
+dependency versions, cost, and CHIA adapter digest. No cluster or GCP compute resource was
+created. This is CHIA orchestration evidence on a model fixture, not BOOM vulnerability
+evidence or a distributed-worker claim.
+
 ## Sealed evidence presentation
 
 `feat/evidence-demo` adds `spechunter present`, which verifies the live report against its

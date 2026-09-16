@@ -11,3 +11,8 @@ def test_local_chia_node():
     report = run_local(BackendConfig(), iterations=2)
     assert report["metrics"]["discovered"] == 3
     assert report["metrics"]["false_positives"] == 0
+    assert report["orchestration"]["engine"] == "chia"
+    assert report["orchestration"]["execution"] == "local-ray"
+    assert report["orchestration"]["node"] == "run_experiment"
+    assert report["orchestration"]["ray_version"]
+    assert report["orchestration"]["chialoops_version"]
