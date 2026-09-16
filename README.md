@@ -21,6 +21,11 @@ positive cases in 1.5 attempts on average. Across 1,000 seeds, random search dis
 8.48 attempts on average. Both approaches produced zero false positives and inconclusive
 cases. These search-quality results are explicitly separated from real BOOM evidence.
 
+Ten additional independent Gemini trials completed the entire fixture discovery, repair,
+mandatory retest, and attacker-exhaustion loop successfully. The 40 calls and complete
+transcripts are sealed with their settled $0.0053752 cost ledger. This measures LLM-loop
+repeatability; it does not replace the live BOOM run.
+
 Generate the presentation locally from its sealed evidence:
 
 ```bash
@@ -31,6 +36,8 @@ uv run spechunter present \
   --corpus-seal docs/evidence/boom-attack-corpus-seal-2026-09-16.json \
   --evaluation docs/evidence/fixture-guided-vs-random-2026-09-16.json \
   --evaluation-seal docs/evidence/fixture-guided-vs-random-seal-2026-09-16.json \
+  --repeatability docs/evidence/vertex-fixture-repeatability-2026-09-16.json \
+  --repeatability-seal docs/evidence/vertex-fixture-repeatability-seal-2026-09-16.json \
   --output artifacts/demo.html
 ```
 

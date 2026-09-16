@@ -251,6 +251,17 @@ cases (57.25%, 95% Wilson interval 55.07%–59.40%) in 8.48 attempts on average.
 zero false positives and zero inconclusive cases. The demo labels these as fixture search
 quality, separately from live BOOM evidence.
 
+## Vertex loop repeatability
+
+`feat/vertex-repeatability` adds a bounded repeated evaluation of the actual Vertex-driven
+agent loop on the fast positive-control model fixture. On 2026-09-16, all ten independent
+Gemini 2.5 Flash-Lite trials discovered the mutation, selected the closed repair, passed
+the mandatory minimized-witness retest, returned to the attacker, and reached exhaustion.
+The evaluation contains 40 settled calls, 264 fixture executions, zero inconclusive cases,
+and $0.0053752 accounted cost under a shared $0.05 ledger. A verifier checks every repair
+state and ledger entry before sealing both artifacts. The offline demo presents this as
+LLM orchestration repeatability, explicitly separate from live BOOM evidence.
+
 ## Sealed evidence presentation
 
 `feat/evidence-demo` adds `spechunter present`, which verifies the live report against its

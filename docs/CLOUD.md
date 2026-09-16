@@ -56,6 +56,12 @@ intentional mutation and repaired harness for 64 SmallBoomV3 executions. The rec
 evidence matched the previously validated simulator hash. The worker and 200 GB disk were
 deleted immediately after artifact verification; the subsequent instance listing was empty.
 
+On 2026-09-16, ten independent Gemini 2.5 Flash-Lite fixture-loop trials made 40 calls
+under a shared $0.05 application ledger. Every call settled successfully, accounting for
+$0.0053752; all ten trials completed discovery, repair, mandatory retest, and attacker
+exhaustion. This evaluation used no Compute Engine resource. Its transcript, ledger, and
+seal are under `docs/evidence/`; delayed Cloud Billing remains authoritative for charges.
+
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;
 record region, machine/model, maximum duration/tokens, disk/storage costs and a

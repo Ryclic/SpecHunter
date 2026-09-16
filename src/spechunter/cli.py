@@ -29,6 +29,10 @@ def main() -> int:
     parser.add_argument("--evaluation", type=Path, help="Optional sealed fixture evaluation")
     parser.add_argument("--evaluation-seal", type=Path, help="Seal for --evaluation")
     parser.add_argument(
+        "--repeatability", type=Path, help="Optional sealed Vertex repeatability evidence"
+    )
+    parser.add_argument("--repeatability-seal", type=Path, help="Seal for --repeatability")
+    parser.add_argument(
         "--runner", type=Path, help="Trusted BOOM runner executable (absolute path)"
     )
     parser.add_argument(
@@ -64,6 +68,10 @@ def main() -> int:
                 raise ValueError("present requires --corpus and --corpus-seal together")
             if (args.evaluation is None) != (args.evaluation_seal is None):
                 raise ValueError("present requires --evaluation and --evaluation-seal together")
+            if (args.repeatability is None) != (args.repeatability_seal is None):
+                raise ValueError(
+                    "present requires --repeatability and --repeatability-seal together"
+                )
             print(
                 json.dumps(
                     render(
@@ -74,6 +82,8 @@ def main() -> int:
                         corpus_seal_path=args.corpus_seal,
                         evaluation_path=args.evaluation,
                         evaluation_seal_path=args.evaluation_seal,
+                        repeatability_path=args.repeatability,
+                        repeatability_seal_path=args.repeatability_seal,
                     ),
                     indent=2,
                 )

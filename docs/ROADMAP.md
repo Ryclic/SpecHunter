@@ -10,9 +10,10 @@
    Calibrating more timing seeds and evaluating the candidate RTL repair still require a
    repeatable baseline violation.
 3. Reconcile the first Vertex smoke ledger with delayed Cloud Billing data, then improve
-   hypothesis quality and evaluate stronger model/configuration choices. Persistent cost
-   reservations, dated price verification, output limits, and bounded transport retries
-   are implemented.
+   hypothesis quality and evaluate stronger model/configuration choices. A ten-trial
+   Gemini 2.5 Flash-Lite fixture-loop repeatability gate now passes 10/10 with sealed
+   transcripts and costs. Persistent reservations, dated prices, output limits, and
+   bounded retries are implemented; delayed Cloud Billing reconciliation remains.
 4. Replace fixture mitigation selection with actual RTL patch generation and target regressions.
 5. Validate distributed CHIA execution on local workers before considering GCP workers.
 6. **Completed for deterministic fixtures 2026-09-16:** compare guided search with 1,000

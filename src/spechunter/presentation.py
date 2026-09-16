@@ -91,6 +91,25 @@ def _load_evaluation(evaluation_path: Path, seal_path: Path) -> dict:
     return evaluation
 
 
+def _load_repeatability(evidence_path: Path, seal_path: Path) -> dict:
+    evidence_path = evidence_path.resolve()
+    evidence = _read(evidence_path)
+    seal = _read(seal_path.resolve())
+    if seal.get("evidence") != evidence_path.name or seal.get("evidence_sha256") != _digest(
+        evidence_path
+    ):
+        raise PresentationError("Vertex repeatability evidence does not match its seal")
+    classification = "model-fixture-repeatability-not-real-boom-evidence"
+    if (
+        evidence.get("classification") != classification
+        or seal.get("classification") != classification
+    ):
+        raise PresentationError("Vertex repeatability classification differs")
+    if seal.get("trials") != 10 or evidence.get("summary", {}).get("successful_full_loops") != 10:
+        raise PresentationError("Vertex repeatability evidence is incomplete")
+    return evidence
+
+
 def render(
     report_path: Path,
     seal_path: Path,
@@ -100,6 +119,8 @@ def render(
     corpus_seal_path: Path | None = None,
     evaluation_path: Path | None = None,
     evaluation_seal_path: Path | None = None,
+    repeatability_path: Path | None = None,
+    repeatability_seal_path: Path | None = None,
 ) -> dict:
     report_path = report_path.resolve()
     seal_path = seal_path.resolve()
@@ -170,6 +191,22 @@ def render(
 <div class="card"><b>{guided["positive_attempts_mean"]:.1f}</b><span>Guided mean attempts</span></div>
 <div class="card"><b>{random["positive_attempts_mean"]:.2f}</b><span>Random mean attempts</span></div></div>
 <div class="card"><p>Random: {random["trials"]} seeds; 95% Wilson interval {interval[0]:.2%}–{interval[1]:.2%}; zero false positives and zero inconclusive cases.</p></div></section>"""
+    repeatability_section = ""
+    repeatability_hash = None
+    if repeatability_path is not None or repeatability_seal_path is not None:
+        if repeatability_path is None or repeatability_seal_path is None:
+            raise PresentationError(
+                "Vertex repeatability evidence and seal must be supplied together"
+            )
+        repeatability = _load_repeatability(repeatability_path, repeatability_seal_path)
+        repeatability_hash = _digest(repeatability_path)
+        repeated = repeatability["summary"]
+        repeatability_section = f"""<section><h2>LLM loop repeatability</h2>
+<p>Ten independent Vertex trials used the fast model fixture to measure orchestration reliability, separately from live BOOM evidence.</p>
+<div class="grid"><div class="card"><b>{repeated["successful_full_loops"]}/{repeated["trials"]}</b><span>Full loops succeeded</span></div>
+<div class="card"><b>{repeated["llm_calls"]}</b><span>Gemini calls</span></div>
+<div class="card"><b>{repeated["fixture_executions"]}</b><span>Fixture executions</span></div>
+<div class="card"><b>${repeatability["cost"]["accounted_usd"]}</b><span>Accounted cost</span></div></div></section>"""
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpecHunter · Verified Agent Loop</title>
@@ -202,6 +239,7 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
 <section><h2>Agent and validator timeline</h2><ol class="timeline">{"".join(events)}</ol></section>
 {corpus_section}
 {evaluation_section}
+{repeatability_section}
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>{report_hash}</code></div><div class="card"><span>Simulator SHA-256</span><code>{simulator_hash}</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{raw_report}</pre></details></section>
 <footer>Generated locally from the sealed SpecHunter report. No network requests or external assets are required.</footer>
@@ -216,4 +254,5 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
         "simulator_sha256": report.get("provenance", {}).get("simulator_sha256"),
         "attack_corpus_sha256": corpus_hash,
         "evaluation_sha256": evaluation_hash,
+        "repeatability_sha256": repeatability_hash,
     }
