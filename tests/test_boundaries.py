@@ -97,6 +97,26 @@ def test_cli_presents_sealed_live_evidence(tmp_path, monkeypatch):
     assert "Cryptographically sealed evidence" in output.read_text()
 
 
+def test_cli_requires_corpus_and_seal_together(tmp_path, monkeypatch, capsys):
+    root = Path(__file__).parents[1]
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "spechunter",
+            "present",
+            "--input",
+            str(root / "docs/evidence/vertex-boom-demo-2026-09-11.json"),
+            "--seal",
+            str(root / "docs/evidence/vertex-boom-demo-seal-2026-09-11.json"),
+            "--corpus",
+            str(tmp_path / "corpus.json"),
+        ],
+    )
+    assert main() == 2
+    assert "--corpus and --corpus-seal together" in capsys.readouterr().err
+
+
 def test_cli_boom_defaults_to_secure_control_and_long_timeout(tmp_path, monkeypatch):
     captured = {}
 

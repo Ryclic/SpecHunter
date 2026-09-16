@@ -22,6 +22,8 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=Path("artifacts/run.json"))
     parser.add_argument("--input", type=Path, help="Sealed experiment report for present")
     parser.add_argument("--seal", type=Path, help="Evidence seal for present")
+    parser.add_argument("--corpus", type=Path, help="Optional sealed BOOM attack corpus")
+    parser.add_argument("--corpus-seal", type=Path, help="Seal for --corpus")
     parser.add_argument(
         "--runner", type=Path, help="Trusted BOOM runner executable (absolute path)"
     )
@@ -54,7 +56,20 @@ def main() -> int:
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")
-            print(json.dumps(render(args.input, args.seal, args.output), indent=2))
+            if (args.corpus is None) != (args.corpus_seal is None):
+                raise ValueError("present requires --corpus and --corpus-seal together")
+            print(
+                json.dumps(
+                    render(
+                        args.input,
+                        args.seal,
+                        args.output,
+                        corpus_path=args.corpus,
+                        corpus_seal_path=args.corpus_seal,
+                    ),
+                    indent=2,
+                )
+            )
             return 0
         if args.runner and not args.runner.is_absolute():
             raise ValueError("runner must be an absolute executable path")
