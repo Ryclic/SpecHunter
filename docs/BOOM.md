@@ -305,3 +305,27 @@ image with no service account or API scopes. It has a six-hour maximum runtime a
 deleted automatically at the limit. Install the listed host packages and copy the two
 scripts plus `pins.env` onto the worker before invoking the bootstrap. Delete a worker
 as soon as its artifacts or failure evidence have been collected.
+
+## Upstream issue #715 current-pin assessment
+
+Upstream BOOM issue #715 reports that a delayed mispredicted branch on BOOM revision
+`fac2c370…` allowed a faulting privileged load and dependent access to execute transiently.
+The report includes a stripped Cascade ELF. SpecHunter records that attachment's SHA-256
+but does not execute it because its runtime and simulator assumptions differ from the pinned
+HTIF/Verilator environment.
+
+The trusted runner instead provides the fixed `issue-715-baseline` adaptation. It trains a
+delayed conditional branch twelve times with a safe pointer, evicts the training cache
+footprint, changes the pointer to the PMP-protected secret, and makes the protected load and
+dependent two-line encode the predicted fall-through of an architecturally taken branch.
+Only the fixed three-operation request is accepted. Spike establishes the architectural
+path while BOOM supplies the cache observation.
+
+On 2026-09-16, four executions on the current pinned BOOM revision `5223e44…` were
+deterministic and clean: both secret worlds returned probe bit zero twice, with no
+architectural exception. The reported vulnerable revision is 335 BOOM commits older.
+[`boom-issue-715-assessment-seal-2026-09-16.json`](evidence/boom-issue-715-assessment-seal-2026-09-16.json)
+binds the upstream provenance, reviewed runner, reproduced baseline simulator, and matrix.
+It records `vulnerability_reproduced: false` and `security_fix_validated: false`. This
+narrows the evidence gap but does not prove the current revision immune to other issue #715
+programs or transient attacks.

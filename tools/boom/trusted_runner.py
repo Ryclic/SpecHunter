@@ -18,6 +18,8 @@ MAX_OUTPUT = 1_048_576
 CHIPYARD = Path("/opt/spechunter/chipyard")
 REPAIRED_CHIPYARD = Path("/opt/spechunter/chipyard-gate-faulting-loads")
 REPAIR_VARIANT = "gate-faulting-loads"
+ISSUE_715_BASELINE = "issue-715-baseline"
+ISSUE_715_REPAIRED = "issue-715-repaired"
 POSITIVE_CONTROL_VARIANT = "seeded-cache-leak"
 POSITIVE_CONTROL_REPAIR = "remove-seeded-cache-leak"
 
@@ -83,10 +85,15 @@ def validate_install(chipyard: Path, pins: dict[str, str], variant: str) -> str:
         timeout=10,
         check=True,
     ).stdout.rstrip("\r\n")
-    if variant in {"none", POSITIVE_CONTROL_VARIANT, POSITIVE_CONTROL_REPAIR}:
+    if variant in {
+        "none",
+        ISSUE_715_BASELINE,
+        POSITIVE_CONTROL_VARIANT,
+        POSITIVE_CONTROL_REPAIR,
+    }:
         if status or source_digest != pins["BOOM_LSU_SHA256"]:
             raise RunnerError("baseline BOOM tree is not pristine reviewed source")
-    elif variant == REPAIR_VARIANT:
+    elif variant in {REPAIR_VARIANT, ISSUE_715_REPAIRED}:
         repair_diff = subprocess.run(
             [
                 "git",
@@ -143,6 +150,8 @@ def validate_request(path: Path, target_revision: str) -> dict:
     if request["variant"] not in {
         "none",
         REPAIR_VARIANT,
+        ISSUE_715_BASELINE,
+        ISSUE_715_REPAIRED,
         POSITIVE_CONTROL_VARIANT,
         POSITIVE_CONTROL_REPAIR,
     }:
@@ -162,10 +171,119 @@ def validate_request(path: Path, target_revision: str) -> dict:
         "load_secret" not in program or "probe" not in program
     ):
         raise RunnerError("positive-control variants require a protected load and probe")
+    if request["variant"] in {ISSUE_715_BASELINE, ISSUE_715_REPAIRED} and program != [
+        "enter_user",
+        "load_secret",
+        "probe",
+    ]:
+        raise RunnerError("issue #715 variants require the fixed reproduction program")
     return request
 
 
+def render_issue_715_candidate(secret: int) -> str:
+    """Render a fixed branch-misprediction adaptation of upstream BOOM issue #715."""
+    return "\n".join(
+        [
+            '#include "riscv_test.h"',
+            "RVTEST_RV64M",
+            "RVTEST_CODE_BEGIN",
+            "  la s2, protected_secret",
+            f"  li t0, {secret}",
+            "  sd t0, 0(s2)",
+            "  srli t0, s2, 2",
+            "  ori t0, t0, 0x1ff",
+            "  csrw pmpaddr0, t0",
+            "  li t0, -1",
+            "  csrw pmpaddr1, t0",
+            "  li t0, 0x1f18",
+            "  csrw pmpcfg0, t0",
+            "  li t0, 1",
+            "  csrw mcounteren, t0",
+            "  csrw scounteren, t0",
+            "  la t0, .Lissue715_user",
+            "  csrw mepc, t0",
+            "  li t0, (3 << 11)",
+            "  csrc mstatus, t0",
+            "  mret",
+            ".Lissue715_user:",
+            "  li s5, 12",
+            "  li s7, 29",
+            "  li s8, 29",
+            "  la s2, safe_secret",
+            ".Lissue715_branch:",
+            "  # Delay branch resolution behind dependent integer operations.",
+            "  div s6, s7, s8",
+            "  mul s6, s6, s8",
+            "  mul s6, s6, s8",
+            "  beqz s6, .Lissue715_correct_path",
+            "  # Predicted fall-through gadget: faulting load then dependent encode.",
+            "  ld s1, 0(s2)",
+            "  andi s1, s1, 1",
+            "  slli s1, s1, 6",
+            "  la t0, probe_lines",
+            "  add t0, t0, s1",
+            "  lbu zero, 0(t0)",
+            ".Lissue715_correct_path:",
+            "  beqz s5, .Lissue715_probe",
+            "  addi s5, s5, -1",
+            "  bnez s5, .Lissue715_branch",
+            "  # Evict training effects from every L1 set before the attack attempt.",
+            "  la t0, eviction_lines",
+            "  li t1, 512",
+            ".Lissue715_evict:",
+            "  lbu zero, 0(t0)",
+            "  addi t0, t0, 64",
+            "  addi t1, t1, -1",
+            "  bnez t1, .Lissue715_evict",
+            "  la s2, protected_secret",
+            "  li s7, 0",
+            "  j .Lissue715_branch",
+            ".Lissue715_probe:",
+            "  la t0, probe_lines",
+            "  fence rw, rw",
+            "  rdcycle t1",
+            "  lbu zero, 0(t0)",
+            "  fence rw, rw",
+            "  rdcycle t2",
+            "  sub t2, t2, t1",
+            "  fence rw, rw",
+            "  rdcycle t3",
+            "  lbu zero, 64(t0)",
+            "  fence rw, rw",
+            "  rdcycle t4",
+            "  sub t4, t4, t3",
+            "  sltu t2, t2, t4",
+            "  beqz t2, spechunter_passed",
+            "  li TESTNUM, 2",
+            "  RVTEST_FAIL",
+            "spechunter_passed:",
+            "  RVTEST_PASS",
+            "  .globl mtvec_handler",
+            "mtvec_handler:",
+            "  li TESTNUM, 10",
+            "  RVTEST_FAIL",
+            "RVTEST_CODE_END",
+            "RVTEST_DATA_BEGIN",
+            "  .balign 4096",
+            "protected_secret:",
+            "  .zero 4096",
+            "safe_secret:",
+            "  .zero 8",
+            "  .balign 4096",
+            "probe_lines:",
+            "  .zero 128",
+            "  .balign 4096",
+            "eviction_lines:",
+            "  .zero 32768",
+            "RVTEST_DATA_END",
+            "",
+        ]
+    )
+
+
 def render_candidate(program: list[str], secret: int, variant: str = "none") -> str:
+    if variant in {ISSUE_715_BASELINE, ISSUE_715_REPAIRED}:
+        return render_issue_715_candidate(secret)
     snippets = {
         "nop": ["  nop"],
         "train": [
@@ -351,7 +469,7 @@ def run_htif_observation(
 def validate_repair_build(
     request: dict, simulator: Path, chipyard: Path, pins: dict[str, str]
 ) -> None:
-    if request["variant"] != REPAIR_VARIANT:
+    if request["variant"] not in {REPAIR_VARIANT, ISSUE_715_REPAIRED}:
         return
     manifest_path = chipyard / "sims/verilator/spechunter-build-gate-faulting-loads.json"
     try:
@@ -424,7 +542,10 @@ def execute(
             env,
             60,
         )
-        has_load = "load_secret" in request["program"]
+        has_load = "load_secret" in request["program"] and request["variant"] not in {
+            ISSUE_715_BASELINE,
+            ISSUE_715_REPAIRED,
+        }
         has_probe = "probe" in request["program"]
         spike = run_htif_observation(
             [str(riscv / "bin/spike"), str(payload)],
@@ -466,7 +587,11 @@ def main() -> int:
         script_dir = Path(__file__).resolve().parent
         pins = load_pins(script_dir / "pins.env")
         request = validate_request(Path(sys.argv[1]), pins["CHIPYARD_REVISION"])
-        chipyard = REPAIRED_CHIPYARD if request["variant"] == REPAIR_VARIANT else CHIPYARD
+        chipyard = (
+            REPAIRED_CHIPYARD
+            if request["variant"] in {REPAIR_VARIANT, ISSUE_715_REPAIRED}
+            else CHIPYARD
+        )
         validate_install(chipyard, pins, request["variant"])
         observation = execute(request, pins["BOOM_CONFIG"], chipyard, pins)
         response = {

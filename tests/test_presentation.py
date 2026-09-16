@@ -126,6 +126,20 @@ def test_renderer_adds_sealed_rtl_repair_regression(tmp_path):
     assert result["rtl_repair_seal_sha256"]
 
 
+def test_renderer_adds_sealed_issue_715_assessment(tmp_path):
+    output = tmp_path / "demo.html"
+    result = render(
+        EVIDENCE / "vertex-boom-demo-2026-09-11.json",
+        EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+        output,
+        issue_715_seal_path=(EVIDENCE / "boom-issue-715-assessment-seal-2026-09-16.json"),
+    )
+    page = output.read_text()
+    assert "Known BOOM issue assessed" in page
+    assert "no vulnerability or repair claim" in page
+    assert result["issue_715_seal_sha256"]
+
+
 def test_renderer_rejects_tampered_report(tmp_path):
     report = json.loads((EVIDENCE / "vertex-boom-demo-2026-09-11.json").read_text())
     report["metrics"]["executions"] = 0

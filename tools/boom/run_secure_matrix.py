@@ -32,6 +32,11 @@ VARIANTS = {
     "gate-faulting-loads": Path("/opt/spechunter/chipyard-gate-faulting-loads"),
     "seeded-cache-leak": Path("/opt/spechunter/chipyard"),
     "remove-seeded-cache-leak": Path("/opt/spechunter/chipyard"),
+    "issue-715-baseline": Path("/opt/spechunter/chipyard"),
+    "issue-715-repaired": Path("/opt/spechunter/chipyard-gate-faulting-loads"),
+}
+ISSUE_715_SCENARIOS = {
+    "issue-715-mispredict": ["enter_user", "load_secret", "probe"],
 }
 
 
@@ -126,7 +131,8 @@ def main() -> int:
         ):
             raise MatrixError(
                 "usage: run_secure_matrix.py /ABSOLUTE/evidence.json "
-                "[none|gate-faulting-loads|seeded-cache-leak|remove-seeded-cache-leak]"
+                "[none|gate-faulting-loads|seeded-cache-leak|remove-seeded-cache-leak|"
+                "issue-715-baseline|issue-715-repaired]"
             )
         evidence_path = Path(sys.argv[1])
         variant = sys.argv[2] if len(sys.argv) == 3 else "none"
@@ -145,7 +151,10 @@ def main() -> int:
         with tempfile.TemporaryDirectory(prefix="spechunter-matrix-") as temporary:
             work = Path(temporary)
             observed_simulator_hashes = set()
-            for name, program in SCENARIOS.items():
+            scenarios_to_run = (
+                ISSUE_715_SCENARIOS if variant.startswith("issue-715-") else SCENARIOS
+            )
+            for name, program in scenarios_to_run.items():
                 requests = []
                 for repeat in range(REPEATS):
                     for secret in (0, 1):

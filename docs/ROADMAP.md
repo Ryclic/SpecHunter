@@ -27,3 +27,8 @@
 6. **Completed for deterministic fixtures 2026-09-16:** compare guided search with 1,000
    random seeds, record per-seed trials, false positives, attempts and executions, and
    report Wilson intervals. Multi-seed LLM evaluation and additional known BOOM bugs remain.
+7. **Completed current-pin assessment 2026-09-16:** adapt the mechanism from upstream BOOM
+   issue #715 into the reviewed PMP/HTIF harness and execute two secrets twice on the pinned
+   simulator. The result was deterministic and clean, so no repair was activated and the
+   seal explicitly records that neither a vulnerability nor fix was validated. Reproducing
+   the exact historical revision or assessing another known bug remains future work.

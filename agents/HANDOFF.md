@@ -175,6 +175,25 @@ syntax, and 97 tests with one skipped RTL-dependent test and one deselected CHIA
 Next: pursue a repeatable baseline witness or a known vulnerable BOOM revision before
 claiming repair efficacy.
 
+## Upstream BOOM issue #715 assessment
+
+`feat/boom-issue-715-reproduction` adds a fixed reviewed adaptation of the mechanism in
+upstream issue #715. The runner accepts only `enter_user, load_secret, probe`, trains a
+delayed branch with a safe pointer, evicts training state, and places the protected load
+plus dependent cache encode on the predicted wrong path. Source provenance records the
+original issue, historical Chipyard/BOOM revisions, and hashes of its stripped attachment
+while clearly identifying the local program as an adaptation.
+
+Four live executions on pinned BOOM `5223e44…` were deterministic and clean across two
+secret worlds and two repetitions. The reported BOOM revision is 335 commits older. The
+seal binds source provenance, the exact reviewed runner hash, matching smoke/simulator
+evidence, and the matrix; it sets both `vulnerability_reproduced` and
+`security_fix_validated` false. The repaired build was skipped because a clean baseline
+cannot establish a security delta. The GCP worker and disk were deleted and no instance
+remained. Full validation passes Ruff, formatting, shell syntax, and 104 tests with one
+skipped RTL-dependent test and one deselected CHIA test. Next: target the historical
+revision or another source-backed known bug.
+
 ## BOOM seeded positive control
 
 `feat/boom-positive-control` adds an intentionally vulnerable harness variant,
