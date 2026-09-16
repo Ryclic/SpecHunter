@@ -35,6 +35,9 @@ def main() -> int:
     parser.add_argument("--chia-evidence", type=Path, help="Optional sealed CHIA/Vertex evidence")
     parser.add_argument("--chia-seal", type=Path, help="Seal for --chia-evidence")
     parser.add_argument(
+        "--rtl-repair-seal", type=Path, help="Optional sealed BOOM RTL repair regression"
+    )
+    parser.add_argument(
         "--runner", type=Path, help="Trusted BOOM runner executable (absolute path)"
     )
     parser.add_argument(
@@ -90,6 +93,7 @@ def main() -> int:
                         repeatability_seal_path=args.repeatability_seal,
                         chia_path=args.chia_evidence,
                         chia_seal_path=args.chia_seal,
+                        rtl_repair_seal_path=args.rtl_repair_seal,
                     ),
                     indent=2,
                 )

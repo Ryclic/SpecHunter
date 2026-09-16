@@ -126,6 +126,37 @@ def _load_chia(evidence_path: Path, seal_path: Path) -> dict:
     return evidence
 
 
+def _load_rtl_repair(seal_path: Path) -> dict:
+    seal_path = seal_path.resolve()
+    seal = _read(seal_path)
+    classification = "source-reviewed-candidate-regression-not-validated-security-fix"
+    if (
+        seal.get("classification") != classification
+        or seal.get("candidate_build_validated") is not True
+        or seal.get("target_regression_validated") is not True
+        or seal.get("security_fix_validated") is not False
+    ):
+        raise PresentationError("RTL repair evidence classification differs")
+    for name_key, hash_key in (
+        ("baseline_smoke", "baseline_smoke_sha256"),
+        ("prior_baseline_matrix", "prior_baseline_matrix_sha256"),
+        ("repair_build", "repair_build_sha256"),
+        ("repair_matrix", "repair_matrix_sha256"),
+    ):
+        artifact = seal_path.parent / str(seal.get(name_key, ""))
+        if not artifact.is_file() or seal.get(hash_key) != _digest(artifact):
+            raise PresentationError("RTL repair artifact does not match its seal")
+    matrix = _read(seal_path.parent / seal["repair_matrix"])
+    scenarios = matrix.get("scenarios")
+    if (
+        not isinstance(scenarios, list)
+        or len(scenarios) != 2
+        or any(item.get("status") != "clean" for item in scenarios)
+    ):
+        raise PresentationError("RTL repair target regression is incomplete")
+    return seal
+
+
 def render(
     report_path: Path,
     seal_path: Path,
@@ -139,6 +170,7 @@ def render(
     repeatability_seal_path: Path | None = None,
     chia_path: Path | None = None,
     chia_seal_path: Path | None = None,
+    rtl_repair_seal_path: Path | None = None,
 ) -> dict:
     report_path = report_path.resolve()
     seal_path = seal_path.resolve()
@@ -239,6 +271,18 @@ def render(
 <div class="card"><b>{escape(orchestration["ray_version"])}</b><span>Ray version</span></div>
 <div class="card"><b>{chia["metrics"]["llm_calls"]}</b><span>Gemini calls</span></div>
 <div class="card"><b>Yes</b><span>Attacker exhausted</span></div></div></section>"""
+    rtl_repair_section = ""
+    rtl_repair_hash = None
+    if rtl_repair_seal_path is not None:
+        rtl_repair = _load_rtl_repair(rtl_repair_seal_path)
+        rtl_repair_hash = _digest(rtl_repair_seal_path)
+        rtl_repair_section = f"""<section><h2>Candidate RTL repair built</h2>
+<p>The source-reviewed LSU patch compiled into a distinct BOOM simulator and passed eight target-regression executions. The baseline was already clean, so this is build and regression evidence, not a validated security fix.</p>
+<div class="grid"><div class="card"><b>8</b><span>Repaired BOOM executions</span></div>
+<div class="card"><b>2/2</b><span>Scenarios clean</span></div>
+<div class="card"><b>Yes</b><span>Distinct binary</span></div>
+<div class="card"><b>No</b><span>Security fix validated</span></div></div>
+<div class="card"><span>Repaired simulator SHA-256</span><code>{escape(str(rtl_repair["repaired_simulator_sha256"]))}</code></div></section>"""
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpecHunter · Verified Agent Loop</title>
@@ -273,6 +317,7 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
 {evaluation_section}
 {repeatability_section}
 {chia_section}
+{rtl_repair_section}
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>{report_hash}</code></div><div class="card"><span>Simulator SHA-256</span><code>{simulator_hash}</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{raw_report}</pre></details></section>
 <footer>Generated locally from the sealed SpecHunter report. No network requests or external assets are required.</footer>
@@ -289,4 +334,5 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
         "evaluation_sha256": evaluation_hash,
         "repeatability_sha256": repeatability_hash,
         "chia_evidence_sha256": chia_hash,
+        "rtl_repair_seal_sha256": rtl_repair_hash,
     }

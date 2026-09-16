@@ -111,6 +111,21 @@ def test_renderer_adds_sealed_chia_execution(tmp_path):
     assert result["chia_evidence_sha256"]
 
 
+def test_renderer_adds_sealed_rtl_repair_regression(tmp_path):
+    output = tmp_path / "demo.html"
+    result = render(
+        EVIDENCE / "vertex-boom-demo-2026-09-11.json",
+        EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+        output,
+        rtl_repair_seal_path=(EVIDENCE / "boom-load-gate-regression-seal-2026-09-16.json"),
+    )
+    page = output.read_text()
+    assert "Candidate RTL repair built" in page
+    assert "not a validated security fix" in page
+    assert "fd4a264c1499cb2c3614cf05de4533e3b31ce2d921650452bca59072e55179c3" in page
+    assert result["rtl_repair_seal_sha256"]
+
+
 def test_renderer_rejects_tampered_report(tmp_path):
     report = json.loads((EVIDENCE / "vertex-boom-demo-2026-09-11.json").read_text())
     report["metrics"]["executions"] = 0

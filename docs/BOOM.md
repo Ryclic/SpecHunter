@@ -34,7 +34,8 @@ Schema or provenance mismatch is inconclusive, never a vulnerability finding.
 
 The BOOM label records the runner's assertion, not independent hardware attestation.
 Review runner code and trace instrumentation before treating reports as research evidence.
-BOOM repair is proposal-only until an RTL patch and full target regressions exist.
+The candidate RTL repair has build and target-regression evidence, but remains unvalidated
+as a security fix until a repeatable baseline violation can be removed.
 
 ## Reproducible build and smoke test
 
@@ -161,12 +162,11 @@ cannot be mislabeled as baseline evidence.
 The hash-bound source audit is checked in as
 [`docs/evidence/boom-lsu-repair-audit-2026-09-11.json`](evidence/boom-lsu-repair-audit-2026-09-11.json).
 
-This patch is source-reviewed but unverified. It must not be described as a BOOM fix until
-a baseline violation is repeatable, a simulator is rebuilt from the patched source, the
-original witness becomes clean, attacker-generated variants are exhausted, and functional
-regressions pass.
-The clean baseline matrix did not trigger that repair gate, so no patched simulator was
-built and the candidate remains unapplied and unverified.
+This patch is source-reviewed and its build and target regression have now been validated.
+It must not be described as a BOOM security fix until a baseline violation is repeatable,
+the original witness becomes clean on the repaired target, attacker-generated variants are
+exhausted, and broader functional regressions pass. The clean baseline matrix could not
+establish that security delta.
 
 ## Seeded positive control
 
@@ -287,6 +287,18 @@ An LLM repair response can select this closed repair ID; it cannot provide execu
 text. After selection, the orchestrator retests the minimized witness on the repaired target
 and returns control to the attacker until it reports exhaustion. BOOM repair verification is
 true only after those real repaired-target executions succeed.
+
+The 2026-09-16 live gate rebuilt the pristine baseline, reproduced simulator SHA-256
+`230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8`, then built the
+isolated patch into distinct simulator SHA-256
+`fd4a264c1499cb2c3614cf05de4533e3b31ce2d921650452bca59072e55179c3` in 329 seconds.
+Both repaired-target scenarios passed two repetitions in both secret worlds: eight total
+executions with identical load-access faults, no architectural secret, and probe bit zero.
+[`boom-load-gate-regression-seal-2026-09-16.json`](evidence/boom-load-gate-regression-seal-2026-09-16.json)
+binds the pristine smoke, prior pristine matrix, repair build, and repaired matrix. Its
+classification is `source-reviewed-candidate-regression-not-validated-security-fix` and
+`security_fix_validated` is false because the baseline never exhibited the hypothesized
+violation.
 
 `tools/boom/gcp_worker.sh create` provisions the corresponding official Rocky Linux 9
 image with no service account or API scopes. It has a six-hour maximum runtime and is

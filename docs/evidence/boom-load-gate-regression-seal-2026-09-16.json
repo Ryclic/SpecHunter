@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-candidate-rtl-repair-build-and-regression",
+  "classification": "source-reviewed-candidate-regression-not-validated-security-fix",
+  "security_fix_validated": false,
+  "reason": "the pristine baseline had no repeatable violation for this candidate patch",
+  "candidate_build_validated": true,
+  "target_regression_validated": true,
+  "baseline_smoke": "boom-repair-baseline-smoke-2026-09-16.json",
+  "baseline_smoke_sha256": "6f29ef125760edb2e9096ed74c13780822fbe7fcd6b4beb197ec846ef3cd5cf2",
+  "prior_baseline_matrix": "boom-secure-matrix-2026-09-11.json",
+  "prior_baseline_matrix_sha256": "74686e94a22089fb26e03cd09a86932d738dcd1dc1c433531fbe20a9a8e31bc0",
+  "repair_build": "boom-load-gate-build-2026-09-16.json",
+  "repair_build_sha256": "cfcb662cc2aac9155c112ab4ec090b3f682a9628fa7f76487eb8b9e7a7d81c61",
+  "repair_matrix": "boom-load-gate-matrix-2026-09-16.json",
+  "repair_matrix_sha256": "01489070b270e0d8ee2b3485baa20c884806b9c7e9903d041212568765f63743",
+  "baseline_simulator_sha256": "230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8",
+  "repaired_simulator_sha256": "fd4a264c1499cb2c3614cf05de4533e3b31ce2d921650452bca59072e55179c3",
+  "patch_sha256": "aacee831e6ed999e406805e7a0de8e29b3ba478b847cadaf61f4e4e90c64df28"
+}

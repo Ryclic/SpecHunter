@@ -1,6 +1,7 @@
 import hashlib
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -112,6 +113,47 @@ def test_runner_requires_complete_pin_set(tmp_path):
     pins.write_text("CHIPYARD_REVISION=abc\nBOOM_CONFIG=SmallBoomV3Config\n")
     with pytest.raises(RUNNER.RunnerError):
         RUNNER.load_pins(pins)
+
+
+def test_repaired_install_preserves_git_porcelain_status_column(tmp_path):
+    chipyard = tmp_path / "chipyard"
+    boom = chipyard / "generators/boom"
+    lsu = boom / "src/main/scala/v3/lsu/lsu.scala"
+    lsu.parent.mkdir(parents=True)
+
+    def git(directory, *arguments):
+        return subprocess.run(
+            ["git", "-C", str(directory), *arguments],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+
+    for repository in (chipyard, boom):
+        git(repository, "init", "--quiet")
+        git(repository, "config", "user.email", "test@example.com")
+        git(repository, "config", "user.name", "SpecHunter test")
+    lsu.write_text("baseline\n")
+    git(boom, "add", ".")
+    git(boom, "commit", "--quiet", "-m", "baseline")
+    git(chipyard, "add", "generators/boom")
+    git(chipyard, "commit", "--quiet", "-m", "baseline")
+
+    lsu.write_text("repaired\n")
+    repair_diff = subprocess.run(
+        ["git", "-C", str(boom), "diff", "--", "src/main/scala/v3/lsu/lsu.scala"],
+        capture_output=True,
+        check=True,
+    ).stdout
+    pins = {
+        "CHIPYARD_REVISION": git(chipyard, "rev-parse", "HEAD"),
+        "BOOM_REVISION": git(boom, "rev-parse", "HEAD"),
+        "BOOM_REPAIRED_LSU_SHA256": hashlib.sha256(b"repaired\n").hexdigest(),
+        "BOOM_LOAD_GATE_PATCH_SHA256": hashlib.sha256(repair_diff).hexdigest(),
+    }
+    assert (
+        RUNNER.validate_install(chipyard, pins, RUNNER.REPAIR_VARIANT) == pins["CHIPYARD_REVISION"]
+    )
 
 
 def test_htif_exit_code_is_a_bounded_probe_observation(tmp_path, monkeypatch):

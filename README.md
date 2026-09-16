@@ -30,6 +30,12 @@ The Vertex loop has also executed through the pinned CHIA 1.0.1 node on a locall
 Ray 2.54.0 runtime. Its four-call discovery-and-repair transcript, CHIA provenance, and
 $0.0005130 settled ledger are sealed as a separate integration artifact.
 
+The source-reviewed BOOM LSU candidate patch has now also been built into a distinct
+SmallBoomV3 simulator. Its eight target-regression executions were deterministic and
+clean, and a seal binds the baseline binary, patch, repaired binary, and matrix. This
+validates patch buildability and regression behavior; it is not a validated security fix
+because the pristine baseline did not exhibit the hypothesized violation.
+
 Generate the presentation locally from its sealed evidence:
 
 ```bash
@@ -44,6 +50,7 @@ uv run spechunter present \
   --repeatability-seal docs/evidence/vertex-fixture-repeatability-seal-2026-09-16.json \
   --chia-evidence docs/evidence/chia-vertex-loop-2026-09-16.json \
   --chia-seal docs/evidence/chia-vertex-loop-seal-2026-09-16.json \
+  --rtl-repair-seal docs/evidence/boom-load-gate-regression-seal-2026-09-16.json \
   --output artifacts/demo.html
 ```
 
