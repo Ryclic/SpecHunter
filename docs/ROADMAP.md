@@ -15,5 +15,6 @@
    are implemented.
 4. Replace fixture mitigation selection with actual RTL patch generation and target regressions.
 5. Validate distributed CHIA execution on local workers before considering GCP workers.
-6. Evaluate multiple seeds, known bugs, held-out hypotheses, functional regressions,
-   and confidence intervals; the current template baseline is only a pipeline smoke test.
+6. **Completed for deterministic fixtures 2026-09-16:** compare guided search with 1,000
+   random seeds, record per-seed trials, false positives, attempts and executions, and
+   report Wilson intervals. Multi-seed LLM evaluation and additional known BOOM bugs remain.

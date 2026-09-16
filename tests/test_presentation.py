@@ -64,6 +64,21 @@ def test_renderer_adds_hash_bound_attack_corpus(tmp_path):
     assert result["attack_corpus_sha256"] == sha256(corpus.read_bytes()).hexdigest()
 
 
+def test_renderer_adds_sealed_fixture_comparison(tmp_path):
+    output = tmp_path / "demo.html"
+    result = render(
+        EVIDENCE / "vertex-boom-demo-2026-09-11.json",
+        EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+        output,
+        evaluation_path=EVIDENCE / "fixture-guided-vs-random-2026-09-16.json",
+        evaluation_seal_path=EVIDENCE / "fixture-guided-vs-random-seal-2026-09-16.json",
+    )
+    page = output.read_text()
+    assert "Guided versus random evaluation" in page
+    assert "57.25%" in page
+    assert result["evaluation_sha256"]
+
+
 def test_renderer_rejects_tampered_report(tmp_path):
     report = json.loads((EVIDENCE / "vertex-boom-demo-2026-09-11.json").read_text())
     report["metrics"]["executions"] = 0

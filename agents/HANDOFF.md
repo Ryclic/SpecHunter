@@ -240,6 +240,17 @@ Local validation passes Ruff, formatting, shell syntax, and 79 tests with one sk
 test and one deselected CHIA test. Next: broaden timing calibration across seeds and only
 evaluate the source-audited RTL repair after a repeatable pristine-baseline violation.
 
+## Quantitative guided-versus-random evaluation
+
+`feat/quantitative-evaluation` adds `spechunter evaluate`, a reproducible comparison over
+the privilege, transient-cache, and secure-control deterministic fixtures. The checked
+2026-09-16 artifact records every one of 1,000 random seeds, binds evaluator/loop/domain
+sources by SHA-256, and is protected by a separately verified seal. Guided search found
+both positive cases in 1.5 attempts on average. Random search found 1,145 of 2,000 positive
+cases (57.25%, 95% Wilson interval 55.07%–59.40%) in 8.48 attempts on average. Both had
+zero false positives and zero inconclusive cases. The demo labels these as fixture search
+quality, separately from live BOOM evidence.
+
 ## Sealed evidence presentation
 
 `feat/evidence-demo` adds `spechunter present`, which verifies the live report against its

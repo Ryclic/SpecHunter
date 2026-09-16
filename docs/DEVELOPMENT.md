@@ -5,6 +5,17 @@ Run `uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest`, and 
 The RTL differential test checks both secrets and every fixture variant across
 seeded random and guided programs; install `iverilog` to enable it locally.
 
+Run the reproducible quantitative fixture comparison with:
+
+```bash
+uv run spechunter evaluate --trials 1000 --iterations 16 \
+  --output artifacts/fixture-evaluation.json
+```
+
+The command records every random seed and trial, reports discovery and false-positive
+rates, attempts and executions, and attaches 95% Wilson intervals to stochastic rates.
+It is fixture evaluation and must not be cited as real BOOM vulnerability evidence.
+
 The optional `chia` extra is pinned to a source commit. `spechunter run --chia`
 invokes the decorated node in a one-CPU local Ray runtime and shuts it down afterward.
 Local sockets must be permitted. The pinned CHIA profiler requires Ray even for local calls.
