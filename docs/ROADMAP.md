@@ -32,3 +32,7 @@
    simulator. The result was deterministic and clean, so no repair was activated and the
    seal explicitly records that neither a vulnerability nor fix was validated. Reproducing
    the exact historical revision or assessing another known bug remains future work.
+8. **In progress:** reproduce issue #715 on the exact reported Chipyard/BOOM revisions with
+   a hash-pinned historical environment and fail-closed runner. Require a repeatable
+   baseline secret-dependent observation before building the reviewed LSU gate, then rerun
+   the identical matrix on the repaired simulator before making any security-fix claim.

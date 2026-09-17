@@ -228,6 +228,23 @@ validation now passes Ruff, formatting, and 58 tests with one skipped RTL test a
 deselected CHIA test. Next: execute a bounded live Vertex-driven agent loop against this
 positive control and preserve its transcript and cost evidence.
 
+## Historical BOOM issue #715 reproduction (in progress)
+
+`feat/boom-issue-715-historical` pins the exact Chipyard commit reported in upstream issue
+#715 (`004297b6…`), its BOOM submodule (`fac2c370…`), historical `SmallBoomConfig`,
+Miniforge 4.12.0-0 by the upstream checksum, and conda-lock 1.1.1. Dedicated bootstrap,
+baseline/repaired build scripts, a fail-closed historical runner, and a two-secret,
+two-repetition matrix driver have been added locally. The reviewed two-line LSU gate patch
+is bound by pristine, repaired, and patch SHA-256 values. Full lint, format, shell syntax,
+and non-CHIA validation pass with 109 tests, one skipped, and one deselected.
+
+The live worker `spechunter-boom-historical715-1` in `us-central1-a` was created with an
+automatic six-hour deletion cap and had its host packages installed. GCloud credentials
+expired before historical bootstrap/build began, and the earlier interactive login process
+is no longer running. Reauthenticate, inspect the worker, run baseline first, build/run the
+repaired variant only after a repeatable baseline violation, recover and seal evidence, and
+explicitly delete the worker.
+
 ## Vertex-to-BOOM live demo
 
 `feat/vertex-boom-demo` adds a trusted local-to-GCP runner transport. It validates the
