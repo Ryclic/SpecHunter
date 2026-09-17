@@ -7,6 +7,30 @@
   "matched_control_flow_and_seed": true,
   "baseline_mechanism_witnessed": true,
   "repaired_mechanism_witnessed": true,
+  "baseline_dependent_requests": [
+    {
+      "cycle": 3809,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1"
+    },
+    {
+      "cycle": 3853,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1"
+    }
+  ],
+  "repaired_dependent_requests": [
+    {
+      "cycle": 3809,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1"
+    },
+    {
+      "cycle": 3853,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1"
+    }
+  ],
   "repair_effective": false,
   "security_fix_validated": false,
   "verdict": "repair-ineffective"

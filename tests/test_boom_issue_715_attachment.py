@@ -74,8 +74,13 @@ def test_historical_trace_seal_records_ordered_issue_mechanism():
     assert evidence["mechanism_witnessed"] is True
     assert evidence["architectural_secret_disclosure_proven"] is False
     assert evidence["branch_fetch_cycle"] < evidence["gadget_fetch_cycles"]["0xd010028e00"]
-    request = evidence["speculative_dcache_requests_before_resolution"][0]
+    protected = evidence["protected_load_requests"][0]
+    request = evidence["dependent_load_requests"][0]
     resolution = evidence["target_mispredicts"][0]
+    assert evidence["transient_dataflow_witnessed"] is True
+    assert protected["vaddr"] == "0xd010098000"
+    assert protected["cycle"] < request["cycle"]
+    assert request["vaddr"] == "0x59f"
     assert request["branch_mask"] == "0x1"
     assert request["cycle"] < resolution["cycle"]
     assert resolution["pc"] == evidence["branch_pc"]

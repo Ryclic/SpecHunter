@@ -352,25 +352,6 @@ live artifacts for direct judge review. Local validation passes Ruff, formatting
 tests with one skipped RTL test and one deselected CHIA test. Next: expand the bounded
 attacker corpus and add evaluation metrics across held-out attack families.
 
-## Original issue #715 attachment experiment (in progress)
-
-`feat/boom-issue-715-attachment` adds a hash-pinned fetcher and fail-closed execution
-driver for the original stripped Cascade ELF attached to upstream BOOM issue #715. The
-attachment was freshly downloaded and independently matched the recorded ZIP and ELF
-SHA-256 values. The exact historical RISC-V objdump confirms the reported delayed branch
-at `0x800287d0`, its target at `0x80028e00`, and the immediately dependent load at
-`0x80028e04`; the bounded disassembly is preserved under `docs/evidence/`.
-
-Worker `spechunter-boom-attachment715-1` in `us-central1-a` is currently rebuilding the
-exact historical `SmallBoomConfig` simulator. It has a six-hour deletion cap, no service
-account or scopes, and a 200 GB balanced disk. After the build completes, run the original
-ELF with `run_historical_issue_715_attachment.py`, recover its manifest and log, and then
-collect a bounded signal trace before deciding whether the upstream vulnerability was
-reproduced. The execution driver deliberately records `vulnerability_reproduced: false`
-until signal evidence supports a verdict. Delete the worker and disk after recovering and
-verifying every artifact. Local validation passes with 115 tests, one skipped test, and
-one deselected CHIA test, plus Ruff and formatting checks.
-
 ## Exact issue #715 attachment RTL witness and failed repair
 
 `feat/boom-issue-715-attachment` fetches the original `program.elf.zip` attachment by
@@ -380,17 +361,33 @@ the ELF directly left BOOM in the boot ROM because this attachment has no HTIF s
 
 On 2026-09-17, the exact attachment ran on historical Chipyard `004297b6…`, BOOM
 `fac2c370…`, and `SmallBoomConfig`. A seed-1789717734 VCD records the reported branch at
-cycle 3769, both wrong-path gadget PCs at cycles 3772–3773, a D-cache request carrying
-branch mask `0x1` at cycle 3810, and resolution of the exact branch as a misprediction at
-cycle 3910. The compressed raw trace and its machine-derived JSON witness are in
-`docs/evidence/`. This proves the issue's speculative request mechanism on historical
-RTL; it does not prove an architectural secret disclosure, which the evidence explicitly
-marks false.
+cycle 3769, both wrong-path gadget PCs at cycles 3772–3773, a branch-masked protected-page
+TLB request at cycle 3807, dependent requests to the loaded value `0x59f` beginning at
+cycle 3809, a branch-masked load page fault, and resolution of the exact branch as a
+misprediction at cycle 3910. The compressed raw trace and its machine-derived JSON witness
+are in `docs/evidence/`. This proves transient protected-to-dependent address dataflow on
+historical RTL; it does not prove an architectural secret disclosure, which the evidence
+explicitly marks false.
 
 The isolated candidate repair built successfully, but the matched-seed repaired trace
-repeated every key event at the same cycle, including the branch-masked D-cache request.
+repeated every key event at the same cycle, including both dependent TLB requests.
 The comparison seal therefore records `repair_effective: false` and
 `security_fix_validated: false`. This is the required attacker feedback: the simple
 same-cycle `pf_ld`/`ae_ld`/`ma_ld` gate does not address this witness. The next repair
 iteration should test a conservative unresolved-branch load gate (or a narrower policy
 with equivalent ordering) against this exact seed, then return to attack exploration.
+
+The VCD scanner was corrected after matched-trace review: it now evaluates settled values
+at timestamp boundaries instead of treating intermediate combinational changes as request
+addresses. Schema v2 binds the protected request, dependent address requests, page fault,
+and later branch resolution. The before/after verdict remains repair-ineffective, now for
+the mechanism named in the upstream report rather than an ambiguous D-cache-valid edge.
+
+A second, deliberately conservative repair candidate is hash-pinned as
+`issue_715_historical_block_speculative_loads.patch`. It retains the fault gates and
+prevents loads with a nonempty unresolved-branch mask from reaching the D-cache; correctly
+predicted loads can retry after their mask clears, while wrong-path loads should be killed.
+This carries a likely performance cost and is not validated. The next live run must build
+it, rerun seed 1789717734, require the protected-to-dependent request chain to disappear,
+then send the repaired target back to broader attacker exploration. GCP CLI credentials
+currently require `gcloud auth login`; the expired worker IP is no longer reachable.

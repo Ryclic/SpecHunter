@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract a bounded, machine-checkable issue #715 witness from a BOOM VCD."""
+"""Extract a stable, machine-checkable issue #715 witness from a BOOM VCD."""
 
 from __future__ import annotations
 
@@ -12,12 +12,16 @@ from typing import TextIO
 
 BRANCH_PC = 0xD0100287D0
 GADGET_PCS = {0xD010028E00, 0xD010028E04}
+PROTECTED_VADDR = 0xD010098000
+DEPENDENT_VADDR = 0x59F
 
 
 def _open(path: Path) -> TextIO:
-    if path.suffix == ".gz":
-        return gzip.open(path, "rt", errors="replace")
-    return path.open(errors="replace")
+    return (
+        gzip.open(path, "rt", errors="replace")
+        if path.suffix == ".gz"
+        else path.open(errors="replace")
+    )
 
 
 def _sha256(path: Path) -> str:
@@ -28,28 +32,84 @@ def _sha256(path: Path) -> str:
     return value.hexdigest()
 
 
-def _single_value(values: dict[str, int], ids: dict[str, set[str]], name: str) -> int:
+def _one(values: dict[str, int], ids: dict[str, set[str]], name: str, default: int = 0) -> int:
     found = {values[identifier] for identifier in ids.get(name, set()) if identifier in values}
+    if not found:
+        return default
     if len(found) != 1:
-        raise RuntimeError(f"expected one current value for {name}, found {sorted(found)}")
+        raise RuntimeError(f"conflicting values for aliased signal {name}: {sorted(found)}")
     return found.pop()
 
 
-def scan(path: Path) -> dict:
+def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     ids: dict[str, set[str]] = {}
     pc_ids: set[str] = set()
     values: dict[str, int] = {}
     timestamp = 0
-    in_header = True
+    header = True
+    changed: set[str] = set()
     branch_fetch_cycle = None
     gadget_fetches: dict[int, int] = {}
-    speculative_requests = []
-    mispredicts = []
+    tlb_requests: list[dict] = []
+    load_faults: list[dict] = []
+    mispredicts: list[dict] = []
+
+    def finish_timestamp() -> None:
+        nonlocal branch_fetch_cycle
+        if not changed:
+            return
+        cycle = timestamp // 2
+        for identifier in changed & pc_ids:
+            pc = values[identifier]
+            if pc == BRANCH_PC and branch_fetch_cycle is None:
+                branch_fetch_cycle = cycle
+            if pc in GADGET_PCS:
+                gadget_fetches.setdefault(pc, cycle)
+        tlb_related = set().union(
+            ids.get("dtlb_io_req_0_valid", set()),
+            ids.get("dtlb_io_req_0_bits_vaddr", set()),
+            ids.get("exe_tlb_uop_0_br_mask", set()),
+        )
+        if changed & tlb_related and _one(values, ids, "dtlb_io_req_0_valid"):
+            mask = _one(values, ids, "exe_tlb_uop_0_br_mask")
+            if mask:
+                event = {
+                    "cycle": cycle,
+                    "vaddr": hex(_one(values, ids, "dtlb_io_req_0_bits_vaddr")),
+                    "branch_mask": hex(mask),
+                }
+                if not tlb_requests or tlb_requests[-1] != event:
+                    tlb_requests.append(event)
+        fault_related = set().union(
+            ids.get("lsu_io_core_lxcpt_valid", set()),
+            ids.get("lsu_io_core_lxcpt_bits_cause", set()),
+            ids.get("lsu_io_core_lxcpt_bits_badvaddr", set()),
+        )
+        if changed & fault_related and _one(values, ids, "lsu_io_core_lxcpt_valid"):
+            event = {
+                "cycle": cycle,
+                "cause": hex(_one(values, ids, "lsu_io_core_lxcpt_bits_cause")),
+                "badvaddr": hex(_one(values, ids, "lsu_io_core_lxcpt_bits_badvaddr")),
+                "branch_mask": hex(_one(values, ids, "lsu_io_core_lxcpt_bits_uop_br_mask")),
+            }
+            if not load_faults or load_faults[-1] != event:
+                load_faults.append(event)
+        mispredict_related = set().union(
+            ids.get("core_io_ifu_brupdate_b2_mispredict", set()),
+            ids.get("ftq_io_bpdupdate_bits_pc", set()),
+            ids.get("core_io_ifu_brupdate_b2_uop_pc_lob", set()),
+        )
+        if changed & mispredict_related and _one(values, ids, "core_io_ifu_brupdate_b2_mispredict"):
+            base = _one(values, ids, "ftq_io_bpdupdate_bits_pc")
+            low = _one(values, ids, "core_io_ifu_brupdate_b2_uop_pc_lob")
+            event = {"cycle": cycle, "pc": hex((base & ~0x3F) | low)}
+            if not mispredicts or mispredicts[-1] != event:
+                mispredicts.append(event)
 
     with _open(path) as trace:
         for raw in trace:
             line = raw.strip()
-            if in_header:
+            if header:
                 if line.startswith("$var "):
                     fields = line.split()
                     width, identifier, name = int(fields[2]), fields[3], fields[4]
@@ -57,71 +117,59 @@ def scan(path: Path) -> dict:
                     if width >= 40 and "pc" in name.lower():
                         pc_ids.add(identifier)
                 elif "$enddefinitions" in line:
-                    in_header = False
+                    header = False
                 continue
-            changed = None
             if line.startswith("#"):
+                finish_timestamp()
                 timestamp = int(line[1:])
+                changed.clear()
                 continue
+            identifier = None
+            value = None
             if line.startswith("b"):
                 bits, separator, identifier = line[1:].partition(" ")
                 if separator and "x" not in bits and "z" not in bits:
-                    values[identifier] = int(bits, 2)
-                    changed = identifier
+                    value = int(bits, 2)
             elif len(line) > 1 and line[0] in "01":
-                changed = line[1:]
-                values[changed] = int(line[0])
-            if changed is None:
-                continue
-
-            cycle = timestamp // 2
-            if changed in pc_ids:
-                pc = values[changed]
-                if pc == BRANCH_PC and branch_fetch_cycle is None:
-                    branch_fetch_cycle = cycle
-                if pc in GADGET_PCS:
-                    gadget_fetches.setdefault(pc, cycle)
-
-            valid_ids = ids.get("lsu_io_dmem_req_bits_0_valid", set())
-            if changed in valid_ids and values[changed] == 1:
-                mask = _single_value(values, ids, "lsu_io_dmem_req_bits_0_bits_uop_br_mask")
-                if mask:
-                    address = _single_value(values, ids, "lsu_io_dmem_req_bits_0_bits_addr")
-                    speculative_requests.append(
-                        {"cycle": cycle, "address": hex(address), "branch_mask": hex(mask)}
-                    )
-
-            mispredict_ids = ids.get("core_io_ifu_brupdate_b2_mispredict", set())
-            if changed in mispredict_ids and values[changed] == 1:
-                base = _single_value(values, ids, "ftq_io_bpdupdate_bits_pc")
-                low = _single_value(values, ids, "core_io_ifu_brupdate_b2_uop_pc_lob")
-                pc = (base & ~0x3F) | low
-                mispredicts.append({"cycle": cycle, "pc": hex(pc)})
+                identifier, value = line[1:], int(line[0])
+            if identifier is not None and value is not None:
+                values[identifier] = value
+                changed.add(identifier)
+    finish_timestamp()
 
     target_mispredicts = [event for event in mispredicts if event["pc"] == hex(BRANCH_PC)]
-    ordered_requests = [
+    protected = [event for event in tlb_requests if event["vaddr"] == hex(PROTECTED_VADDR)]
+    dependent = [event for event in tlb_requests if event["vaddr"] == hex(DEPENDENT_VADDR)]
+    faults = [
         event
-        for event in speculative_requests
-        if gadget_fetches
-        and event["cycle"] >= min(gadget_fetches.values())
-        and target_mispredicts
-        and event["cycle"] < target_mispredicts[0]["cycle"]
+        for event in load_faults
+        if event["cause"] == "0xd" and event["badvaddr"] == hex(PROTECTED_VADDR)
     ]
+    dataflow = bool(
+        protected
+        and dependent
+        and protected[0]["cycle"] < dependent[0]["cycle"]
+        and target_mispredicts
+        and dependent[0]["cycle"] < target_mispredicts[0]["cycle"]
+    )
     witness = bool(
         branch_fetch_cycle is not None
         and GADGET_PCS.issubset(gadget_fetches)
-        and ordered_requests
-        and target_mispredicts
+        and dataflow
+        and faults
     )
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment": "boom-upstream-issue-715-vcd-witness",
         "trace_sha256": _sha256(path),
         "branch_pc": hex(BRANCH_PC),
         "branch_fetch_cycle": branch_fetch_cycle,
         "gadget_fetch_cycles": {hex(pc): gadget_fetches.get(pc) for pc in sorted(GADGET_PCS)},
-        "speculative_dcache_requests_before_resolution": ordered_requests,
+        "protected_load_requests": protected,
+        "dependent_load_requests": dependent,
+        "load_page_faults": faults,
         "target_mispredicts": target_mispredicts,
+        "transient_dataflow_witnessed": dataflow,
         "mechanism_witnessed": witness,
         "architectural_secret_disclosure_proven": False,
     }

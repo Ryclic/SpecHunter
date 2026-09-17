@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "experiment": "boom-upstream-issue-715-vcd-witness",
   "trace_sha256": "1df480bb1d27dd1ef50e8ef47ff6d3f26bf4d07c51a264aaccacd57b1aa24d0e",
   "branch_pc": "0xd0100287d0",
@@ -8,10 +8,40 @@
     "0xd010028e00": 3772,
     "0xd010028e04": 3773
   },
-  "speculative_dcache_requests_before_resolution": [
+  "protected_load_requests": [
     {
-      "cycle": 3810,
-      "address": "0x59f",
+      "cycle": 3807,
+      "vaddr": "0xd010098000",
+      "branch_mask": "0x1"
+    },
+    {
+      "cycle": 3852,
+      "vaddr": "0xd010098000",
+      "branch_mask": "0x1"
+    },
+    {
+      "cycle": 3888,
+      "vaddr": "0xd010098000",
+      "branch_mask": "0x1"
+    }
+  ],
+  "dependent_load_requests": [
+    {
+      "cycle": 3809,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1"
+    },
+    {
+      "cycle": 3853,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1"
+    }
+  ],
+  "load_page_faults": [
+    {
+      "cycle": 3890,
+      "cause": "0xd",
+      "badvaddr": "0xd010098000",
       "branch_mask": "0x1"
     }
   ],
@@ -21,6 +51,7 @@
       "pc": "0xd0100287d0"
     }
   ],
+  "transient_dataflow_witnessed": true,
   "mechanism_witnessed": true,
   "architectural_secret_disclosure_proven": false
 }

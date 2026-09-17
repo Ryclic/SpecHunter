@@ -25,8 +25,8 @@ def main() -> int:
         raise RuntimeError("repair build manifest has the wrong variant")
     shared = ("branch_pc", "branch_fetch_cycle", "gadget_fetch_cycles", "target_mispredicts")
     same_control_flow = all(baseline[key] == repaired[key] for key in shared)
-    baseline_requests = baseline["speculative_dcache_requests_before_resolution"]
-    repaired_requests = repaired["speculative_dcache_requests_before_resolution"]
+    baseline_requests = baseline["dependent_load_requests"]
+    repaired_requests = repaired["dependent_load_requests"]
     repair_effective = bool(baseline_requests and not repaired_requests and same_control_flow)
     result = {
         "schema_version": 1,
@@ -37,6 +37,8 @@ def main() -> int:
         "matched_control_flow_and_seed": same_control_flow,
         "baseline_mechanism_witnessed": baseline["mechanism_witnessed"],
         "repaired_mechanism_witnessed": repaired["mechanism_witnessed"],
+        "baseline_dependent_requests": baseline_requests,
+        "repaired_dependent_requests": repaired_requests,
         "repair_effective": repair_effective,
         "security_fix_validated": repair_effective,
         "verdict": "repair-blocked-witness" if repair_effective else "repair-ineffective",

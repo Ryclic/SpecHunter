@@ -32,10 +32,22 @@ def request(tmp_path: Path, **changes) -> Path:
 
 def test_historical_pins_and_patch_are_hash_bound():
     pins = RUNNER.load_pins(ROOT / "tools/boom/historical_pins.env")
+    pins_v2 = dict(
+        line.split("=", 1)
+        for line in (ROOT / "tools/boom/issue_715_repair_v2.env").read_text().splitlines()
+        if line
+    )
     patch = ROOT / "tools/boom/patches/issue_715_historical_gate_faulting_loads.patch"
+    patch_v2 = ROOT / "tools/boom/patches/issue_715_historical_block_speculative_loads.patch"
     assert pins["CHIPYARD_REVISION"] == "004297b6a8c01be1b2110c4cf4f9393ae1ff8805"
     assert pins["BOOM_REVISION"] == "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d"
     assert hashlib.sha256(patch.read_bytes()).hexdigest() == pins["BOOM_LOAD_GATE_PATCH_SHA256"]
+    assert (
+        hashlib.sha256(patch_v2.read_bytes()).hexdigest() == pins_v2["BOOM_REPAIR_V2_PATCH_SHA256"]
+    )
+    assert pins_v2["BOOM_REPAIR_V2_LSU_SHA256"] == (
+        "11450b6764113d1e54c9ef548313676e946cec3b599c938797af93a490cc863a"
+    )
 
 
 def test_historical_request_accepts_only_closed_program(tmp_path):
