@@ -354,4 +354,6 @@ tools/boom/run_historical_issue_715.py \
 Build and test the repair only if that baseline produces a repeatable secret-dependent
 observation. A clean or unstable baseline cannot validate the patch. This historical gate
 is still in progress; no vulnerability or security-fix result is claimed until the live
-artifacts are recovered and sealed.
+artifacts are recovered and sealed. `seal_historical_issue_715.py` independently derives
+the classification from all four raw observations, cross-checks simulator and source
+provenance, and rejects repair evidence unless the baseline first reproduces the issue.

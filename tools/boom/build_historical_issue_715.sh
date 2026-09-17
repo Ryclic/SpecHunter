@@ -23,7 +23,11 @@ if [[ "$actual_lsu" == "$BOOM_LSU_SHA256" ]]; then
 else
   variant=historical-issue-715-repaired
 fi
+miniforge="$(dirname -- "$chipyard")/miniforge3-issue-715"
+export PATH="$miniforge/bin:$PATH"
 set +u
+# shellcheck disable=SC1091
+source "$miniforge/etc/profile.d/conda.sh"
 # shellcheck disable=SC1091
 source "$chipyard/env.sh"
 set -u

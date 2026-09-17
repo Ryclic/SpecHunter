@@ -18,7 +18,7 @@ trap 'rm -f "$installer"' EXIT
 curl -fL "https://github.com/conda-forge/miniforge/releases/download/${MINIFORGE_VERSION}/Miniforge3-${MINIFORGE_VERSION}-Linux-x86_64.sh" -o "$installer"
 echo "$MINIFORGE_SHA256  $installer" | sha256sum -c -
 bash "$installer" -b -p "$miniforge"
-"$miniforge/bin/conda" install -y -n base -c conda-forge "conda-lock=$CONDA_LOCK_VERSION"
+"$miniforge/bin/pip" install "conda-lock==$CONDA_LOCK_VERSION"
 
 git clone https://github.com/ucb-bar/chipyard.git "$chipyard"
 git -C "$chipyard" checkout --detach "$CHIPYARD_REVISION"

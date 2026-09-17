@@ -235,14 +235,18 @@ positive control and preserve its transcript and cost evidence.
 Miniforge 4.12.0-0 by the upstream checksum, and conda-lock 1.1.1. Dedicated bootstrap,
 baseline/repaired build scripts, a fail-closed historical runner, and a two-secret,
 two-repetition matrix driver have been added locally. The reviewed two-line LSU gate patch
-is bound by pristine, repaired, and patch SHA-256 values. Full lint, format, shell syntax,
-and non-CHIA validation pass with 109 tests, one skipped, and one deselected.
+is bound by pristine, repaired, and patch SHA-256 values. A seal independently derives the
+result from raw runs and refuses repair evidence without a repeatable baseline violation.
+Full lint, format, shell syntax, and non-CHIA validation pass with 112 tests, one skipped,
+and one deselected. Draft PR #16 is open with all three GitHub checks passing.
 
-The live worker `spechunter-boom-historical715-1` in `us-central1-a` was created with an
-automatic six-hour deletion cap and had its host packages installed. GCloud credentials
-expired before historical bootstrap/build began, and the earlier interactive login process
-is no longer running. Reauthenticate, inspect the worker, run baseline first, build/run the
-repaired variant only after a repeatable baseline violation, recover and seal evidence, and
+The live worker `spechunter-boom-historical715-1` in `us-central1-a` has an automatic
+six-hour deletion cap, all host packages, eight cores, and a 200 GB balanced disk. GCloud
+authentication recovered on 2026-09-17. The historical bootstrap is installing the exact
+Chipyard lockfile; the slow classic conda solve for `conda-lock=1.1.1` was replaced with
+the same pinned package from pip while retaining the hash-pinned historical Miniforge and
+locked target environment. After bootstrap, run baseline first, build/run the repaired
+variant only after a repeatable baseline violation, recover and seal evidence, and
 explicitly delete the worker.
 
 ## Vertex-to-BOOM live demo
