@@ -18,7 +18,13 @@ def artifacts(tmp_path: Path, violation: bool):
     build = tmp_path / "build.json"
     matrix = tmp_path / "matrix.json"
     source.write_text(
-        json.dumps({"upstream_issue": "https://github.com/riscv-boom/riscv-boom/issues/715"})
+        json.dumps(
+            {
+                "upstream_issue_url": "https://github.com/riscv-boom/riscv-boom/issues/715",
+                "reported_chipyard_revision": PINS["CHIPYARD_REVISION"],
+                "reported_boom_revision": PINS["BOOM_REVISION"],
+            }
+        )
     )
     simulator = "a" * 64
     common = {
@@ -56,6 +62,8 @@ def artifacts(tmp_path: Path, violation: bool):
                 **common,
                 "classification": "repeatable-violation" if violation else "deterministic-clean",
                 "vulnerability_reproduced": violation,
+                "runner_sha256": SEAL.digest(ROOT / "tools/boom/historical_issue_715_runner.py"),
+                "trusted_runner_sha256": SEAL.digest(ROOT / "tools/boom/trusted_runner.py"),
                 "probe_sequences": {"0": [0, 0], "1": [1, 1] if violation else [0, 0]},
                 "runs": runs,
             }
@@ -86,3 +94,17 @@ def test_seal_rejects_simulator_drift(tmp_path):
     matrix.write_text(json.dumps(value))
     with pytest.raises(SEAL.SealError, match="simulator mismatch"):
         SEAL.create_seal(source, build, matrix, ROOT / "tools/boom/historical_pins.env")
+
+
+def test_checked_historical_evidence_verifies():
+    evidence = ROOT / "docs/evidence"
+    result = SEAL.create_seal(
+        evidence / "boom-issue-715-source-2026-09-16.json",
+        evidence / "boom-issue-715-historical-build-2026-09-17.json",
+        evidence / "boom-issue-715-historical-matrix-2026-09-17.json",
+        ROOT / "tools/boom/historical_pins.env",
+    )
+    checked = json.loads((evidence / "boom-issue-715-historical-seal-2026-09-17.json").read_text())
+    result.pop("sealed_at")
+    checked.pop("sealed_at")
+    assert result == checked

@@ -101,9 +101,20 @@ def create_seal(
     baseline_build = read(baseline_build_path)
     baseline = read(baseline_matrix_path)
     values = pins(pin_path)
-    if source.get("upstream_issue") != "https://github.com/riscv-boom/riscv-boom/issues/715":
+    if (
+        source.get("upstream_issue_url") != "https://github.com/riscv-boom/riscv-boom/issues/715"
+        or source.get("reported_chipyard_revision") != values["CHIPYARD_REVISION"]
+        or source.get("reported_boom_revision") != values["BOOM_REVISION"]
+    ):
         raise SealError("source provenance is not upstream issue #715")
     reproduced = validate_pair(baseline_build, baseline, "historical-issue-715-baseline", values)
+    expected_runner = digest(pin_path.parent / "historical_issue_715_runner.py")
+    expected_trusted = digest(pin_path.parent / "trusted_runner.py")
+    if (
+        baseline.get("runner_sha256") != expected_runner
+        or baseline.get("trusted_runner_sha256") != expected_trusted
+    ):
+        raise SealError("baseline runner provenance mismatch")
     repaired = repair_build_path is not None or repair_matrix_path is not None
     if repaired != (repair_build_path is not None and repair_matrix_path is not None):
         raise SealError("repair build and matrix must be supplied together")
@@ -117,6 +128,11 @@ def create_seal(
         repair_violation = validate_pair(
             repair_build, repair, "historical-issue-715-repaired", values
         )
+        if (
+            repair.get("runner_sha256") != expected_runner
+            or repair.get("trusted_runner_sha256") != expected_trusted
+        ):
+            raise SealError("repair runner provenance mismatch")
         fix_validated = not repair_violation
         if not fix_validated:
             raise SealError("repaired matrix is not deterministically clean")

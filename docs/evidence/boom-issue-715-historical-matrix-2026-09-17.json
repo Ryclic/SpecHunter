@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-historical-issue-715",
+  "variant": "historical-issue-715-baseline",
+  "classification": "deterministic-clean",
+  "vulnerability_reproduced": false,
+  "chipyard_revision": "004297b6a8c01be1b2110c4cf4f9393ae1ff8805",
+  "boom_revision": "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d",
+  "config": "SmallBoomConfig",
+  "runner_sha256": "9c8afc29f61bf4078c589d268010ce3c6648ac5589a73c26844dd6e2df807673",
+  "trusted_runner_sha256": "3648c1621d6ec005cd1789b665dce150837e3f8dfb83f16eee71a58f7e01dd10",
+  "program_sha256": "13227cb44a11fcfdabf177ae739b689589599f091ca6b6ef1fccbd4ed23da544",
+  "probe_sequences": {
+    "0": [
+      0,
+      0
+    ],
+    "1": [
+      0,
+      0
+    ]
+  },
+  "runs": [
+    {
+      "repetition": 0,
+      "secret": 0,
+      "response": {
+        "schema_version": 1,
+        "target_revision": "004297b6a8c01be1b2110c4cf4f9393ae1ff8805",
+        "program_sha256": "13227cb44a11fcfdabf177ae739b689589599f091ca6b6ef1fccbd4ed23da544",
+        "secret": 0,
+        "variant": "historical-issue-715-baseline",
+        "target": "boom",
+        "boom_revision": "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d",
+        "simulator_sha256": "c31e4b1c0845d63b43197373798dd5ff6451f74bf803b15c7a0527e1666027ff",
+        "observation": {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [],
+          "completed": true
+        }
+      }
+    },
+    {
+      "repetition": 0,
+      "secret": 1,
+      "response": {
+        "schema_version": 1,
+        "target_revision": "004297b6a8c01be1b2110c4cf4f9393ae1ff8805",
+        "program_sha256": "13227cb44a11fcfdabf177ae739b689589599f091ca6b6ef1fccbd4ed23da544",
+        "secret": 1,
+        "variant": "historical-issue-715-baseline",
+        "target": "boom",
+        "boom_revision": "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d",
+        "simulator_sha256": "c31e4b1c0845d63b43197373798dd5ff6451f74bf803b15c7a0527e1666027ff",
+        "observation": {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [],
+          "completed": true
+        }
+      }
+    },
+    {
+      "repetition": 1,
+      "secret": 0,
+      "response": {
+        "schema_version": 1,
+        "target_revision": "004297b6a8c01be1b2110c4cf4f9393ae1ff8805",
+        "program_sha256": "13227cb44a11fcfdabf177ae739b689589599f091ca6b6ef1fccbd4ed23da544",
+        "secret": 0,
+        "variant": "historical-issue-715-baseline",
+        "target": "boom",
+        "boom_revision": "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d",
+        "simulator_sha256": "c31e4b1c0845d63b43197373798dd5ff6451f74bf803b15c7a0527e1666027ff",
+        "observation": {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [],
+          "completed": true
+        }
+      }
+    },
+    {
+      "repetition": 1,
+      "secret": 1,
+      "response": {
+        "schema_version": 1,
+        "target_revision": "004297b6a8c01be1b2110c4cf4f9393ae1ff8805",
+        "program_sha256": "13227cb44a11fcfdabf177ae739b689589599f091ca6b6ef1fccbd4ed23da544",
+        "secret": 1,
+        "variant": "historical-issue-715-baseline",
+        "target": "boom",
+        "boom_revision": "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d",
+        "simulator_sha256": "c31e4b1c0845d63b43197373798dd5ff6451f74bf803b15c7a0527e1666027ff",
+        "observation": {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [],
+          "completed": true
+        }
+      }
+    }
+  ],
+  "completed_at": "2026-09-17T06:25:08.861094+00:00"
+}

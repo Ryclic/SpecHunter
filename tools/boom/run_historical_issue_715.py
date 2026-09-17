@@ -8,7 +8,7 @@ import json
 import subprocess
 import sys
 import tempfile
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -95,7 +95,7 @@ def main() -> int:
         "program_sha256": program_hash,
         "probe_sequences": {str(k): v for k, v in probes.items()},
         "runs": runs,
-        "completed_at": datetime.now(UTC).isoformat(),
+        "completed_at": datetime.now(timezone.utc).isoformat(),  # noqa: UP017
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(evidence, indent=2) + "\n")

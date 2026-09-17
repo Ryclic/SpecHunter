@@ -6,8 +6,10 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -138,6 +140,84 @@ def validate_request(path: Path, pins: dict[str, str]) -> dict:
     return request
 
 
+def execute(request: dict, config: str, chipyard: Path) -> dict:
+    """Execute with the pre-Zicsr naming convention understood by the 2022 compiler."""
+    riscv = chipyard / ".conda-env/riscv-tools"
+    env = {
+        "PATH": f"{riscv / 'bin'}:/usr/bin:/bin",
+        "HOME": "",
+        "LANG": "C.UTF-8",
+        "LD_LIBRARY_PATH": ":".join(
+            str(path)
+            for path in (riscv / "lib", chipyard / "sims/verilator", chipyard / "tools/DRAMSim2")
+        ),
+    }
+    simulators = list((chipyard / "sims/verilator").glob(f"simulator-*-{config}"))
+    if len(simulators) != 1 or not os.access(simulators[0], os.X_OK):
+        raise TRUSTED.RunnerError(f"expected exactly one executable {config} simulator")
+    with tempfile.TemporaryDirectory(prefix="spechunter-boom-historical-") as temporary:
+        work = Path(temporary)
+        env["HOME"] = str(work)
+        candidate = work / "candidate.S"
+        payload = work / "candidate.riscv"
+        candidate.write_text(TRUSTED.render_issue_715_candidate(request["secret"]))
+        test_environment = chipyard / "toolchains/riscv-tools/riscv-tests/env"
+        TRUSTED.run_bounded(
+            [
+                str(riscv / "bin/riscv64-unknown-elf-gcc"),
+                "-march=rv64imafd",
+                "-mabi=lp64d",
+                "-mcmodel=medany",
+                "-nostdlib",
+                "-nostartfiles",
+                "-static",
+                "-I",
+                str(test_environment / "p"),
+                "-I",
+                str(test_environment),
+                "-T",
+                str(test_environment / "p/link.ld"),
+                str(candidate),
+                "-o",
+                str(payload),
+            ],
+            work,
+            env,
+            60,
+        )
+        spike = TRUSTED.run_htif_observation(
+            [str(riscv / "bin/spike"), str(payload)],
+            work,
+            env,
+            60,
+            has_load=False,
+            has_probe=True,
+        )
+        dramsim = chipyard / "generators/testchipip/src/main/resources/dramsim2_ini"
+        boom = TRUSTED.run_htif_observation(
+            [
+                str(simulators[0]),
+                "+permissive",
+                "+dramsim",
+                f"+dramsim_ini_dir={dramsim}",
+                "+max-cycles=10000000",
+                "+permissive-off",
+                str(payload),
+            ],
+            work,
+            env,
+            900,
+            has_load=False,
+            has_probe=True,
+        )
+        if (spike["architectural"], spike["events"]) != (
+            boom["architectural"],
+            boom["events"],
+        ):
+            raise TRUSTED.RunnerError("Spike/BOOM architectural observations disagree")
+        return boom
+
+
 def main() -> int:
     try:
         if len(sys.argv) != 2 or not Path(sys.argv[1]).is_absolute():
@@ -152,8 +232,7 @@ def main() -> int:
         if len(simulators) != 1:
             raise TRUSTED.RunnerError("cannot bind historical simulator provenance")
         validate_build(chipyard, pins, request["variant"], simulators[0])
-        trusted_request = dict(request, variant="issue-715-baseline")
-        observation = TRUSTED.execute(trusted_request, pins["BOOM_CONFIG"], chipyard)
+        observation = execute(request, pins["BOOM_CONFIG"], chipyard)
         response = {
             key: request[key]
             for key in ("schema_version", "target_revision", "program_sha256", "secret", "variant")

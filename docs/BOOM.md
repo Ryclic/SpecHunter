@@ -352,8 +352,14 @@ tools/boom/run_historical_issue_715.py \
 ```
 
 Build and test the repair only if that baseline produces a repeatable secret-dependent
-observation. A clean or unstable baseline cannot validate the patch. This historical gate
-is still in progress; no vulnerability or security-fix result is claimed until the live
-artifacts are recovered and sealed. `seal_historical_issue_715.py` independently derives
-the classification from all four raw observations, cross-checks simulator and source
-provenance, and rejects repair evidence unless the baseline first reproduces the issue.
+observation. A clean or unstable baseline cannot validate the patch.
+
+On 2026-09-17 the exact historical simulator built successfully in 685 seconds. Four live
+executions produced probe sequences `[0, 0]` for both secret worlds, so the result is
+deterministic and clean for this adaptation. The repair was not built because that would
+not establish a security delta. The checked seal independently derives this classification
+from the raw observations, cross-checks the source, runner, simulator, and revision
+provenance, and records both `vulnerability_reproduced` and `security_fix_validated` as
+false. The worker and its disk were deleted after recovered hashes matched the remote
+artifacts. See
+[`boom-issue-715-historical-seal-2026-09-17.json`](evidence/boom-issue-715-historical-seal-2026-09-17.json).

@@ -228,7 +228,7 @@ validation now passes Ruff, formatting, and 58 tests with one skipped RTL test a
 deselected CHIA test. Next: execute a bounded live Vertex-driven agent loop against this
 positive control and preserve its transcript and cost evidence.
 
-## Historical BOOM issue #715 reproduction (in progress)
+## Historical BOOM issue #715 assessment
 
 `feat/boom-issue-715-historical` pins the exact Chipyard commit reported in upstream issue
 #715 (`004297b6…`), its BOOM submodule (`fac2c370…`), historical `SmallBoomConfig`,
@@ -237,17 +237,17 @@ baseline/repaired build scripts, a fail-closed historical runner, and a two-secr
 two-repetition matrix driver have been added locally. The reviewed two-line LSU gate patch
 is bound by pristine, repaired, and patch SHA-256 values. A seal independently derives the
 result from raw runs and refuses repair evidence without a repeatable baseline violation.
-Full lint, format, shell syntax, and non-CHIA validation pass with 112 tests, one skipped,
+Full lint, format, shell syntax, and non-CHIA validation pass with 113 tests, one skipped,
 and one deselected. Draft PR #16 is open with all three GitHub checks passing.
 
-The live worker `spechunter-boom-historical715-1` in `us-central1-a` has an automatic
-six-hour deletion cap, all host packages, eight cores, and a 200 GB balanced disk. GCloud
-authentication recovered on 2026-09-17. The historical bootstrap is installing the exact
-Chipyard lockfile; the slow classic conda solve for `conda-lock=1.1.1` was replaced with
-the same pinned package from pip while retaining the hash-pinned historical Miniforge and
-locked target environment. After bootstrap, run baseline first, build/run the repaired
-variant only after a repeatable baseline violation, recover and seal evidence, and
-explicitly delete the worker.
+On 2026-09-17 the exact historical simulator built in 685 seconds with SHA-256 `c31e4b…`.
+Both secret worlds returned probe bit zero twice, so this reviewed adaptation is
+deterministic and clean even on the reported BOOM revision. The sealed result sets
+`vulnerability_reproduced` and `security_fix_validated` false, and the repair gate remained
+closed. The slow classic conda solve for `conda-lock=1.1.1` was replaced with the same
+pinned package from pip while the target environment still came from Chipyard's exact
+lockfile. Recovered evidence hashes matched the worker; the worker and disk were then
+deleted. Next pursue the original Cascade attachment or a different source-backed bug.
 
 ## Vertex-to-BOOM live demo
 
