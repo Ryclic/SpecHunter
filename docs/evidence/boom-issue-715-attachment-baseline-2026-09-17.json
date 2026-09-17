@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-upstream-issue-715-vcd-witness",
+  "trace_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
+  "branch_pc": "0xd0100287d0",
+  "branch_fetch_cycle": 3769,
+  "gadget_fetch_cycles": {
+    "0xd010028e00": 3772,
+    "0xd010028e04": 3773
+  },
+  "speculative_dcache_requests_before_resolution": [
+    {
+      "cycle": 3810,
+      "address": "0x59f",
+      "branch_mask": "0x1"
+    }
+  ],
+  "target_mispredicts": [
+    {
+      "cycle": 3910,
+      "pc": "0xd0100287d0"
+    }
+  ],
+  "mechanism_witnessed": true,
+  "architectural_secret_disclosure_proven": false
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-upstream-issue-715-attachment-before-after",
+  "baseline_trace_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
+  "repaired_trace_sha256": "1df480bb1d27dd1ef50e8ef47ff6d3f26bf4d07c51a264aaccacd57b1aa24d0e",
+  "repaired_simulator_sha256": "6cf4d9e5d0a3f1b86531ba333364f8b96315c2594750f83274430ce154787fb8",
+  "matched_control_flow_and_seed": true,
+  "baseline_mechanism_witnessed": true,
+  "repaired_mechanism_witnessed": true,
+  "repair_effective": false,
+  "security_fix_validated": false,
+  "verdict": "repair-ineffective"
+}

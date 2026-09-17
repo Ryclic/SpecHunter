@@ -1,0 +1,10 @@
+This emulator compiled with JTAG Remote Bitbang client. To enable, use +jtag_rbb_enable=1.
+Listening on port 33109
+warning: tohost and fromhost symbols not in ELF; can't communicate with target
+[UART] UART0 is here (stdin/stdout).
+== Loading device model file '/opt/spechunter/chipyard-issue-715-repaired/generators/testchipip/src/main/resources/dramsim2_ini/DDR3_micron_64M_8B_x4_sg15.ini' == 
+== Loading system model file '/opt/spechunter/chipyard-issue-715-repaired/generators/testchipip/src/main/resources/dramsim2_ini/system.ini' == 
+===== MemorySystem 0 =====
+CH. 0 TOTAL_STORAGE : 4096MB | 1 Ranks | 16 Devices per rank
+DRAMSim2 Clock Frequency =666666666Hz, CPU Clock Frequency=100000000Hz
+*** FAILED *** via trace_count (timeout, seed 1789717734) after 10000 cycles
