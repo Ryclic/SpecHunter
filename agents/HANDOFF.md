@@ -387,7 +387,13 @@ A second, deliberately conservative repair candidate is hash-pinned as
 `issue_715_historical_block_speculative_loads.patch`. It retains the fault gates and
 prevents loads with a nonempty unresolved-branch mask from reaching the D-cache; correctly
 predicted loads can retry after their mask clears, while wrong-path loads should be killed.
-This carries a likely performance cost and is not validated. The next live run must build
-it, rerun seed 1789717734, require the protected-to-dependent request chain to disappear,
-then send the repaired target back to broader attacker exploration. GCP CLI credentials
-currently require `gcloud auth login`; the expired worker IP is no longer reachable.
+This carries a likely performance cost. Its exact-seed live run was also ineffective: the
+protected and dependent TLB requests, fault, and misprediction were cycle-identical to
+baseline. The comparison remains fail-closed.
+
+Repair v3 now targets the consumer-release paths exposed by v2: it suppresses fast
+speculative wakeup for unresolved-branch loads, suppresses writeback for LDQ entries
+already marked excepting, and prevents excepting entries from retry/wakeup selection. Its
+hash-pinned live build is in progress on the six-hour-capped worker
+`spechunter-boom-issue715-repairv2`; no v3 security verdict exists yet. Application-default
+credentials authorized this worker noninteractively, and the prior worker list was empty.

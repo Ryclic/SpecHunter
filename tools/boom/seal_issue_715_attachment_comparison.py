@@ -21,7 +21,12 @@ def main() -> int:
     baseline = json.loads(baseline_path.read_text())
     repaired = json.loads(repaired_path.read_text())
     build = json.loads(build_path.read_text())
-    if build.get("variant") != "historical-issue-715-repaired":
+    allowed_variants = {
+        "historical-issue-715-repaired",
+        "historical-issue-715-speculative-load-block",
+        "historical-issue-715-fault-dependent-kill",
+    }
+    if build.get("variant") not in allowed_variants:
         raise RuntimeError("repair build manifest has the wrong variant")
     shared = ("branch_pc", "branch_fetch_cycle", "gadget_fetch_cycles", "target_mispredicts")
     same_control_flow = all(baseline[key] == repaired[key] for key in shared)
@@ -31,6 +36,7 @@ def main() -> int:
     result = {
         "schema_version": 1,
         "experiment": "boom-upstream-issue-715-attachment-before-after",
+        "repair_variant": build["variant"],
         "baseline_trace_sha256": baseline["trace_sha256"],
         "repaired_trace_sha256": repaired["trace_sha256"],
         "repaired_simulator_sha256": build["simulator_sha256"],

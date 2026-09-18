@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "experiment": "boom-upstream-issue-715-attachment-before-after",
-  "repair_variant": "historical-issue-715-repaired",
+  "repair_variant": "historical-issue-715-speculative-load-block",
   "baseline_trace_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
-  "repaired_trace_sha256": "1df480bb1d27dd1ef50e8ef47ff6d3f26bf4d07c51a264aaccacd57b1aa24d0e",
-  "repaired_simulator_sha256": "6cf4d9e5d0a3f1b86531ba333364f8b96315c2594750f83274430ce154787fb8",
+  "repaired_trace_sha256": "8dd92d61415419a1d6faa89197cc12445ed058252f3b5dfdd9c9983533c44317",
+  "repaired_simulator_sha256": "0cbba4b40f971decd0fd7dd6cfcdf11b35e05018571183a2e0a51b280b043e3b",
   "matched_control_flow_and_seed": true,
   "baseline_mechanism_witnessed": true,
   "repaired_mechanism_witnessed": true,

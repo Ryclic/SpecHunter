@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-historical-issue-715-build",
+  "variant": "historical-issue-715-speculative-load-block",
+  "chipyard_revision": "004297b6a8c01be1b2110c4cf4f9393ae1ff8805",
+  "boom_revision": "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d",
+  "config": "SmallBoomConfig",
+  "lsu_source_sha256": "11450b6764113d1e54c9ef548313676e946cec3b599c938797af93a490cc863a",
+  "simulator_sha256": "0cbba4b40f971decd0fd7dd6cfcdf11b35e05018571183a2e0a51b280b043e3b",
+  "elapsed_seconds": 725,
+  "completed_at": "2026-09-17T23:37:02.314777+00:00"
+}
