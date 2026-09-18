@@ -14,11 +14,13 @@ source "$script_directory/historical_pins.env"
 source "$script_directory/issue_715_repair_v2.env"
 # shellcheck source=issue_715_repair_v3.env
 source "$script_directory/issue_715_repair_v3.env"
+# shellcheck source=issue_715_repair_v4.env
+source "$script_directory/issue_715_repair_v4.env"
 [[ "$(git -C "$chipyard" rev-parse HEAD)" == "$CHIPYARD_REVISION" ]]
 [[ "$(git -C "$chipyard/generators/boom" rev-parse HEAD)" == "$BOOM_REVISION" ]]
 lsu="$chipyard/generators/boom/src/main/scala/lsu/lsu.scala"
 actual_lsu=$(sha256sum "$lsu" | cut -d' ' -f1)
-[[ "$actual_lsu" == "$BOOM_LSU_SHA256" || "$actual_lsu" == "$BOOM_REPAIRED_LSU_SHA256" || "$actual_lsu" == "$BOOM_REPAIR_V2_LSU_SHA256" || "$actual_lsu" == "$BOOM_REPAIR_V3_LSU_SHA256" ]] || {
+[[ "$actual_lsu" == "$BOOM_LSU_SHA256" || "$actual_lsu" == "$BOOM_REPAIRED_LSU_SHA256" || "$actual_lsu" == "$BOOM_REPAIR_V2_LSU_SHA256" || "$actual_lsu" == "$BOOM_REPAIR_V3_LSU_SHA256" || "$actual_lsu" == "$BOOM_REPAIR_V4_LSU_SHA256" ]] || {
   echo "historical LSU source is not a reviewed baseline or repair" >&2
   exit 2
 }
@@ -28,8 +30,10 @@ elif [[ "$actual_lsu" == "$BOOM_REPAIRED_LSU_SHA256" ]]; then
   variant=historical-issue-715-repaired
 elif [[ "$actual_lsu" == "$BOOM_REPAIR_V2_LSU_SHA256" ]]; then
   variant=historical-issue-715-speculative-load-block
-else
+elif [[ "$actual_lsu" == "$BOOM_REPAIR_V3_LSU_SHA256" ]]; then
   variant=historical-issue-715-fault-dependent-kill
+else
+  variant=historical-issue-715-dcache-fired-wakeup
 fi
 miniforge="$(dirname -- "$chipyard")/miniforge3-issue-715"
 export PATH="$miniforge/bin:$PATH"

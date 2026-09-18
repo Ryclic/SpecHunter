@@ -40,6 +40,9 @@ def test_historical_pins_and_patch_are_hash_bound():
     patch = ROOT / "tools/boom/patches/issue_715_historical_gate_faulting_loads.patch"
     patch_v2 = ROOT / "tools/boom/patches/issue_715_historical_block_speculative_loads.patch"
     patch_v3 = ROOT / "tools/boom/patches/issue_715_historical_kill_fault_dependents.patch"
+    patch_v4 = (
+        ROOT / "tools/boom/patches/issue_715_historical_gate_spec_wakeup_on_dcache_fire.patch"
+    )
     assert pins["CHIPYARD_REVISION"] == "004297b6a8c01be1b2110c4cf4f9393ae1ff8805"
     assert pins["BOOM_REVISION"] == "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d"
     assert hashlib.sha256(patch.read_bytes()).hexdigest() == pins["BOOM_LOAD_GATE_PATCH_SHA256"]
@@ -59,6 +62,17 @@ def test_historical_pins_and_patch_are_hash_bound():
     )
     assert pins_v3["BOOM_REPAIR_V3_LSU_SHA256"] == (
         "94a2d6b44e702824a78534424a0f4e59f5c5a14762b065ca0684845e7f010320"
+    )
+    pins_v4 = dict(
+        line.split("=", 1)
+        for line in (ROOT / "tools/boom/issue_715_repair_v4.env").read_text().splitlines()
+        if line
+    )
+    assert (
+        hashlib.sha256(patch_v4.read_bytes()).hexdigest() == pins_v4["BOOM_REPAIR_V4_PATCH_SHA256"]
+    )
+    assert pins_v4["BOOM_REPAIR_V4_LSU_SHA256"] == (
+        "18abf60f48d67223a768b503047ff1f21d9057c1afa4a5d408b0d9e623d77b0f"
     )
 
 

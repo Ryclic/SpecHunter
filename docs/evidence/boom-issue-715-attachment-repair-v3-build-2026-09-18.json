@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-historical-issue-715-build",
+  "variant": "historical-issue-715-fault-dependent-kill",
+  "chipyard_revision": "004297b6a8c01be1b2110c4cf4f9393ae1ff8805",
+  "boom_revision": "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d",
+  "config": "SmallBoomConfig",
+  "lsu_source_sha256": "94a2d6b44e702824a78534424a0f4e59f5c5a14762b065ca0684845e7f010320",
+  "simulator_sha256": "542fd4528f30dd71d95998089ece9f68e03b0732553a2b343c3b6627ba2c6b68",
+  "elapsed_seconds": 629,
+  "completed_at": "2026-09-18T03:44:49.051544+00:00"
+}

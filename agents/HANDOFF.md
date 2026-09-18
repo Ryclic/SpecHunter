@@ -394,6 +394,17 @@ baseline. The comparison remains fail-closed.
 Repair v3 now targets the consumer-release paths exposed by v2: it suppresses fast
 speculative wakeup for unresolved-branch loads, suppresses writeback for LDQ entries
 already marked excepting, and prevents excepting entries from retry/wakeup selection. Its
-hash-pinned live build is in progress on the six-hour-capped worker
-`spechunter-boom-issue715-repairv2`; no v3 security verdict exists yet. Application-default
-credentials authorized this worker noninteractively, and the prior worker list was empty.
+hash-pinned live build and exact-seed trace completed on the six-hour-capped worker
+`spechunter-boom-issue715-repairv2`. The dependent `0x59f` requests still occurred at
+cycles 3809 and 3853, exactly matching baseline, so its sealed verdict is also
+`repair-ineffective`.
+
+That failure exposed the narrower historical bug: `fired_load_incoming` records an LSU
+issue even when `dmem_req_fire` is false because the TLB missed. The fast load-use wakeup
+used only the former, releasing the dependent instruction with a stale physical-register
+value before any cache response existed. Repair v4 is a minimal hash-pinned candidate that
+requires the aligned, registered `dmem_req_fire` before asserting `spec_ld_wakeup`. Its
+live build is in progress. If the matched trace removes the dependent request while
+preserving the trigger and protected TLB request, return to the attacker with additional
+seeds and attack variants before accepting the repair. Application-default credentials
+authorized this worker noninteractively, and the prior worker list was empty.

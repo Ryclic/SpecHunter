@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-upstream-issue-715-attachment-before-after",
+  "repair_variant": "historical-issue-715-fault-dependent-kill",
+  "baseline_trace_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
+  "repaired_trace_sha256": "5f7250b931c825e83ad36040d8bec2ed90d885da205a7359a53e6556d21ca1af",
+  "repaired_simulator_sha256": "542fd4528f30dd71d95998089ece9f68e03b0732553a2b343c3b6627ba2c6b68",
+  "matched_control_flow_and_seed": true,
+  "baseline_mechanism_witnessed": true,
+  "repaired_mechanism_witnessed": true,
+  "baseline_dependent_requests": [
+    {
+      "cycle": 3809,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1"
+    },
+    {
+      "cycle": 3853,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1"
+    }
+  ],
+  "repaired_dependent_requests": [
+    {
+      "cycle": 3809,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1"
+    },
+    {
+      "cycle": 3853,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1"
+    }
+  ],
+  "repair_effective": false,
+  "security_fix_validated": false,
+  "verdict": "repair-ineffective"
+}

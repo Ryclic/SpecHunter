@@ -25,6 +25,7 @@ def main() -> int:
         "historical-issue-715-repaired",
         "historical-issue-715-speculative-load-block",
         "historical-issue-715-fault-dependent-kill",
+        "historical-issue-715-dcache-fired-wakeup",
     }
     if build.get("variant") not in allowed_variants:
         raise RuntimeError("repair build manifest has the wrong variant")
