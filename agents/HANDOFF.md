@@ -456,3 +456,11 @@ inconclusive minimized replay becomes an inconclusive transcript event and stops
 search. The repair agent receives the minimized program's validated result, rather than
 the original larger candidate's result. Regressions cover non-reproducing replays and
 confirm that the repair receives the reduced program with its matching validation.
+
+The issue #715 VCD scanner now requires a single ordered branch → gadget → protected
+request → dependent request → page fault → misprediction chain, with an overlapping
+unresolved-branch mask across the protected, dependent, and fault events. This prevents
+unrelated events elsewhere in a trace from forming a false mechanism witness. Unit
+cases cover disjoint masks, misplaced events, and a later valid chain following an
+unrelated early request. Rescanning the stored baseline and v1–v3 waveforms produced
+the same JSON witnesses; the prior positive and rejected-repair verdicts are unchanged.

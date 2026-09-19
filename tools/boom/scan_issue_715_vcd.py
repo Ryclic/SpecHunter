@@ -41,6 +41,42 @@ def _one(values: dict[str, int], ids: dict[str, set[str]], name: str, default: i
     return found.pop()
 
 
+def _witness_flags(
+    branch_fetch_cycle: int | None,
+    gadget_fetches: dict[int, int],
+    protected: list[dict],
+    dependent: list[dict],
+    faults: list[dict],
+    target_mispredicts: list[dict],
+) -> tuple[bool, bool]:
+    if branch_fetch_cycle is None:
+        return False, False
+    dataflow = False
+    for resolution in target_mispredicts:
+        for source in protected:
+            if not branch_fetch_cycle < source["cycle"] < resolution["cycle"]:
+                continue
+            source_mask = int(source["branch_mask"], 16)
+            for sink in dependent:
+                if not source["cycle"] < sink["cycle"] < resolution["cycle"]:
+                    continue
+                shared_mask = source_mask & int(sink["branch_mask"], 16)
+                if not shared_mask:
+                    continue
+                dataflow = True
+                gadgets_in_window = all(
+                    branch_fetch_cycle < gadget_fetches.get(pc, -1) < source["cycle"]
+                    for pc in GADGET_PCS
+                )
+                if gadgets_in_window and any(
+                    sink["cycle"] < fault["cycle"] < resolution["cycle"]
+                    and shared_mask & int(fault["branch_mask"], 16)
+                    for fault in faults
+                ):
+                    return True, True
+    return dataflow, False
+
+
 def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     ids: dict[str, set[str]] = {}
     pc_ids: set[str] = set()
@@ -145,18 +181,13 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         for event in load_faults
         if event["cause"] == "0xd" and event["badvaddr"] == hex(PROTECTED_VADDR)
     ]
-    dataflow = bool(
-        protected
-        and dependent
-        and protected[0]["cycle"] < dependent[0]["cycle"]
-        and target_mispredicts
-        and dependent[0]["cycle"] < target_mispredicts[0]["cycle"]
-    )
-    witness = bool(
-        branch_fetch_cycle is not None
-        and GADGET_PCS.issubset(gadget_fetches)
-        and dataflow
-        and faults
+    dataflow, witness = _witness_flags(
+        branch_fetch_cycle,
+        gadget_fetches,
+        protected,
+        dependent,
+        faults,
+        target_mispredicts,
     )
     return {
         "schema_version": 2,
