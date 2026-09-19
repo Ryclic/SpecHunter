@@ -473,3 +473,10 @@ blocked dependent load look like an effective repair. Schema v3 exposes
 `repaired_trigger_preserved`; all three stored v1–v3 comparisons were regenerated and
 still reject their ineffective repairs. Tests cover disjoint-mask and late faults.
 Validation: 131 passed, 2 skipped; Ruff lint/format and `git diff --check` passed.
+
+The nested agent loop now clears its clean-replay flag at each new recon cycle.
+Previously a repair could be verified when the attacker immediately exhausted a new
+hypothesis without testing that cycle, because the preceding cycle's clean mandatory
+replay remained in state. A regression demonstrates the false positive and requires
+the later cycle to report an inconclusive attacker exhaustion instead. Validation:
+132 passed, 2 skipped; Ruff lint/format and `git diff --check` passed.

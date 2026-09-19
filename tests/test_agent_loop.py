@@ -39,7 +39,7 @@ class ScriptedProvider:
 def test_repair_returns_to_attacker_before_next_recon():
     provider = ScriptedProvider()
     report = agent_experiment(
-        provider, BackendConfig(), recon_cycles=2, attack_limit=4, repair_limit=2
+        provider, BackendConfig(), recon_cycles=1, attack_limit=4, repair_limit=2
     )
     result = report["results"][0]
     stages = [event["stage"] for event in result["transcript"]]
@@ -54,7 +54,7 @@ def test_repair_returns_to_attacker_before_next_recon():
     ]
     assert result["repair"]["attacker_exhausted"]
     assert result["repair"]["verified"]
-    assert provider.repaired_attacks == 2
+    assert provider.repaired_attacks == 1
     assert result["transcript"][4]["rationale"] == "mandatory minimized-exploit repair retest"
 
 
@@ -97,6 +97,39 @@ def test_later_outer_cycle_bypass_revokes_earlier_repair_verdict(monkeypatch):
     assert any(event.get("reason") == "repair limit reached" for event in result["transcript"])
     assert result["repair"]["verified"] is False
     assert result["repair"]["attacker_exhausted"] is False
+
+
+def test_new_recon_cycle_cannot_reuse_prior_clean_replay(monkeypatch):
+    import spechunter.agent_loop as loop
+
+    class ImmediateExhaustionProvider(ScriptedProvider):
+        def attack(self, benchmark, hypothesis, history, repaired):
+            self.calls += 1
+            if hypothesis["hypothesis"].endswith("-2"):
+                return AttackDecision("exhausted", "no candidate for the new hypothesis")
+            return super().attack(benchmark, hypothesis, history, repaired)
+
+    calls = 0
+
+    def fake_validate(backend, program, benchmark, **kwargs):
+        nonlocal calls
+        calls += 1
+        return Validation("violation" if calls <= 2 else "clean", "scripted", ())
+
+    monkeypatch.setattr(loop, "validate", fake_validate)
+    monkeypatch.setattr(loop, "minimize", lambda backend, program, benchmark, **kwargs: program)
+    result = agent_experiment(
+        ImmediateExhaustionProvider(),
+        BackendConfig(),
+        recon_cycles=2,
+        attack_limit=4,
+        repair_limit=1,
+        benchmark_id="privilege-bypass",
+    )["results"][0]
+    assert calls == 3
+    assert result["repair"]["verified"] is False
+    assert result["repair"]["attacker_exhausted"] is False
+    assert result["transcript"][-1]["reason"] == "attacker exhausted without testing the repair"
 
 
 @pytest.mark.parametrize("later_status", ["clean", "inconclusive"])
