@@ -167,6 +167,41 @@ def test_minimized_witness_must_reproduce_before_repair(monkeypatch, replay_stat
     assert provider.calls == 2
 
 
+def test_repair_receives_minimized_program_and_its_validation(monkeypatch):
+    import spechunter.agent_loop as loop
+
+    reduced = Program((Op.ENTER_USER, Op.LOAD_SECRET))
+    calls = 0
+
+    def fake_validate(backend, program, benchmark, **kwargs):
+        nonlocal calls
+        calls += 1
+        return Validation(
+            "violation" if calls <= 2 else "clean",
+            "minimized witness" if calls == 2 else "candidate or retest",
+            (),
+        )
+
+    class CaptureRepairProvider(ScriptedProvider):
+        def repair(self, benchmark, program, validation, history):
+            assert program == reduced
+            assert validation.reason == "minimized witness"
+            return super().repair(benchmark, program, validation, history)
+
+    monkeypatch.setattr(loop, "validate", fake_validate)
+    monkeypatch.setattr(loop, "minimize", lambda backend, program, benchmark, **kwargs: reduced)
+    result = agent_experiment(
+        CaptureRepairProvider(),
+        BackendConfig(),
+        recon_cycles=1,
+        attack_limit=4,
+        repair_limit=1,
+        benchmark_id="privilege-bypass",
+    )["results"][0]
+    assert result["findings"][0]["program"] == list(reduced.ops)
+    assert result["findings"][0]["validation"]["reason"] == "minimized witness"
+
+
 def test_attack_decision_contract_rejects_missing_program():
     import pytest
 

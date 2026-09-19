@@ -454,4 +454,5 @@ The LLM/CHIA loop now requires the minimized exploit to reproduce a violation on
 final validation before recording a finding or calling the repair agent. A clean or
 inconclusive minimized replay becomes an inconclusive transcript event and stops that
 search. The repair agent receives the minimized program's validated result, rather than
-the original larger candidate's result. Two regressions cover non-reproducing replays.
+the original larger candidate's result. Regressions cover non-reproducing replays and
+confirm that the repair receives the reduced program with its matching validation.
