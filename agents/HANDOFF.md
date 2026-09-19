@@ -449,3 +449,9 @@ seed equality from matching branch/gadget timing, which the waveform alone canno
 The seal now reports `matched_control_flow` and explicitly marks seed provenance as
 `not-bound-by-vcd`. The three rejected-repair comparison artifacts were regenerated;
 their fail-closed verdicts are unchanged. Run logs document the chosen seed separately.
+
+The LLM/CHIA loop now requires the minimized exploit to reproduce a violation on its
+final validation before recording a finding or calling the repair agent. A clean or
+inconclusive minimized replay becomes an inconclusive transcript event and stops that
+search. The repair agent receives the minimized program's validated result, rather than
+the original larger candidate's result. Two regressions cover non-reproducing replays.

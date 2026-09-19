@@ -135,6 +135,38 @@ def test_later_outer_cycle_must_finish_its_attacker_search(monkeypatch, later_st
     assert result["repair"]["attacker_exhausted"] is False
 
 
+@pytest.mark.parametrize("replay_status", ["clean", "inconclusive"])
+def test_minimized_witness_must_reproduce_before_repair(monkeypatch, replay_status):
+    import spechunter.agent_loop as loop
+
+    calls = 0
+
+    def fake_validate(backend, program, benchmark, **kwargs):
+        nonlocal calls
+        calls += 1
+        status = "violation" if calls == 1 else replay_status
+        return Validation(status, "scripted minimized replay", ())
+
+    monkeypatch.setattr(loop, "validate", fake_validate)
+    monkeypatch.setattr(loop, "minimize", lambda backend, program, benchmark, **kwargs: program)
+    provider = ScriptedProvider()
+    result = agent_experiment(
+        provider,
+        BackendConfig(),
+        recon_cycles=2,
+        attack_limit=4,
+        repair_limit=1,
+        benchmark_id="privilege-bypass",
+    )["results"][0]
+    assert result["findings"] == []
+    assert result["repair"]["attempted"] is False
+    assert result["repair"]["verified"] is False
+    assert result["transcript"][-1]["reason"] == "minimized witness did not reproduce"
+    assert result["transcript"][-1]["minimized_validation"]["status"] == replay_status
+    assert len([event for event in result["transcript"] if event["stage"] == "recon"]) == 1
+    assert provider.calls == 2
+
+
 def test_attack_decision_contract_rejects_missing_program():
     import pytest
 

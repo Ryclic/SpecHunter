@@ -85,13 +85,26 @@ def _run_benchmark(
             repair_verified = False
             clean_since_repair = False
             reduced = minimize(backend, decision.program, benchmark, bug=active_variant)
+            reduced_result = validate(backend, reduced, benchmark, bug=active_variant)
+            if not reduced_result.violation:
+                transcript.append(
+                    {
+                        "stage": "validator",
+                        "cycle": cycle,
+                        "attempt": attempt,
+                        "status": "inconclusive",
+                        "reason": "minimized witness did not reproduce",
+                        "minimized_validation": asdict(reduced_result),
+                    }
+                )
+                break
             findings.append(
                 {
                     "cycle": cycle,
                     "program": list(reduced.ops),
                     "sha256": reduced.digest,
                     "assembly": reduced.assembly(),
-                    "validation": asdict(validate(backend, reduced, benchmark, bug=active_variant)),
+                    "validation": asdict(reduced_result),
                     "variant": active_variant,
                 }
             )
@@ -99,7 +112,7 @@ def _run_benchmark(
                 transcript.append({"stage": "limit", "reason": "repair limit reached"})
                 break
             repair_round += 1
-            repair = provider.repair(benchmark, reduced, result, transcript)
+            repair = provider.repair(benchmark, reduced, reduced_result, transcript)
             trusted_repair = repair.repair_id and (
                 (
                     benchmark.id == "boom-positive-control"
