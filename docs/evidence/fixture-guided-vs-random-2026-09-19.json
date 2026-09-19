@@ -16,7 +16,7 @@
   "provenance": {
     "backend": "deterministic-model-fixture",
     "evaluator_sha256": "58a0931758a6f3c2e0d37138bb997dcb928fa87e3a9bfdfc006c9ac4237a4bab",
-    "loop_sha256": "814de6dff6c88edf82b32d110912cfa52aa1f238bdbda331b038fc0b00b0fbc0",
+    "loop_sha256": "e75c42c9d908a5b5f3811c715fdf93546241baf18f4d7cc16db50976f8eb5f73",
     "domain_sha256": "08758ce9a2c41d220441c3976b68dae94230202bb726dfb35bc8c35bbe2ebfae"
   },
   "guided": {
@@ -13057,5 +13057,5 @@
       ]
     }
   ],
-  "completed_at": "2026-09-19T08:18:26.614363+00:00"
+  "completed_at": "2026-09-19T08:21:27.893572+00:00"
 }

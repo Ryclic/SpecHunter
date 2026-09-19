@@ -490,3 +490,11 @@ a fresh September 19 evaluation and seal bind the revised loop source and reprod
 the 57.25% random discovery rate over 1,000 trials. The README presentation command
 and current source-bound evaluation tests use the new seal. Validation: 134 passed,
 2 skipped; Ruff lint/format and `git diff --check` passed.
+
+The shared validator now requires exactly one observation per requested simulator
+execution before comparing repeated secret worlds. Previously a short batch of two
+observations could silently skip the intended four-execution repeatability check;
+missing or extra results now return inconclusive. Five regression cases cover batch
+lengths 0, 1, 2, 3, and 5. The September 19 source-bound fixture evaluation and seal
+were regenerated after this validator change; the 1,000-trial random discovery rate
+remains 57.25%. Validation: 139 passed, 2 skipped; Ruff and diff checks passed.

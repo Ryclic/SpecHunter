@@ -32,6 +32,8 @@ def validate(
                 observations.append(backend.execute(program, secret, bug or benchmark.bug))
     except (ExecutionError, ValueError) as exc:
         return Validation("inconclusive", str(exc), tuple(observations))
+    if len(observations) != len(secrets):
+        return Validation("inconclusive", "execution batch size differs", tuple(observations))
     if any(not o.completed for o in observations):
         return Validation("inconclusive", "incomplete execution", tuple(observations))
     for world in (0, 1):

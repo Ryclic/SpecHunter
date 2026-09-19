@@ -88,6 +88,17 @@ def test_nondeterminism_is_inconclusive():
     assert validate(Unstable(), Program((Op.NOP,)), BENCHMARKS[0]).status == "inconclusive"
 
 
+@pytest.mark.parametrize("batch_count", [0, 1, 2, 3, 5])
+def test_incomplete_or_extra_simulation_batch_is_inconclusive(batch_count):
+    class ShortOrLongBatch:
+        def execute_many(self, program, secrets, bug):
+            return [Observation((), (), ()) for _ in range(batch_count)]
+
+    result = validate(ShortOrLongBatch(), Program((Op.NOP,)), BENCHMARKS[0])
+    assert result.status == "inconclusive"
+    assert result.reason == "execution batch size differs"
+
+
 @pytest.mark.parametrize("values", [[], ["bad"], ["nop"] * 129])
 def test_reject_invalid_programs(values):
     with pytest.raises(ValueError):
