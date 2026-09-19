@@ -464,3 +464,12 @@ unrelated events elsewhere in a trace from forming a false mechanism witness. Un
 cases cover disjoint masks, misplaced events, and a later valid chain following an
 unrelated early request. Rescanning the stored baseline and v1–v3 waveforms produced
 the same JSON witnesses; the prior positive and rejected-repair verdicts are unchanged.
+
+The issue #715 comparison seal now checks that the repaired trace preserves the
+specific exploit trigger as an ordered branch → gadget → protected request → matching
+page fault → misprediction sequence, with a shared unresolved-branch mask. Previously,
+unrelated protected requests and faults anywhere in the trace could make an otherwise
+blocked dependent load look like an effective repair. Schema v3 exposes
+`repaired_trigger_preserved`; all three stored v1–v3 comparisons were regenerated and
+still reject their ineffective repairs. Tests cover disjoint-mask and late faults.
+Validation: 131 passed, 2 skipped; Ruff lint/format and `git diff --check` passed.

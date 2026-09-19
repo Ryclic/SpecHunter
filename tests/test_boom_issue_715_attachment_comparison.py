@@ -36,6 +36,8 @@ def test_matched_replay_requires_attacker_return(tmp_path, monkeypatch):
     repaired["mechanism_witnessed"] = False
     result = _seal(tmp_path, monkeypatch, repaired)
     assert result["repair_effective"] is True
+    assert result["repaired_trigger_preserved"] is True
+    assert result["schema_version"] == 3
     assert result["matched_control_flow"] is True
     assert result["seed_provenance"] == "not-bound-by-vcd"
     assert result["security_fix_validated"] is False
@@ -53,3 +55,27 @@ def test_missing_protected_load_is_not_a_valid_repair(tmp_path, monkeypatch):
     result = _seal(tmp_path, monkeypatch, repaired)
     assert result["repair_effective"] is False
     assert result["security_fix_validated"] is False
+
+
+def test_unrelated_fault_is_not_a_valid_repair(tmp_path, monkeypatch):
+    repaired = json.loads(
+        (ROOT / "docs/evidence/boom-issue-715-attachment-baseline-2026-09-17.json").read_text()
+    )
+    repaired["dependent_load_requests"] = []
+    repaired["mechanism_witnessed"] = False
+    repaired["load_page_faults"][0]["branch_mask"] = "0x2"
+    result = _seal(tmp_path, monkeypatch, repaired)
+    assert result["repaired_trigger_preserved"] is False
+    assert result["repair_effective"] is False
+
+
+def test_late_fault_is_not_a_valid_repair(tmp_path, monkeypatch):
+    repaired = json.loads(
+        (ROOT / "docs/evidence/boom-issue-715-attachment-baseline-2026-09-17.json").read_text()
+    )
+    repaired["dependent_load_requests"] = []
+    repaired["mechanism_witnessed"] = False
+    repaired["load_page_faults"][0]["cycle"] = 3911
+    result = _seal(tmp_path, monkeypatch, repaired)
+    assert result["repaired_trigger_preserved"] is False
+    assert result["repair_effective"] is False

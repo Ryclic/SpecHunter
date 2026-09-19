@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "experiment": "boom-upstream-issue-715-attachment-before-after",
   "repair_variant": "historical-issue-715-speculative-load-block",
   "baseline_trace_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
@@ -9,6 +9,7 @@
   "seed_provenance": "not-bound-by-vcd",
   "baseline_mechanism_witnessed": true,
   "repaired_mechanism_witnessed": true,
+  "repaired_trigger_preserved": true,
   "baseline_dependent_requests": [
     {
       "cycle": 3809,

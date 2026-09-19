@@ -8,6 +8,31 @@ import sys
 from pathlib import Path
 
 
+def _trigger_preserved(witness: dict) -> bool:
+    branch = witness["branch_fetch_cycle"]
+    gadget_cycles = witness["gadget_fetch_cycles"]
+    if not {"0xd010028e00", "0xd010028e04"} <= gadget_cycles.keys():
+        return False
+    gadgets = gadget_cycles.values()
+    if branch is None:
+        return False
+    for resolution in witness["target_mispredicts"]:
+        for source in witness["protected_load_requests"]:
+            if not branch < source["cycle"] < resolution["cycle"]:
+                continue
+            if not all(cycle is not None and branch < cycle < source["cycle"] for cycle in gadgets):
+                continue
+            source_mask = int(source["branch_mask"], 16)
+            if any(
+                source["cycle"] < fault["cycle"] < resolution["cycle"]
+                and fault["badvaddr"] == source["vaddr"]
+                and source_mask & int(fault["branch_mask"], 16)
+                for fault in witness["load_page_faults"]
+            ):
+                return True
+    return False
+
+
 def main() -> int:
     if len(sys.argv) != 5 or any(not Path(arg).is_absolute() for arg in sys.argv[1:]):
         print(
@@ -33,17 +58,17 @@ def main() -> int:
     same_control_flow = all(baseline[key] == repaired[key] for key in shared)
     baseline_requests = baseline["dependent_load_requests"]
     repaired_requests = repaired["dependent_load_requests"]
+    repaired_trigger_preserved = _trigger_preserved(repaired)
     repair_effective = bool(
         baseline["mechanism_witnessed"]
         and baseline_requests
         and not repaired_requests
         and same_control_flow
-        and repaired["protected_load_requests"]
-        and repaired["load_page_faults"]
+        and repaired_trigger_preserved
         and not repaired["mechanism_witnessed"]
     )
     result = {
-        "schema_version": 2,
+        "schema_version": 3,
         "experiment": "boom-upstream-issue-715-attachment-before-after",
         "repair_variant": build["variant"],
         "baseline_trace_sha256": baseline["trace_sha256"],
@@ -53,6 +78,7 @@ def main() -> int:
         "seed_provenance": "not-bound-by-vcd",
         "baseline_mechanism_witnessed": baseline["mechanism_witnessed"],
         "repaired_mechanism_witnessed": repaired["mechanism_witnessed"],
+        "repaired_trigger_preserved": repaired_trigger_preserved,
         "baseline_dependent_requests": baseline_requests,
         "repaired_dependent_requests": repaired_requests,
         "repair_effective": repair_effective,
