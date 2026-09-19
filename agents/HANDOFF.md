@@ -430,3 +430,10 @@ exhausted a repaired variant in one recon cycle, a later recon cycle could redis
 violation and hit the repair limit while leaving the earlier `verified` result true.
 Verification is now revoked immediately on any new violation, before checking the repair
 budget. A scripted two-cycle regression covers the bypass-after-exhaustion sequence.
+
+The BOOM backend now binds simulator SHA-256 per approved variant. Previously a single
+hash for the entire experiment rejected a legitimate RTL repair because its simulator
+binary must differ from baseline. The backend still fails closed if a variant's hash
+changes during the run. Reports retain the first simulator hash for existing consumers
+and add `simulator_sha256_by_variant` for before/after review. A runner-boundary test
+checks both allowed baseline-to-repair transition and rejected within-variant drift.

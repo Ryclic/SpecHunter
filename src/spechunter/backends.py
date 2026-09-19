@@ -73,6 +73,7 @@ class Backend:
         self.directory = Path(self._temp.name)
         self.binary: Path | None = None
         self._boom_simulator_sha256: str | None = None
+        self._boom_simulator_sha256_by_variant: dict[str, str] = {}
         self._boom_provenance_lock = threading.Lock()
 
     def __enter__(self):
@@ -190,9 +191,12 @@ class Backend:
                 ):
                     raise ValueError("trace provenance mismatch")
                 with self._boom_provenance_lock:
-                    if self._boom_simulator_sha256 not in {None, data["simulator_sha256"]}:
-                        raise ValueError("simulator provenance changed during experiment")
-                    self._boom_simulator_sha256 = data["simulator_sha256"]
+                    prior = self._boom_simulator_sha256_by_variant.get(bug)
+                    if prior is not None and prior != data["simulator_sha256"]:
+                        raise ValueError("simulator provenance changed within variant")
+                    self._boom_simulator_sha256_by_variant[bug] = data["simulator_sha256"]
+                    if self._boom_simulator_sha256 is None:
+                        self._boom_simulator_sha256 = data["simulator_sha256"]
                 return Observation.from_dict(data["observation"])
             except (ValueError, KeyError, TypeError) as exc:
                 raise ExecutionError(f"invalid BOOM trace: {exc}") from exc
@@ -209,4 +213,5 @@ class Backend:
             "command": list(self.config.command),
             "is_boom_evidence": self.config.kind == "boom",
             "simulator_sha256": self._boom_simulator_sha256,
+            "simulator_sha256_by_variant": dict(self._boom_simulator_sha256_by_variant),
         }
