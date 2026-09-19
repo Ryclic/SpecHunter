@@ -1,5 +1,7 @@
 from dataclasses import asdict
 
+import pytest
+
 from spechunter.agent_loop import agent_experiment
 from spechunter.agents import AttackDecision, RepairDecision
 from spechunter.backends import Backend, BackendConfig
@@ -93,6 +95,42 @@ def test_later_outer_cycle_bypass_revokes_earlier_repair_verdict(monkeypatch):
         benchmark_id="privilege-bypass",
     )["results"][0]
     assert any(event.get("reason") == "repair limit reached" for event in result["transcript"])
+    assert result["repair"]["verified"] is False
+    assert result["repair"]["attacker_exhausted"] is False
+
+
+@pytest.mark.parametrize("later_status", ["clean", "inconclusive"])
+def test_later_outer_cycle_must_finish_its_attacker_search(monkeypatch, later_status):
+    import spechunter.agent_loop as loop
+
+    class UnfinishedSearchProvider(ScriptedProvider):
+        def attack(self, benchmark, hypothesis, history, repaired):
+            self.calls += 1
+            if hypothesis["hypothesis"].endswith("-2"):
+                return AttackDecision("candidate", "new recon candidate", LEAK)
+            if repaired:
+                return AttackDecision("exhausted", "first recon search exhausted")
+            return AttackDecision("candidate", "initial exploit", LEAK)
+
+    calls = 0
+
+    def fake_validate(backend, program, benchmark, **kwargs):
+        nonlocal calls
+        calls += 1
+        status = "violation" if calls <= 2 else "clean" if calls == 3 else later_status
+        return Validation(status, "simulator timed out" if status == "inconclusive" else status, ())
+
+    monkeypatch.setattr(loop, "validate", fake_validate)
+    monkeypatch.setattr(loop, "minimize", lambda backend, program, benchmark, **kwargs: program)
+    result = agent_experiment(
+        UnfinishedSearchProvider(),
+        BackendConfig(),
+        recon_cycles=2,
+        attack_limit=3,
+        repair_limit=1,
+        benchmark_id="privilege-bypass",
+    )["results"][0]
+    assert any(event.get("outcome") == "exhausted" for event in result["transcript"])
     assert result["repair"]["verified"] is False
     assert result["repair"]["attacker_exhausted"] is False
 

@@ -25,6 +25,9 @@ def _run_benchmark(
     required_retest = None
 
     for cycle in range(1, recon_cycles + 1):
+        # A fresh recon hypothesis opens a new attack search. The previous cycle's
+        # exhaustion cannot stand in for this cycle's result.
+        repair_verified = False
         hypothesis = provider.recon(benchmark, cycle, transcript)
         transcript.append({"stage": "recon", "cycle": cycle, "output": hypothesis})
         repaired = active_variant != benchmark.bug

@@ -437,3 +437,8 @@ binary must differ from baseline. The backend still fails closed if a variant's 
 changes during the run. Reports retain the first simulator hash for existing consumers
 and add `simulator_sha256_by_variant` for before/after review. A runner-boundary test
 checks both allowed baseline-to-repair transition and rejected within-variant drift.
+
+The outer recon loop now requires each new cycle to earn its own attacker-exhaustion
+verdict. Previously an earlier verified repair could survive a later cycle that ended
+in an inconclusive simulator result or simply consumed its attack budget. Scripted
+regressions cover both incomplete outcomes, in addition to the later-bypass case.
