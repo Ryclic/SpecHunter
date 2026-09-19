@@ -424,3 +424,9 @@ security fix. It requires the repaired protected request and fault to remain pre
 and always leaves `security_fix_validated` false while marking
 `attacker_retest_required` when the matched witness is blocked. A subsequent attacker
 pass across independent seeds or variants is necessary before declaring the fix secure.
+
+The general LLM/CHIA agent loop also had a cross-cycle verdict bug: after the attacker
+exhausted a repaired variant in one recon cycle, a later recon cycle could rediscover a
+violation and hit the repair limit while leaving the earlier `verified` result true.
+Verification is now revoked immediately on any new violation, before checking the repair
+budget. A scripted two-cycle regression covers the bypass-after-exhaustion sequence.

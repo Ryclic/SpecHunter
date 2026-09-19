@@ -77,6 +77,10 @@ def _run_benchmark(
                     required_retest = None
                 continue
 
+            # A later recon cycle can break a repair that an earlier cycle exhausted.
+            # Revoke that verdict even when the repair limit prevents another patch.
+            repair_verified = False
+            clean_since_repair = False
             reduced = minimize(backend, decision.program, benchmark, bug=active_variant)
             findings.append(
                 {

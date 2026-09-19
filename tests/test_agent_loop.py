@@ -3,7 +3,7 @@ from dataclasses import asdict
 from spechunter.agent_loop import agent_experiment
 from spechunter.agents import AttackDecision, RepairDecision
 from spechunter.backends import Backend, BackendConfig
-from spechunter.domain import Observation, Op, Program
+from spechunter.domain import Observation, Op, Program, Validation
 
 LEAK = Program((Op.ENTER_USER, Op.LOAD_SECRET, Op.PROBE))
 
@@ -61,6 +61,40 @@ def test_boom_repair_proposal_is_not_marked_verified():
     # fixture variants. The backend integration itself is covered by test_boundaries.py.
     decision = RepairDecision("diagnosis", "RTL proposal", None)
     assert decision.fixture_variant is None
+
+
+def test_later_outer_cycle_bypass_revokes_earlier_repair_verdict(monkeypatch):
+    import spechunter.agent_loop as loop
+
+    class LaterBypassProvider(ScriptedProvider):
+        def attack(self, benchmark, hypothesis, history, repaired):
+            self.calls += 1
+            if hypothesis["hypothesis"].endswith("-2"):
+                return AttackDecision("candidate", "new bypass after recon", LEAK)
+            if repaired:
+                return AttackDecision("exhausted", "no bypass in first recon cycle")
+            return AttackDecision("candidate", "initial exploit", LEAK)
+
+    calls = 0
+
+    def fake_validate(backend, program, benchmark, **kwargs):
+        nonlocal calls
+        calls += 1
+        return Validation("clean" if calls == 3 else "violation", "scripted", ())
+
+    monkeypatch.setattr(loop, "validate", fake_validate)
+    monkeypatch.setattr(loop, "minimize", lambda backend, program, benchmark, **kwargs: program)
+    result = agent_experiment(
+        LaterBypassProvider(),
+        BackendConfig(),
+        recon_cycles=2,
+        attack_limit=4,
+        repair_limit=1,
+        benchmark_id="privilege-bypass",
+    )["results"][0]
+    assert any(event.get("reason") == "repair limit reached" for event in result["transcript"])
+    assert result["repair"]["verified"] is False
+    assert result["repair"]["attacker_exhausted"] is False
 
 
 def test_attack_decision_contract_rejects_missing_program():
