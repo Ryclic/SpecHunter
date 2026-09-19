@@ -22,13 +22,16 @@ def _run_benchmark(
     repair_round = 0
     repair_verified = False
     clean_since_repair = False
+    novel_clean_since_repair = False
     required_retest = None
+    repaired_witness_digest = None
 
     for cycle in range(1, recon_cycles + 1):
         # A fresh recon hypothesis opens a new attack search. The previous cycle's
         # exhaustion or clean replay cannot stand in for this cycle's result.
         repair_verified = False
         clean_since_repair = False
+        novel_clean_since_repair = False
         hypothesis = provider.recon(benchmark, cycle, transcript)
         transcript.append({"stage": "recon", "cycle": cycle, "output": hypothesis})
         repaired = active_variant != benchmark.bug
@@ -52,14 +55,21 @@ def _run_benchmark(
             transcript.append(attack_event)
             if decision.outcome == "exhausted":
                 exhausted = True
-                if repaired and clean_since_repair and required_retest is None:
+                if (
+                    repaired
+                    and clean_since_repair
+                    and novel_clean_since_repair
+                    and required_retest is None
+                ):
                     repair_verified = True
                 elif repaired:
                     transcript.append(
                         {
                             "stage": "validator",
                             "status": "inconclusive",
-                            "reason": "attacker exhausted without testing the repair",
+                            "reason": (
+                                "attacker exhausted without a distinct clean repair challenge"
+                            ),
                             "observations": [],
                         }
                     )
@@ -78,6 +88,11 @@ def _run_benchmark(
                     required_retest is None or decision.program.digest == required_retest.digest
                 ):
                     clean_since_repair = True
+                    if (
+                        required_retest is None
+                        and decision.program.digest != repaired_witness_digest
+                    ):
+                        novel_clean_since_repair = True
                     required_retest = None
                 continue
 
@@ -85,6 +100,7 @@ def _run_benchmark(
             # Revoke that verdict even when the repair limit prevents another patch.
             repair_verified = False
             clean_since_repair = False
+            novel_clean_since_repair = False
             reduced = minimize(backend, decision.program, benchmark, bug=active_variant)
             reduced_result = validate(backend, reduced, benchmark, bug=active_variant)
             if not reduced_result.violation:
@@ -136,7 +152,9 @@ def _run_benchmark(
             repaired = True
             repair_verified = False
             clean_since_repair = False
+            novel_clean_since_repair = False
             required_retest = reduced
+            repaired_witness_digest = reduced.digest
             transcript.append(
                 {
                     "stage": "repair",
@@ -201,13 +219,14 @@ def agent_experiment(
         positives = [r for r in results if r["benchmark"]["positive"]]
         negatives = [r for r in results if not r["benchmark"]["positive"]]
         report = {
-            "schema_version": 2,
+            "schema_version": 3,
             "strategy": "llm",
             "provider": provider.name,
             "limits": {
                 "recon_cycles": recon_cycles,
                 "attacks_per_cycle": attack_limit,
                 "repairs_per_benchmark": repair_limit,
+                "minimum_distinct_repair_challenges": 1,
             },
             "provenance": backend.provenance(),
             "metrics": {

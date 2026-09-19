@@ -15,6 +15,12 @@ SmallBoomV3 executions: every intentional mutation was detected, every repaired 
 clean, and none was inconclusive. The corpus is bound to the same simulator as the live
 Vertex run.
 
+Those September 11 and 16 agent transcripts used the earlier exhaustion criterion:
+the agent stopped after the mandatory exploit replay. Current runs require an additional
+distinct, clean attacker-generated candidate before reporting a repair as verified.
+The separate eight-program held-out gate remains evidence for the historical positive
+control, not a substitute for that current agent-loop requirement.
+
 On the separate deterministic fixture benchmark, guided search discovered 100% of seeded
 positive cases in 1.5 attempts on average. Across 1,000 seeds, random search discovered
 57.25% within the same 16-attempt limit (95% Wilson interval 55.07%–59.40%) and required
@@ -118,8 +124,8 @@ result and CLI exit code 2; a finding is a valid experiment result (exit code 0)
 - Optional pinned CHIA node (`uv sync --extra chia`; `uv run spechunter run --chia`).
 - Optional Vertex agents with schema-constrained recon, attack, and repair responses.
 - Nested repair red-teaming: every repair returns to attacker → validator; a fixture
-  repair is verified only after a clean retest followed by attacker exhaustion. The
-  outer loop then returns to recon for a fresh hypothesis.
+  repair is verified only after a clean retest, a distinct clean challenge, and attacker
+  exhaustion. The outer loop then returns to recon for a fresh hypothesis.
 - Pull request CI and artifact delivery after reviewed changes reach main.
 
 The guided baseline knows the benchmark templates; its results do not establish LLM

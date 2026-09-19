@@ -506,3 +506,12 @@ have been reused. Regressions cover out-of-order misprediction records and the s
 failure in the repair seal. All four stored baseline/v1–v3 VCDs rescan to equivalent
 JSON witnesses, so their rejected-repair verdicts remain unchanged. Validation:
 141 passed, 2 skipped; Ruff and diff checks passed.
+
+Current agent reports use schema v3 and require a clean, attacker-generated program
+distinct from the minimized exploit after the mandatory repair replay before exhaustion
+can verify a repair. Exhaustion immediately after replay, or after replaying the same
+program again, is inconclusive. The requirement resets with each recon cycle and repair.
+Vertex prompts now request this additional challenge. The September 11 live Vertex and
+September 16 CHIA/fixture transcripts remain sealed historical schema-v2 evidence;
+they exhausted after only the mandatory replay. README now states that limit and the
+current stronger rule. Validation: 142 passed, 2 skipped; Ruff and diff checks passed.

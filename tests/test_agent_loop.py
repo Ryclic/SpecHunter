@@ -8,6 +8,16 @@ from spechunter.backends import Backend, BackendConfig
 from spechunter.domain import Observation, Op, Program, Validation
 
 LEAK = Program((Op.ENTER_USER, Op.LOAD_SECRET, Op.PROBE))
+CHALLENGE = Program((Op.ENTER_USER, Op.LOAD_SECRET, Op.ENCODE, Op.PROBE))
+
+
+def _challenged(history, cycle):
+    return any(
+        event.get("stage") == "attacker"
+        and event.get("cycle") == cycle
+        and event.get("program") == list(CHALLENGE.ops)
+        for event in history
+    )
 
 
 class ScriptedProvider:
@@ -52,10 +62,44 @@ def test_repair_returns_to_attacker_before_next_recon():
         "validator",
         "attacker",
     ]
-    assert result["repair"]["attacker_exhausted"]
-    assert result["repair"]["verified"]
+    assert result["repair"]["attacker_exhausted"] is False
+    assert result["repair"]["verified"] is False
     assert provider.repaired_attacks == 1
     assert result["transcript"][4]["rationale"] == "mandatory minimized-exploit repair retest"
+    assert result["transcript"][-1]["reason"] == (
+        "attacker exhausted without a distinct clean repair challenge"
+    )
+
+
+def test_replaying_same_program_does_not_count_as_a_new_challenge():
+    class DuplicateProvider(ScriptedProvider):
+        def attack(self, benchmark, hypothesis, history, repaired):
+            if repaired and not any(
+                event.get("rationale") == "duplicate repair candidate" for event in history
+            ):
+                replay = next(
+                    event
+                    for event in history
+                    if event.get("rationale") == "mandatory minimized-exploit repair retest"
+                )
+                return AttackDecision(
+                    "candidate", "duplicate repair candidate", Program.parse(replay["program"])
+                )
+            return super().attack(benchmark, hypothesis, history, repaired)
+
+    result = agent_experiment(
+        DuplicateProvider(),
+        BackendConfig(),
+        recon_cycles=1,
+        attack_limit=4,
+        repair_limit=1,
+        benchmark_id="privilege-bypass",
+    )["results"][0]
+    assert result["repair"]["verified"] is False
+    assert result["repair"]["attacker_exhausted"] is False
+    assert (
+        len([event for event in result["transcript"] if event.get("outcome") == "candidate"]) == 3
+    )
 
 
 def test_boom_repair_proposal_is_not_marked_verified():
@@ -74,6 +118,8 @@ def test_later_outer_cycle_bypass_revokes_earlier_repair_verdict(monkeypatch):
             if hypothesis["hypothesis"].endswith("-2"):
                 return AttackDecision("candidate", "new bypass after recon", LEAK)
             if repaired:
+                if not _challenged(history, 1):
+                    return AttackDecision("candidate", "distinct challenge", CHALLENGE)
                 return AttackDecision("exhausted", "no bypass in first recon cycle")
             return AttackDecision("candidate", "initial exploit", LEAK)
 
@@ -82,7 +128,7 @@ def test_later_outer_cycle_bypass_revokes_earlier_repair_verdict(monkeypatch):
     def fake_validate(backend, program, benchmark, **kwargs):
         nonlocal calls
         calls += 1
-        return Validation("clean" if calls == 3 else "violation", "scripted", ())
+        return Validation("clean" if calls in {3, 4} else "violation", "scripted", ())
 
     monkeypatch.setattr(loop, "validate", fake_validate)
     monkeypatch.setattr(loop, "minimize", lambda backend, program, benchmark, **kwargs: program)
@@ -107,6 +153,8 @@ def test_new_recon_cycle_cannot_reuse_prior_clean_replay(monkeypatch):
             self.calls += 1
             if hypothesis["hypothesis"].endswith("-2"):
                 return AttackDecision("exhausted", "no candidate for the new hypothesis")
+            if repaired and not _challenged(history, 1):
+                return AttackDecision("candidate", "distinct first-cycle challenge", CHALLENGE)
             return super().attack(benchmark, hypothesis, history, repaired)
 
     calls = 0
@@ -126,10 +174,12 @@ def test_new_recon_cycle_cannot_reuse_prior_clean_replay(monkeypatch):
         repair_limit=1,
         benchmark_id="privilege-bypass",
     )["results"][0]
-    assert calls == 3
+    assert calls == 4
     assert result["repair"]["verified"] is False
     assert result["repair"]["attacker_exhausted"] is False
-    assert result["transcript"][-1]["reason"] == "attacker exhausted without testing the repair"
+    assert result["transcript"][-1]["reason"] == (
+        "attacker exhausted without a distinct clean repair challenge"
+    )
 
 
 @pytest.mark.parametrize("later_status", ["clean", "inconclusive"])
@@ -142,6 +192,8 @@ def test_later_outer_cycle_must_finish_its_attacker_search(monkeypatch, later_st
             if hypothesis["hypothesis"].endswith("-2"):
                 return AttackDecision("candidate", "new recon candidate", LEAK)
             if repaired:
+                if not _challenged(history, 1):
+                    return AttackDecision("candidate", "distinct first-cycle challenge", CHALLENGE)
                 return AttackDecision("exhausted", "first recon search exhausted")
             return AttackDecision("candidate", "initial exploit", LEAK)
 
@@ -150,7 +202,7 @@ def test_later_outer_cycle_must_finish_its_attacker_search(monkeypatch, later_st
     def fake_validate(backend, program, benchmark, **kwargs):
         nonlocal calls
         calls += 1
-        status = "violation" if calls <= 2 else "clean" if calls == 3 else later_status
+        status = "violation" if calls <= 2 else "clean" if calls in {3, 4} else later_status
         return Validation(status, "simulator timed out" if status == "inconclusive" else status, ())
 
     monkeypatch.setattr(loop, "validate", fake_validate)
@@ -159,7 +211,7 @@ def test_later_outer_cycle_must_finish_its_attacker_search(monkeypatch, later_st
         UnfinishedSearchProvider(),
         BackendConfig(),
         recon_cycles=2,
-        attack_limit=3,
+        attack_limit=4,
         repair_limit=1,
         benchmark_id="privilege-bypass",
     )["results"][0]
@@ -257,6 +309,8 @@ def test_trusted_boom_repair_returns_to_attacker_and_can_be_verified(monkeypatch
             self.calls += 1
             if repaired:
                 self.repaired_attacks += 1
+                if not _challenged(history, 1):
+                    return AttackDecision("candidate", "challenge repaired RTL", CHALLENGE)
                 return AttackDecision("exhausted", "no supported bypass remains")
             return AttackDecision("candidate", "exercise faulting load", LEAK)
 
@@ -304,6 +358,8 @@ def test_boom_positive_control_repairs_then_returns_to_attacker(monkeypatch):
             self.calls += 1
             if repaired:
                 self.repaired_attacks += 1
+                if not _challenged(history, 1):
+                    return AttackDecision("candidate", "challenge repaired control", CHALLENGE)
                 return AttackDecision("exhausted", "seeded cache injection is gone")
             return AttackDecision("candidate", "probe the seeded cache line", LEAK)
 
@@ -336,6 +392,8 @@ def test_boom_positive_control_repairs_then_returns_to_attacker(monkeypatch):
         "attacker",
         "validator",
         "repair",
+        "attacker",
+        "validator",
         "attacker",
         "validator",
         "attacker",
