@@ -70,8 +70,8 @@ def test_renderer_adds_sealed_fixture_comparison(tmp_path):
         EVIDENCE / "vertex-boom-demo-2026-09-11.json",
         EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
         output,
-        evaluation_path=EVIDENCE / "fixture-guided-vs-random-2026-09-16.json",
-        evaluation_seal_path=EVIDENCE / "fixture-guided-vs-random-seal-2026-09-16.json",
+        evaluation_path=EVIDENCE / "fixture-guided-vs-random-2026-09-19.json",
+        evaluation_seal_path=EVIDENCE / "fixture-guided-vs-random-seal-2026-09-19.json",
     )
     page = output.read_text()
     assert "Guided versus random evaluation" in page

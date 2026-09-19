@@ -4,7 +4,7 @@ import shutil
 import pytest
 
 from spechunter.backends import Backend, BackendConfig
-from spechunter.domain import BENCHMARKS, Observation, Op, Program
+from spechunter.domain import BENCHMARKS, Observation, Op, Program, Validation
 from spechunter.loop import attack, experiment, minimize, validate
 
 
@@ -47,6 +47,27 @@ def test_positive_control_minimizer_preserves_protected_load():
 def test_no_observation_is_not_a_finding():
     with Backend(BackendConfig()) as backend:
         assert validate(backend, Program((Op.NOP,)), BENCHMARKS[0]).status == "clean"
+
+
+@pytest.mark.parametrize("replay_status", ["clean", "inconclusive"])
+def test_minimized_benchmark_witness_must_reproduce(monkeypatch, replay_status):
+    import spechunter.loop as loop
+
+    calls = 0
+
+    def fake_validate(backend, program, benchmark, **kwargs):
+        nonlocal calls
+        calls += 1
+        return Validation("violation" if calls == 1 else replay_status, "replayed", ())
+
+    monkeypatch.setattr(loop, "validate", fake_validate)
+    monkeypatch.setattr(loop, "minimize", lambda backend, program, benchmark: program)
+    result = loop.experiment(iterations=2, benchmark_id="privilege-bypass")
+    assert calls == 2
+    assert result["results"][0]["finding"] is None
+    assert result["results"][0]["attempts"][0]["minimized_validation"]["status"] == replay_status
+    assert result["metrics"]["discovered"] == 0
+    assert result["metrics"]["inconclusive_cases"] == 1
 
 
 def test_experiment_can_select_one_real_target_benchmark():

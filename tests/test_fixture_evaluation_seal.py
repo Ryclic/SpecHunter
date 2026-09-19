@@ -13,7 +13,7 @@ SPEC.loader.exec_module(SEAL)
 
 
 def test_checked_in_evaluation_is_complete_and_source_bound():
-    path = ROOT / "docs/evidence/fixture-guided-vs-random-2026-09-16.json"
+    path = ROOT / "docs/evidence/fixture-guided-vs-random-2026-09-19.json"
     report = json.loads(path.read_text())
     SEAL.verify(report, ROOT)
     assert report["random"]["discovery_rate"] == 0.5725
@@ -21,7 +21,7 @@ def test_checked_in_evaluation_is_complete_and_source_bound():
 
 
 def test_seal_rejects_changed_trial_summary():
-    path = ROOT / "docs/evidence/fixture-guided-vs-random-2026-09-16.json"
+    path = ROOT / "docs/evidence/fixture-guided-vs-random-2026-09-19.json"
     report = json.loads(path.read_text())
     report["random"]["discoveries"] += 1
     with pytest.raises(SEAL.SealError, match="summary"):

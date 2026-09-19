@@ -480,3 +480,13 @@ hypothesis without testing that cycle, because the preceding cycle's clean manda
 replay remained in state. A regression demonstrates the false positive and requires
 the later cycle to report an inconclusive attacker exhaustion instead. Validation:
 132 passed, 2 skipped; Ruff lint/format and `git diff --check` passed.
+
+The deterministic guided/random benchmark loop now independently revalidates each
+minimized witness before recording a finding or attempting repair. A clean or
+inconclusive minimized replay halts that search and counts as an inconclusive case;
+it cannot inflate discovery or repair claims. Two regressions cover the replay
+outcomes. The September 16 evaluation remains an unchanged historical artifact;
+a fresh September 19 evaluation and seal bind the revised loop source and reproduce
+the 57.25% random discovery rate over 1,000 trials. The README presentation command
+and current source-bound evaluation tests use the new seal. Validation: 134 passed,
+2 skipped; Ruff lint/format and `git diff --check` passed.

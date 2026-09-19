@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "experiment": "fixture-guided-vs-random-evaluation",
+  "classification": "deterministic-fixture-evaluation-not-real-boom-evidence",
+  "evaluation": "fixture-guided-vs-random-2026-09-19.json",
+  "evaluation_sha256": "4e8ab85070ace715cdc253eb8ba8a43694b4c8e8c08262d373d016c84a3449b6",
+  "random_trials": 1000
+}

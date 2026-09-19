@@ -50,8 +50,8 @@ uv run spechunter present \
   --seal docs/evidence/vertex-boom-demo-seal-2026-09-11.json \
   --corpus docs/evidence/boom-attack-corpus-2026-09-16.json \
   --corpus-seal docs/evidence/boom-attack-corpus-seal-2026-09-16.json \
-  --evaluation docs/evidence/fixture-guided-vs-random-2026-09-16.json \
-  --evaluation-seal docs/evidence/fixture-guided-vs-random-seal-2026-09-16.json \
+  --evaluation docs/evidence/fixture-guided-vs-random-2026-09-19.json \
+  --evaluation-seal docs/evidence/fixture-guided-vs-random-seal-2026-09-19.json \
   --repeatability docs/evidence/vertex-fixture-repeatability-2026-09-16.json \
   --repeatability-seal docs/evidence/vertex-fixture-repeatability-seal-2026-09-16.json \
   --chia-evidence docs/evidence/chia-vertex-loop-2026-09-16.json \
