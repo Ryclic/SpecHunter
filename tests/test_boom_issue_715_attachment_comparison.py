@@ -36,6 +36,8 @@ def test_matched_replay_requires_attacker_return(tmp_path, monkeypatch):
     repaired["mechanism_witnessed"] = False
     result = _seal(tmp_path, monkeypatch, repaired)
     assert result["repair_effective"] is True
+    assert result["matched_control_flow"] is True
+    assert result["seed_provenance"] == "not-bound-by-vcd"
     assert result["security_fix_validated"] is False
     assert result["attacker_retest_required"] is True
     assert result["verdict"] == "repair-blocked-witness"

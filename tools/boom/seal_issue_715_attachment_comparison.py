@@ -43,13 +43,14 @@ def main() -> int:
         and not repaired["mechanism_witnessed"]
     )
     result = {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment": "boom-upstream-issue-715-attachment-before-after",
         "repair_variant": build["variant"],
         "baseline_trace_sha256": baseline["trace_sha256"],
         "repaired_trace_sha256": repaired["trace_sha256"],
         "repaired_simulator_sha256": build["simulator_sha256"],
-        "matched_control_flow_and_seed": same_control_flow,
+        "matched_control_flow": same_control_flow,
+        "seed_provenance": "not-bound-by-vcd",
         "baseline_mechanism_witnessed": baseline["mechanism_witnessed"],
         "repaired_mechanism_witnessed": repaired["mechanism_witnessed"],
         "baseline_dependent_requests": baseline_requests,

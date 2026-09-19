@@ -442,3 +442,10 @@ The outer recon loop now requires each new cycle to earn its own attacker-exhaus
 verdict. Previously an earlier verified repair could survive a later cycle that ended
 in an inconclusive simulator result or simply consumed its attack budget. Scripted
 regressions cover both incomplete outcomes, in addition to the later-bypass case.
+
+The issue #715 comparison seal was upgraded to schema v2 because VCD waveforms do not
+encode the simulator seed. Its previous `matched_control_flow_and_seed` field inferred
+seed equality from matching branch/gadget timing, which the waveform alone cannot prove.
+The seal now reports `matched_control_flow` and explicitly marks seed provenance as
+`not-bound-by-vcd`. The three rejected-repair comparison artifacts were regenerated;
+their fail-closed verdicts are unchanged. Run logs document the chosen seed separately.

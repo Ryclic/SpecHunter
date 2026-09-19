@@ -90,7 +90,8 @@ def test_matched_repair_result_is_fail_closed():
     evidence = json.loads(
         (ROOT / "docs/evidence/boom-issue-715-attachment-comparison-2026-09-17.json").read_text()
     )
-    assert evidence["matched_control_flow_and_seed"] is True
+    assert evidence["matched_control_flow"] is True
+    assert evidence["seed_provenance"] == "not-bound-by-vcd"
     assert evidence["baseline_mechanism_witnessed"] is True
     assert evidence["repaired_mechanism_witnessed"] is True
     assert evidence["repair_effective"] is False
