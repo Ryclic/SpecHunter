@@ -515,3 +515,14 @@ Vertex prompts now request this additional challenge. The September 11 live Vert
 September 16 CHIA/fixture transcripts remain sealed historical schema-v2 evidence;
 they exhausted after only the mandatory replay. README now states that limit and the
 current stronger rule. Validation: 142 passed, 2 skipped; Ruff and diff checks passed.
+
+The distinct post-repair challenge also must exercise the benchmark's threat model.
+A different but irrelevant `nop` or probe-only candidate can be clean by construction
+and no longer counts toward attacker exhaustion. Observable-isolation challenges require
+a protected user load followed by a probe; transient-cache additionally requires
+branch training and cache encoding before the probe. The validator transcript records
+whether each repaired-variant candidate qualified, and the Vertex prompt describes
+the requirement; a fence or squash between training and encoding disqualifies the
+transient challenge. Current agent reports use schema v4 to distinguish this criterion
+from the earlier schema-v3 distinction-only rule. Validation: 145 passed, 2 skipped;
+Ruff and diff checks passed.

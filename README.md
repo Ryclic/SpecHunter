@@ -17,7 +17,8 @@ Vertex run.
 
 Those September 11 and 16 agent transcripts used the earlier exhaustion criterion:
 the agent stopped after the mandatory exploit replay. Current runs require an additional
-distinct, clean attacker-generated candidate before reporting a repair as verified.
+distinct, clean attacker-generated candidate that exercises the protected user load
+and relevant observer before reporting a repair as verified.
 The separate eight-program held-out gate remains evidence for the historical positive
 control, not a substitute for that current agent-loop requirement.
 
@@ -124,8 +125,9 @@ result and CLI exit code 2; a finding is a valid experiment result (exit code 0)
 - Optional pinned CHIA node (`uv sync --extra chia`; `uv run spechunter run --chia`).
 - Optional Vertex agents with schema-constrained recon, attack, and repair responses.
 - Nested repair red-teaming: every repair returns to attacker → validator; a fixture
-  repair is verified only after a clean retest, a distinct clean challenge, and attacker
-  exhaustion. The outer loop then returns to recon for a fresh hypothesis.
+  repair is verified only after a clean retest, a distinct clean protected-load challenge
+  relevant to the benchmark, and attacker exhaustion. The outer loop then returns to
+  recon for a fresh hypothesis.
 - Pull request CI and artifact delivery after reviewed changes reach main.
 
 The guided baseline knows the benchmark templates; its results do not establish LLM

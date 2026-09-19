@@ -250,7 +250,9 @@ class VertexAgentProvider:
                     "Propose a new attack candidate, or return exhausted only after the history "
                     "provides no materially different supported candidate. When testing a "
                     "repair, propose at least one candidate distinct from the mandatory "
-                    "minimized-exploit replay before returning exhausted."
+                    "minimized-exploit replay before returning exhausted. That candidate "
+                    "must exercise a protected user load and, for observable isolation, "
+                    "a later observer probe."
                 ),
                 "benchmark": asdict(benchmark),
                 "hypothesis": hypothesis,

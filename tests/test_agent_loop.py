@@ -102,6 +102,45 @@ def test_replaying_same_program_does_not_count_as_a_new_challenge():
     )
 
 
+@pytest.mark.parametrize("irrelevant", [Program((Op.NOP,)), Program((Op.ENTER_USER, Op.PROBE))])
+def test_clean_irrelevant_candidate_cannot_verify_repair(irrelevant):
+    class IrrelevantProvider(ScriptedProvider):
+        def attack(self, benchmark, hypothesis, history, repaired):
+            if repaired and not any(
+                event.get("rationale") == "irrelevant repair candidate" for event in history
+            ):
+                return AttackDecision("candidate", "irrelevant repair candidate", irrelevant)
+            return super().attack(benchmark, hypothesis, history, repaired)
+
+    result = agent_experiment(
+        IrrelevantProvider(),
+        BackendConfig(),
+        recon_cycles=1,
+        attack_limit=4,
+        repair_limit=1,
+        benchmark_id="privilege-bypass",
+    )["results"][0]
+    challenge = next(
+        event
+        for event in result["transcript"]
+        if event.get("stage") == "validator" and event.get("attempt") == 3
+    )
+    assert challenge["status"] == "clean"
+    assert challenge["repair_challenge_eligible"] is False
+    assert result["repair"]["verified"] is False
+
+
+def test_transient_challenge_needs_speculative_observer_sequence():
+    import spechunter.agent_loop as loop
+
+    benchmark = next(b for b in loop.BENCHMARKS if b.id == "transient-cache")
+    assert loop._relevant_repair_challenge(CHALLENGE, benchmark) is False
+    candidate = Program((Op.TRAIN, Op.ENTER_USER, Op.LOAD_SECRET, Op.ENCODE, Op.SQUASH, Op.PROBE))
+    assert loop._relevant_repair_challenge(candidate, benchmark) is True
+    fenced = Program((Op.TRAIN, Op.ENTER_USER, Op.FENCE, Op.LOAD_SECRET, Op.ENCODE, Op.PROBE))
+    assert loop._relevant_repair_challenge(fenced, benchmark) is False
+
+
 def test_boom_repair_proposal_is_not_marked_verified():
     # Model this boundary through a provider decision: real-target proposals cannot select
     # fixture variants. The backend integration itself is covered by test_boundaries.py.
@@ -343,6 +382,7 @@ def test_trusted_boom_repair_returns_to_attacker_and_can_be_verified(monkeypatch
     assert repair_event["status"] == "trusted-candidate-repair"
     assert repair_event["repair_id"] == "gate-faulting-loads"
     assert repair_event["rtl_patch_applied"] is True
+    assert any(event.get("repair_challenge_eligible") is True for event in result["transcript"])
     assert result["repair"] == {
         "attempted": True,
         "attacker_exhausted": True,

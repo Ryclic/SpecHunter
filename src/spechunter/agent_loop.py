@@ -4,8 +4,36 @@ from dataclasses import asdict
 
 from spechunter.agents import AgentProvider, AttackDecision
 from spechunter.backends import Backend, BackendConfig
-from spechunter.domain import BENCHMARKS, Benchmark
+from spechunter.domain import BENCHMARKS, Benchmark, Op, Program
 from spechunter.loop import minimize, validate
+
+
+def _relevant_repair_challenge(program: Program, benchmark: Benchmark) -> bool:
+    """Require a protected user load and the observer needed by this invariant."""
+    ops = program.ops
+    try:
+        user = ops.index(Op.ENTER_USER)
+        load = ops.index(Op.LOAD_SECRET, user + 1)
+    except ValueError:
+        return False
+    if benchmark.invariant == "architectural-isolation":
+        return True
+    if benchmark.invariant != "observable-isolation":
+        return False
+    try:
+        probe = ops.index(Op.PROBE, load + 1)
+    except ValueError:
+        return False
+    if benchmark.bug != "transient":
+        return True
+    try:
+        train = ops.index(Op.TRAIN, 0, load)
+        encode = ops.index(Op.ENCODE, load + 1, probe)
+    except ValueError:
+        return False
+    return train < load < encode < probe and not any(
+        op in (Op.FENCE, Op.SQUASH) for op in ops[train + 1 : encode]
+    )
 
 
 def _run_benchmark(
@@ -76,9 +104,21 @@ def _run_benchmark(
                 break
 
             result = validate(backend, decision.program, benchmark, bug=active_variant)
-            transcript.append(
-                {"stage": "validator", "cycle": cycle, "attempt": attempt, **asdict(result)}
+            challenge_eligible = bool(
+                repaired
+                and required_retest is None
+                and decision.program.digest != repaired_witness_digest
+                and _relevant_repair_challenge(decision.program, benchmark)
             )
+            validator_event = {
+                "stage": "validator",
+                "cycle": cycle,
+                "attempt": attempt,
+                **asdict(result),
+            }
+            if repaired:
+                validator_event["repair_challenge_eligible"] = challenge_eligible
+            transcript.append(validator_event)
             if result.status == "inconclusive":
                 if result.reason == "secret load outside user threat model":
                     continue
@@ -88,10 +128,7 @@ def _run_benchmark(
                     required_retest is None or decision.program.digest == required_retest.digest
                 ):
                     clean_since_repair = True
-                    if (
-                        required_retest is None
-                        and decision.program.digest != repaired_witness_digest
-                    ):
+                    if challenge_eligible:
                         novel_clean_since_repair = True
                     required_retest = None
                 continue
@@ -219,7 +256,7 @@ def agent_experiment(
         positives = [r for r in results if r["benchmark"]["positive"]]
         negatives = [r for r in results if not r["benchmark"]["positive"]]
         report = {
-            "schema_version": 3,
+            "schema_version": 4,
             "strategy": "llm",
             "provider": provider.name,
             "limits": {
