@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-historical-issue-715-build",
+  "variant": "historical-issue-715-dcache-fired-wakeup",
+  "chipyard_revision": "004297b6a8c01be1b2110c4cf4f9393ae1ff8805",
+  "boom_revision": "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d",
+  "config": "SmallBoomConfig",
+  "lsu_source_sha256": "18abf60f48d67223a768b503047ff1f21d9057c1afa4a5d408b0d9e623d77b0f",
+  "simulator_sha256": "a1ba8a64bfbfc69b6b5dd7eb8b53492611da50c1f0567f2c630faf2c047e0f55",
+  "elapsed_seconds": 692,
+  "completed_at": "2026-09-18T04:08:49.407268+00:00"
+}

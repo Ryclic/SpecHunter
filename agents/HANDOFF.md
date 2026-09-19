@@ -408,3 +408,19 @@ live build is in progress. If the matched trace removes the dependent request wh
 preserving the trigger and protected TLB request, return to the attacker with additional
 seeds and attack variants before accepting the repair. Application-default credentials
 authorized this worker noninteractively, and the prior worker list was empty.
+
+On 2026-09-18, v4 built successfully on the worker: the release simulator SHA-256 is
+`a1ba8a64bfbfc69b6b5dd7eb8b53492611da50c1f0567f2c630faf2c047e0f55`.
+The waveform-enabled binary also built and the exact attachment/seed ran to the same
+10,000-cycle timeout as baseline. The build manifest, build log, and run log were
+retrieved locally. Automatic approval review then rejected remote compression and
+retrieval of the raw v4 VCD, citing a Codex usage limit through 2026-09-22 01:28 UTC.
+No v4 witness or security verdict can be inferred from the run log alone. The worker had
+a six-hour automatic deletion limit, so its trace may no longer be available; if so,
+rebuild and rerun v4 after remote access resumes.
+
+The matched-trace comparison seal now distinguishes one blocked witness from a validated
+security fix. It requires the repaired protected request and fault to remain present,
+and always leaves `security_fix_validated` false while marking
+`attacker_retest_required` when the matched witness is blocked. A subsequent attacker
+pass across independent seeds or variants is necessary before declaring the fix secure.

@@ -33,7 +33,15 @@ def main() -> int:
     same_control_flow = all(baseline[key] == repaired[key] for key in shared)
     baseline_requests = baseline["dependent_load_requests"]
     repaired_requests = repaired["dependent_load_requests"]
-    repair_effective = bool(baseline_requests and not repaired_requests and same_control_flow)
+    repair_effective = bool(
+        baseline["mechanism_witnessed"]
+        and baseline_requests
+        and not repaired_requests
+        and same_control_flow
+        and repaired["protected_load_requests"]
+        and repaired["load_page_faults"]
+        and not repaired["mechanism_witnessed"]
+    )
     result = {
         "schema_version": 1,
         "experiment": "boom-upstream-issue-715-attachment-before-after",
@@ -47,7 +55,8 @@ def main() -> int:
         "baseline_dependent_requests": baseline_requests,
         "repaired_dependent_requests": repaired_requests,
         "repair_effective": repair_effective,
-        "security_fix_validated": repair_effective,
+        "security_fix_validated": False,
+        "attacker_retest_required": repair_effective,
         "verdict": "repair-blocked-witness" if repair_effective else "repair-ineffective",
     }
     output.write_text(json.dumps(result, indent=2) + "\n")
