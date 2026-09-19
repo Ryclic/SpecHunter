@@ -16,20 +16,23 @@ def _trigger_preserved(witness: dict) -> bool:
     gadgets = gadget_cycles.values()
     if branch is None:
         return False
-    for resolution in witness["target_mispredicts"]:
-        for source in witness["protected_load_requests"]:
-            if not branch < source["cycle"] < resolution["cycle"]:
-                continue
-            if not all(cycle is not None and branch < cycle < source["cycle"] for cycle in gadgets):
-                continue
-            source_mask = int(source["branch_mask"], 16)
-            if any(
-                source["cycle"] < fault["cycle"] < resolution["cycle"]
-                and fault["badvaddr"] == source["vaddr"]
-                and source_mask & int(fault["branch_mask"], 16)
-                for fault in witness["load_page_faults"]
-            ):
-                return True
+    resolutions = [event for event in witness["target_mispredicts"] if event["cycle"] > branch]
+    if not resolutions:
+        return False
+    resolution = min(resolutions, key=lambda event: event["cycle"])
+    for source in witness["protected_load_requests"]:
+        if not branch < source["cycle"] < resolution["cycle"]:
+            continue
+        if not all(cycle is not None and branch < cycle < source["cycle"] for cycle in gadgets):
+            continue
+        source_mask = int(source["branch_mask"], 16)
+        if any(
+            source["cycle"] < fault["cycle"] < resolution["cycle"]
+            and fault["badvaddr"] == source["vaddr"]
+            and source_mask & int(fault["branch_mask"], 16)
+            for fault in witness["load_page_faults"]
+        ):
+            return True
     return False
 
 

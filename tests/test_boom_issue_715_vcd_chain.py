@@ -58,3 +58,14 @@ def test_later_valid_chain_is_not_hidden_by_earlier_unrelated_request():
         [{"cycle": 50}],
     )
     assert (dataflow, witness) == (True, True)
+
+
+def test_later_misprediction_cannot_extend_first_branch_window():
+    assert SCANNER._witness_flags(
+        10,
+        {0xD010028E00: 12, 0xD010028E04: 13},
+        [{"cycle": 30, "branch_mask": "0x1"}],
+        [{"cycle": 32, "branch_mask": "0x1"}],
+        [{"cycle": 40, "branch_mask": "0x1"}],
+        [{"cycle": 50}, {"cycle": 20}],
+    ) == (False, False)

@@ -365,9 +365,9 @@ cycle 3769, both wrong-path gadget PCs at cycles 3772–3773, a branch-masked pr
 TLB request at cycle 3807, dependent requests to the loaded value `0x59f` beginning at
 cycle 3809, a branch-masked load page fault, and resolution of the exact branch as a
 misprediction at cycle 3910. The compressed raw trace and its machine-derived JSON witness
-are in `docs/evidence/`. This proves transient protected-to-dependent address dataflow on
-historical RTL; it does not prove an architectural secret disclosure, which the evidence
-explicitly marks false.
+are in `docs/evidence/`. This establishes a correlated transient protected/dependent
+request sequence on historical RTL. The waveform does not directly prove register-level
+dependence or architectural secret disclosure; the latter is explicitly marked false.
 
 The isolated candidate repair built successfully, but the matched-seed repaired trace
 repeated every key event at the same cycle, including both dependent TLB requests.
@@ -498,3 +498,11 @@ missing or extra results now return inconclusive. Five regression cases cover ba
 lengths 0, 1, 2, 3, and 5. The September 19 source-bound fixture evaluation and seal
 were regenerated after this validator change; the 1,000-trial random discovery rate
 remains 57.25%. Validation: 139 passed, 2 skipped; Ruff and diff checks passed.
+
+The issue #715 scanner and repair comparison now close the recorded speculation window
+at the first target-branch misprediction after its fetch. A later misprediction cannot
+retroactively connect requests after an earlier resolution, where branch-mask bits may
+have been reused. Regressions cover out-of-order misprediction records and the same
+failure in the repair seal. All four stored baseline/v1–v3 VCDs rescan to equivalent
+JSON witnesses, so their rejected-repair verdicts remain unchanged. Validation:
+141 passed, 2 skipped; Ruff and diff checks passed.

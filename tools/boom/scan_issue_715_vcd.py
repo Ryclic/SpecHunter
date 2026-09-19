@@ -52,28 +52,33 @@ def _witness_flags(
     if branch_fetch_cycle is None:
         return False, False
     dataflow = False
-    for resolution in target_mispredicts:
-        for source in protected:
-            if not branch_fetch_cycle < source["cycle"] < resolution["cycle"]:
+    # A branch-mask bit can be reused after resolution. Later mispredictions
+    # cannot extend the window opened by this first recorded branch fetch.
+    resolutions = [event for event in target_mispredicts if event["cycle"] > branch_fetch_cycle]
+    if not resolutions:
+        return False, False
+    resolution = min(resolutions, key=lambda event: event["cycle"])
+    for source in protected:
+        if not branch_fetch_cycle < source["cycle"] < resolution["cycle"]:
+            continue
+        source_mask = int(source["branch_mask"], 16)
+        for sink in dependent:
+            if not source["cycle"] < sink["cycle"] < resolution["cycle"]:
                 continue
-            source_mask = int(source["branch_mask"], 16)
-            for sink in dependent:
-                if not source["cycle"] < sink["cycle"] < resolution["cycle"]:
-                    continue
-                shared_mask = source_mask & int(sink["branch_mask"], 16)
-                if not shared_mask:
-                    continue
-                dataflow = True
-                gadgets_in_window = all(
-                    branch_fetch_cycle < gadget_fetches.get(pc, -1) < source["cycle"]
-                    for pc in GADGET_PCS
-                )
-                if gadgets_in_window and any(
-                    sink["cycle"] < fault["cycle"] < resolution["cycle"]
-                    and shared_mask & int(fault["branch_mask"], 16)
-                    for fault in faults
-                ):
-                    return True, True
+            shared_mask = source_mask & int(sink["branch_mask"], 16)
+            if not shared_mask:
+                continue
+            dataflow = True
+            gadgets_in_window = all(
+                branch_fetch_cycle < gadget_fetches.get(pc, -1) < source["cycle"]
+                for pc in GADGET_PCS
+            )
+            if gadgets_in_window and any(
+                sink["cycle"] < fault["cycle"] < resolution["cycle"]
+                and shared_mask & int(fault["branch_mask"], 16)
+                for fault in faults
+            ):
+                return True, True
     return dataflow, False
 
 

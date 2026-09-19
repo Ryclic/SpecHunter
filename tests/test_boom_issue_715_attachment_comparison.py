@@ -79,3 +79,15 @@ def test_late_fault_is_not_a_valid_repair(tmp_path, monkeypatch):
     result = _seal(tmp_path, monkeypatch, repaired)
     assert result["repaired_trigger_preserved"] is False
     assert result["repair_effective"] is False
+
+
+def test_earlier_resolution_closes_repair_trigger_window(tmp_path, monkeypatch):
+    repaired = json.loads(
+        (ROOT / "docs/evidence/boom-issue-715-attachment-baseline-2026-09-17.json").read_text()
+    )
+    repaired["dependent_load_requests"] = []
+    repaired["mechanism_witnessed"] = False
+    repaired["target_mispredicts"].append({"cycle": 3800, "pc": repaired["branch_pc"]})
+    assert MODULE._trigger_preserved(repaired) is False
+    result = _seal(tmp_path, monkeypatch, repaired)
+    assert result["repair_effective"] is False
