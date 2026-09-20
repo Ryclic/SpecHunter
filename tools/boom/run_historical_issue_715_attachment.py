@@ -161,7 +161,7 @@ def main() -> int:
         "+permissive",
         "+dramsim",
         f"+dramsim_ini_dir={dramsim}",
-        "+max-cycles=150000",
+        "+max-cycles=10000" if trace else "+max-cycles=150000",
         f"+loadmem={loadmem}",
         "+loadmem_addr=80000000",
         "+permissive-off",
@@ -234,6 +234,7 @@ def main() -> int:
         evidence["witness_sha256"] = write_diagnostic_witness(waveform, witness_path)
         evidence["witness_path"] = str(witness_path)
         evidence["seed"] = 1789717734
+        evidence["max_cycles"] = 10000
         evidence["executed_elf_sha256"] = digest(attachment)
         evidence["candidate_manifest_sha256"] = candidate_manifest_sha256
     output.write_text(json.dumps(evidence, indent=2) + "\n")

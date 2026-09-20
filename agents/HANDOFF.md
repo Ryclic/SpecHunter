@@ -14,7 +14,8 @@ diagnostic, use `build_historical_issue_715.sh /ABS/CHIPYARD /ABS/build.json
 trace` to compile the pinned Makefile's separate `-debug` simulator and write
 a distinct trace-build manifest. The runner rejects ordinary or unverified
 simulators, checks VCD support, fixes the seed to
-`1789717734`, and requires and hashes a captured waveform. The diagnostic
+`1789717734`, limits the run to 10,000 cycles like the preserved baseline,
+and requires and hashes a captured waveform. The diagnostic
 runner also scans the raw waveform and records the witness JSON hash while
 leaving the security verdict pending. Diagnostic
 waveform attribution requires a valid same-cycle LSU execute request matched
@@ -32,7 +33,9 @@ prepared diagnostic candidate SHA-256:
 The pinned upstream Chipyard Verilator Makefile confirms `default` and `debug`
 produce distinct simulator paths and `debug` enables tracing. This corrected
 build selection was source-reviewed and shell syntax-checked locally; no
-trace-enabled BOOM build or live run was made. Local validation: Ruff lint and
+trace-enabled BOOM build or live run was made. The diagnostic limit and updated
+worker runbook passed five focused tests plus Ruff and `git diff --check`; no
+paid cloud resources were created. Local validation: Ruff lint and
 format pass; `PYTHONPATH=src .venv/bin/pytest -q
 -m 'not chia'` passes (169 passed, 1 skipped, 1 deselected). The prior unrestricted
 suite reported 166 passed, 1 skipped, and one local CHIA/Ray startup timeout
