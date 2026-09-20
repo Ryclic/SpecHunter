@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "experiment": "boom-upstream-issue-715-vcd-witness",
   "trace_sha256": "5f7250b931c825e83ad36040d8bec2ed90d885da205a7359a53e6556d21ca1af",
   "branch_pc": "0xd0100287d0",
@@ -42,6 +42,7 @@
       "branch_mask": "0x1"
     }
   ],
+  "tlb_miss_fast_wakeup_observations": [],
   "load_page_faults": [
     {
       "cycle": 3890,

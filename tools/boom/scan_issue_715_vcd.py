@@ -87,6 +87,7 @@ def _witness_flags(
 def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     ids: dict[str, set[str]] = {}
     frontend_pc_ids: dict[str, set[str]] = {}
+    lsu_ids: dict[str, set[str]] = {}
     values: dict[str, int] = {}
     timestamp = 0
     header = True
@@ -97,6 +98,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     tlb_requests: list[dict] = []
     load_faults: list[dict] = []
     mispredicts: list[dict] = []
+    fast_wakeups: list[dict] = []
 
     def finish_timestamp() -> None:
         nonlocal branch_frontend_pc_cycle
@@ -131,6 +133,32 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                 }
                 if not tlb_requests or tlb_requests[-1] != event:
                     tlb_requests.append(event)
+        wakeup_related = set().union(*(lsu_ids.get(name, set()) for name in lsu_ids))
+        if (
+            changed & wakeup_related
+            and _one(values, lsu_ids, "io_core_spec_ld_wakeup_0_valid")
+            and _one(values, lsu_ids, "fired_load_incoming_REG")
+            and _one(values, lsu_ids, "mem_tlb_miss_0")
+            and not _one(values, lsu_ids, "dmem_req_fire_0")
+        ):
+            preceding = next(
+                (
+                    request["cycle"]
+                    for request in reversed(tlb_requests)
+                    if request["cycle"] == cycle - 1 and request["vaddr"] == hex(PROTECTED_VADDR)
+                ),
+                None,
+            )
+            if preceding is not None:
+                event = {
+                    "cycle": cycle,
+                    "preceding_protected_request_cycle": preceding,
+                    "wakeup_pdst": hex(_one(values, lsu_ids, "io_core_spec_ld_wakeup_0_bits")),
+                    "tlb_miss": True,
+                    "dcache_request_fired": False,
+                }
+                if not fast_wakeups or fast_wakeups[-1] != event:
+                    fast_wakeups.append(event)
         fault_related = set().union(
             ids.get("lsu_io_core_lxcpt_valid", set()),
             ids.get("lsu_io_core_lxcpt_bits_cause", set()),
@@ -177,12 +205,31 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                             frontend_pc_ids.setdefault("fb_pc_2", set()).add(identifier)
                         if width == 1 and name == "io_enq_valid":
                             frontend_pc_ids.setdefault("fb_io_enq_valid", set()).add(identifier)
+                    if scope.endswith(".boom_tile.lsu") and name in {
+                        "io_core_spec_ld_wakeup_0_valid",
+                        "io_core_spec_ld_wakeup_0_bits",
+                        "fired_load_incoming_REG",
+                        "mem_tlb_miss_0",
+                        "dmem_req_fire_0",
+                    }:
+                        lsu_ids.setdefault(name, set()).add(identifier)
                 elif "$enddefinitions" in line:
                     if not all(
                         frontend_pc_ids.get(name)
                         for name in ("s0_vpc", "fb_pc_2", "fb_io_enq_valid")
                     ):
                         raise RuntimeError("historical frontend PC signals are missing")
+                    if not all(
+                        lsu_ids.get(name)
+                        for name in (
+                            "io_core_spec_ld_wakeup_0_valid",
+                            "io_core_spec_ld_wakeup_0_bits",
+                            "fired_load_incoming_REG",
+                            "mem_tlb_miss_0",
+                            "dmem_req_fire_0",
+                        )
+                    ):
+                        raise RuntimeError("historical LSU wakeup signals are missing")
                     header = False
                 continue
             if line.startswith("#"):
@@ -220,7 +267,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         target_mispredicts,
     )
     return {
-        "schema_version": 3,
+        "schema_version": 4,
         "experiment": "boom-upstream-issue-715-vcd-witness",
         "trace_sha256": _sha256(path),
         "branch_pc": hex(BRANCH_PC),
@@ -235,6 +282,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         },
         "protected_load_requests": protected,
         "dependent_load_requests": dependent,
+        "tlb_miss_fast_wakeup_observations": fast_wakeups,
         "load_page_faults": faults,
         "target_mispredicts": target_mispredicts,
         "transient_dataflow_witnessed": dataflow,

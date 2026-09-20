@@ -79,18 +79,25 @@ def build_seal(root: Path) -> dict:
     baseline_trace_hash = _digest(root / baseline_trace_name)
     baseline_run_name, baseline_run_hash = _run_log(root, BASELINE[2])
     if (
-        baseline.get("schema_version") != 3
+        baseline.get("schema_version") != 4
         or baseline.get("experiment") != "boom-upstream-issue-715-vcd-witness"
         or baseline.get("frontend_pc_signal_sources") != FRONTEND_SOURCES
         or baseline.get("gadget_frontend_pc_cycles", {}).get("0xd010028e04") is None
         or baseline.get("mechanism_witnessed") is not True
         or baseline.get("architectural_secret_disclosure_proven") is not False
         or baseline.get("trace_sha256") != baseline_trace_hash
+        or not baseline.get("tlb_miss_fast_wakeup_observations")
     ):
         raise AttachmentEvidenceError("baseline witness or raw trace differs")
     repairs = []
     revisions = set()
-    for witness_suffix, trace_suffix, build_suffix, comparison_suffix, run_suffix in REPAIRS:
+    for index, (
+        witness_suffix,
+        trace_suffix,
+        build_suffix,
+        comparison_suffix,
+        run_suffix,
+    ) in enumerate(REPAIRS):
         witness, witness_name, witness_hash = _read(root, witness_suffix)
         build, build_name, build_hash = _read(root, build_suffix)
         comparison, comparison_name, comparison_hash = _read(root, comparison_suffix)
@@ -99,7 +106,7 @@ def build_seal(root: Path) -> dict:
         run_name, run_hash = _run_log(root, run_suffix)
         revisions.add((build.get("chipyard_revision"), build.get("boom_revision")))
         if (
-            witness.get("schema_version") != 3
+            witness.get("schema_version") != 4
             or witness.get("frontend_pc_signal_sources") != FRONTEND_SOURCES
             or witness.get("experiment") != "boom-upstream-issue-715-vcd-witness"
             or witness.get("gadget_frontend_pc_cycles", {}).get("0xd010028e04") is None
@@ -120,6 +127,8 @@ def build_seal(root: Path) -> dict:
             or comparison.get("repair_effective") is not False
             or comparison.get("security_fix_validated") is not False
             or comparison.get("verdict") != "repair-ineffective"
+            or bool(witness.get("tlb_miss_fast_wakeup_observations")) != (index < 2)
+            or not witness.get("dependent_load_requests")
         ):
             raise AttachmentEvidenceError(f"rejected repair evidence differs: {build_name}")
         repairs.append(
@@ -135,6 +144,7 @@ def build_seal(root: Path) -> dict:
                 "comparison_sha256": comparison_hash,
                 "run_log": run_name,
                 "run_log_sha256": run_hash,
+                "tlb_miss_fast_wakeup_count": len(witness["tlb_miss_fast_wakeup_observations"]),
             }
         )
     v4, v4_name, v4_hash = _read(root, V4_BUILD)
@@ -154,6 +164,7 @@ def build_seal(root: Path) -> dict:
             "waveform_sha256": baseline_trace_hash,
             "run_log": baseline_run_name,
             "run_log_sha256": baseline_run_hash,
+            "tlb_miss_fast_wakeup_count": len(baseline["tlb_miss_fast_wakeup_observations"]),
         },
         "repairs": repairs,
         "historical_revisions": {
@@ -165,6 +176,7 @@ def build_seal(root: Path) -> dict:
         "v4_run_log": v4_run_name,
         "v4_run_log_sha256": v4_run_hash,
         "v4_security_verdict": "unresolved-no-waveform",
+        "v3_fast_wakeup_suppressed_but_request_chain_remained": True,
         "security_fix_validated": False,
     }
 

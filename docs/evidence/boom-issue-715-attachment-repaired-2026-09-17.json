@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "experiment": "boom-upstream-issue-715-vcd-witness",
   "trace_sha256": "1df480bb1d27dd1ef50e8ef47ff6d3f26bf4d07c51a264aaccacd57b1aa24d0e",
   "branch_pc": "0xd0100287d0",
@@ -40,6 +40,15 @@
       "cycle": 3853,
       "vaddr": "0x59f",
       "branch_mask": "0x1"
+    }
+  ],
+  "tlb_miss_fast_wakeup_observations": [
+    {
+      "cycle": 3808,
+      "preceding_protected_request_cycle": 3807,
+      "wakeup_pdst": "0x12",
+      "tlb_miss": true,
+      "dcache_request_fired": false
     }
   ],
   "load_page_faults": [

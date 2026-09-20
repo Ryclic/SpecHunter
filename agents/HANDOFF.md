@@ -400,15 +400,18 @@ hash-pinned live build and exact-seed trace completed on the six-hour-capped wor
 cycles 3809 and 3853, exactly matching baseline, so its sealed verdict is also
 `repair-ineffective`.
 
-That failure exposed the narrower historical bug: `fired_load_incoming` records an LSU
-issue even when `dmem_req_fire` is false because the TLB missed. The fast load-use wakeup
-used only the former, releasing the dependent instruction with a stale physical-register
-value before any cache response existed. Repair v4 is a minimal hash-pinned candidate that
-requires the aligned, registered `dmem_req_fire` before asserting `spec_ld_wakeup`. Its
-live build is in progress. If the matched trace removes the dependent request while
-preserving the trigger and protected TLB request, return to the attacker with additional
-seeds and attack variants before accepting the repair. Application-default credentials
-authorized this worker noninteractively, and the prior worker list was empty.
+That failure suggested a narrower hypothesis: `fired_load_incoming` can record an LSU
+issue even when `dmem_req_fire` is false because the TLB missed. A fast load-use wakeup
+then appeared capable of releasing a consumer before any cache response existed.
+Repair v4 is a minimal hash-pinned candidate that requires the aligned, registered
+`dmem_req_fire` before asserting `spec_ld_wakeup`. Later waveform analysis showed that
+v3 already suppressed the observed TLB-miss fast wakeup while the dependent-address
+requests persisted, so this wakeup alone does not explain the request chain. V4's
+effectiveness is unproven and the remaining release/data path needs investigation.
+If a future matched trace removes the dependent request while preserving the trigger,
+return to the attacker with additional seeds and variants before accepting the repair.
+Application-default credentials authorized the worker noninteractively, and the prior
+worker list was empty.
 
 On 2026-09-18, v4 built successfully on the worker: the release simulator SHA-256 is
 `a1ba8a64bfbfc69b6b5dd7eb8b53492611da50c1f0567f2c630faf2c047e0f55`.
@@ -594,4 +597,16 @@ case seal, and the demo were regenerated. A synthetic VCD regression confirms th
 a predictor-only PC cannot satisfy the new observation rule. CI now rescans every
 stored waveform and requires exact agreement with its JSON witness. Validation:
 159 passed, 2 skipped; Ruff lint and format and `git diff --check` passed.
-Publication is next; v4 remains unresolved.
+This was published as `6b4a26a` on PR #17, and all three GitHub checks passed.
+V4 remains unresolved.
+
+An LSU signal review found that baseline, v1, and v2 record a protected-page TLB
+request at cycle 3807, then `mem_tlb_miss_0=1`, speculative load wakeup valid, and
+`dmem_req_fire_0=0` at 3808; the `0x59f` request follows at 3809. V3 has the same
+TLB miss and no D-cache fire but no speculative wakeup valid at 3808, yet the
+`0x59f` request still follows. The scanner now records this narrowly as a
+TLB-miss fast-wakeup observation, not a proof of dependency. All four witnesses,
+the case seal, and the demo were regenerated; the demo notes that v3 weakens the
+fast-wakeup-only root-cause hypothesis. The v4 waveform and a causal explanation
+for the persistent request remain outstanding. Validation: 160 passed, 2 skipped;
+Ruff lint and format and `git diff --check` passed. Publication is next.

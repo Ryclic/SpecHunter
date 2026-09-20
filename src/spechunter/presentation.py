@@ -336,6 +336,7 @@ def render(
 <div class="card"><b>{len(baseline_witness["dependent_load_requests"])}</b><span>Dependent-address requests</span></div>
 <div class="card"><b>{len(attachment["repairs"])}</b><span>RTL candidates rejected</span></div>
 <div class="card"><b>Unresolved</b><span>Fourth candidate verdict</span></div></div>
+<p>The baseline shows a TLB miss and speculative load wakeup one cycle after the protected-page request, with no D-cache request firing; a dependent-address request follows. Candidate v3 suppressed that wakeup, yet the dependent-address requests persisted. This weakens the fast-wakeup-only repair hypothesis without establishing another causal path.</p>
 <p>The first three candidate repairs reproduced the dependent requests and failed the matched-trace gate. The fourth built and ran, but its waveform was not recovered; no security fix is claimed.</p>
 <div class="card"><span>Original waveform SHA-256</span><code>{escape(attachment["baseline"]["waveform_sha256"])}</code></div>
 <div class="card"><span>Case seal SHA-256</span><code>{escape(attachment_hash)}</code></div></section>"""

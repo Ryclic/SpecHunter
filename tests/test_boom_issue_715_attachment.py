@@ -104,6 +104,15 @@ def test_historical_trace_seal_records_ordered_issue_mechanism():
         evidence["branch_frontend_pc_cycle"] < evidence["gadget_frontend_pc_cycles"]["0xd010028e00"]
     )
     assert evidence["gadget_frontend_pc_cycles"]["0xd010028e04"] == 3802
+    assert evidence["tlb_miss_fast_wakeup_observations"] == [
+        {
+            "cycle": 3808,
+            "preceding_protected_request_cycle": 3807,
+            "wakeup_pdst": "0x12",
+            "tlb_miss": True,
+            "dcache_request_fired": False,
+        }
+    ]
     protected = evidence["protected_load_requests"][0]
     request = evidence["dependent_load_requests"][0]
     resolution = evidence["target_mispredicts"][0]
@@ -114,6 +123,17 @@ def test_historical_trace_seal_records_ordered_issue_mechanism():
     assert request["branch_mask"] == "0x1"
     assert request["cycle"] < resolution["cycle"]
     assert resolution["pc"] == evidence["branch_pc"]
+
+
+def test_v3_suppressed_fast_wakeup_without_blocking_request_chain():
+    evidence = json.loads(
+        (
+            ROOT / "docs/evidence/boom-issue-715-attachment-repair-v3-witness-2026-09-18.json"
+        ).read_text()
+    )
+    assert evidence["tlb_miss_fast_wakeup_observations"] == []
+    assert evidence["dependent_load_requests"]
+    assert evidence["mechanism_witnessed"] is True
 
 
 def test_matched_repair_result_is_fail_closed():

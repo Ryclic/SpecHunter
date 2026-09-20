@@ -44,5 +44,7 @@
    waveform was not recovered, so its security result is unresolved. The demo seal
    binds baseline and failed-repair waveforms, witnesses, builds, comparisons, and
    all five run logs. Recovering a v4 waveform and running independent attacker seeds
-   and variants remain necessary before accepting any fix. The waveform does not
-   prove register-level dependence or architectural secret disclosure.
+   and variants remain necessary before accepting any fix. V3 removed the observed
+   TLB-miss fast wakeup but did not remove the request chain, so another release/data
+   path needs investigation before attributing root cause to that wakeup. The waveform
+   does not prove register-level dependence or architectural secret disclosure.

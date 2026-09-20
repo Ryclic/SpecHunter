@@ -379,6 +379,14 @@ The second gadget PC is observed at cycle 3802; its earlier branch-predictor gue
 themselves prove either gadget instruction retired or that the dependent request used
 a value from the protected load.
 
+The LSU trace narrows the repair investigation. One cycle after the baseline's
+protected TLB request, it shows a TLB miss and a speculative load wakeup while the
+D-cache request did not fire; the `0x59f` request follows in the next cycle. V1 and
+v2 show the same sequence. V3 suppresses that fast wakeup, but the `0x59f` requests
+persist. Thus the observed fast wakeup is not sufficient to explain the dependent-
+address request chain; the remaining release/data path needs analysis. These
+signals still do not prove that protected data reached a consumer.
+
 Three separately built RTL candidates were retested against the same attachment and
 seed. All reproduced the dependent requests, so the comparison records reject all
 three. A fourth candidate built and completed a simulator run, but its waveform was
