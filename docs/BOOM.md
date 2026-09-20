@@ -417,15 +417,17 @@ protected load, dependent load, ELF headers, and all other bytes intact. On a
 provisioned historical BOOM worker with the pinned simulator/build manifest, run:
 
 ```sh
+bash tools/boom/build_historical_issue_715.sh /ABS/CHIPYARD /ABS/trace-build.json trace
 python tools/boom/prepare_issue_715_isolated_gadget.py /ABS/original.elf /ABS/isolated.elf /ABS/candidate.json
 python tools/boom/run_historical_issue_715_attachment.py /ABS/CHIPYARD /ABS/isolated.elf /ABS/isolated-evidence.json /ABS/original.elf /ABS/candidate.json
 ```
 
 The builder checks the original attachment SHA-256 and the old instruction. The
 runner reproduces the mutation from the original and checks the candidate and
-manifest before executing. The diagnostic runner requires a simulator whose
-`--help` advertises `--vcd`; a build without trace support fails before the
-run and must be rebuilt with tracing enabled. It sets the pinned seed
+manifest before executing. The `trace` build target uses the pinned Chipyard
+Makefile's separate `debug` simulator and records its distinct SHA-256 in a
+trace-build manifest; the runner rejects an ordinary simulator or mismatched
+manifest. Its help must advertise the `-v` VCD option. It sets the pinned seed
 `1789717734`, requires a nonempty VCD waveform, and records its hash in the
 evidence JSON. It scans the VCD with `scan_issue_715_vcd.py` and binds the
 resulting witness JSON by SHA-256 in the same evidence record. Retain both

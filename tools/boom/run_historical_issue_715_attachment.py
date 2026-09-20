@@ -60,8 +60,8 @@ def require_waveform_support(simulator: Path) -> None:
     help_text = subprocess.run(
         [str(simulator), "--help"], capture_output=True, text=True, timeout=30, check=True
     ).stdout
-    if "--vcd" not in help_text:
-        raise RuntimeError("diagnostic requires a trace-enabled simulator supporting --vcd")
+    if "vcd" not in help_text.lower() or "-v" not in help_text:
+        raise RuntimeError("diagnostic requires a trace-enabled simulator supporting -v VCD")
 
 
 def write_diagnostic_witness(waveform: Path, destination: Path) -> str:
@@ -106,11 +106,22 @@ def main() -> int:
         )
     elif digest(attachment) != values["ISSUE_715_ATTACHMENT_ELF_SHA256"]:
         raise RuntimeError("issue #715 attachment ELF digest mismatch")
-    manifest_path = chipyard / "sims/verilator/spechunter-historical-build.json"
+    trace = candidate_manifest_sha256 is not None
+    manifest_path = (
+        chipyard
+        / "sims/verilator"
+        / (
+            "spechunter-historical-trace-build.json"
+            if trace
+            else "spechunter-historical-build.json"
+        )
+    )
     manifest = json.loads(manifest_path.read_text())
     expected = {
         "experiment": "boom-historical-issue-715-build",
-        "variant": "historical-issue-715-baseline",
+        "variant": "historical-issue-715-baseline-trace"
+        if trace
+        else "historical-issue-715-baseline",
         "chipyard_revision": values["CHIPYARD_REVISION"],
         "boom_revision": values["BOOM_REVISION"],
         "config": values["BOOM_CONFIG"],
@@ -118,7 +129,10 @@ def main() -> int:
     }
     if any(manifest.get(key) != value for key, value in expected.items()):
         raise RuntimeError("historical build manifest provenance mismatch")
-    simulators = list((chipyard / "sims/verilator").glob(f"simulator-*-{values['BOOM_CONFIG']}"))
+    suffix = "-debug" if trace else ""
+    simulators = list(
+        (chipyard / "sims/verilator").glob(f"simulator-*-{values['BOOM_CONFIG']}{suffix}")
+    )
     if len(simulators) != 1 or digest(simulators[0]) != manifest.get("simulator_sha256"):
         raise RuntimeError("historical simulator does not match its build manifest")
     if candidate_manifest_sha256:
@@ -140,7 +154,7 @@ def main() -> int:
     argv = [
         str(simulators[0]),
         *(
-            ["--seed=1789717734", "--vcd", str(output.with_suffix(".vcd"))]
+            ["--seed=1789717734", f"-v{output.with_suffix('.vcd')}"]
             if candidate_manifest_sha256
             else []
         ),

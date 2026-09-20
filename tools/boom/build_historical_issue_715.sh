@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 2 || "$1" != /* || "$2" != /* ]]; then
-  echo "usage: $0 /ABSOLUTE/CHIPYARD /ABSOLUTE/EVIDENCE.json" >&2
+if [[ ( $# -ne 2 && $# -ne 3 ) || "$1" != /* || "$2" != /* || ( $# -eq 3 && "$3" != trace ) ]]; then
+  echo "usage: $0 /ABSOLUTE/CHIPYARD /ABSOLUTE/EVIDENCE.json [trace]" >&2
   exit 2
 fi
 chipyard=$1
@@ -44,10 +44,22 @@ source "$miniforge/etc/profile.d/conda.sh"
 source "$chipyard/env.sh"
 set -u
 start=$(date +%s)
-make -C "$chipyard/sims/verilator" CONFIG="$BOOM_CONFIG" -j"${SPECHUNTER_BUILD_JOBS:-$(nproc)}"
-mapfile -t simulators < <(find "$chipyard/sims/verilator" -maxdepth 1 -type f -executable -name "simulator-*-${BOOM_CONFIG}" -print)
-[[ ${#simulators[@]} -eq 1 ]] || { echo "expected exactly one simulator" >&2; exit 2; }
+target=default
+suffix=
 manifest="$chipyard/sims/verilator/spechunter-historical-build.json"
+if [[ $# -eq 3 ]]; then
+  [[ "$variant" == historical-issue-715-baseline ]] || {
+    echo "trace diagnostic requires the pristine historical BOOM source" >&2
+    exit 2
+  }
+  target=debug
+  suffix=-debug
+  variant=historical-issue-715-baseline-trace
+  manifest="$chipyard/sims/verilator/spechunter-historical-trace-build.json"
+fi
+make -C "$chipyard/sims/verilator" CONFIG="$BOOM_CONFIG" -j"${SPECHUNTER_BUILD_JOBS:-$(nproc)}" "$target"
+mapfile -t simulators < <(find "$chipyard/sims/verilator" -maxdepth 1 -type f -executable -name "simulator-*-${BOOM_CONFIG}${suffix}" -print)
+[[ ${#simulators[@]} -eq 1 ]] || { echo "expected exactly one simulator" >&2; exit 2; }
 python - "$evidence" "$manifest" "${simulators[0]}" "$start" "$CHIPYARD_REVISION" "$BOOM_REVISION" "$BOOM_CONFIG" "$variant" "$actual_lsu" <<'PY'
 import hashlib, json, sys
 from datetime import datetime, timezone
