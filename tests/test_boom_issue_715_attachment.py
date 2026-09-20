@@ -129,6 +129,7 @@ def test_historical_trace_seal_records_ordered_issue_mechanism():
             "load_miss": True,
             "register_read_valid": False,
             "ldq_idx": "0x1",
+            "rob_idx": "0x1",
             "branch_mask": "0x1",
             "dispatch_pc_lob": "0x4",
         }

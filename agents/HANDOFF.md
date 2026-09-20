@@ -706,3 +706,21 @@ Validation: raw baseline/v1-v3 VCD rescans matched all four schema-v9 witness
 JSON files; 162 passed, 2 skipped; Ruff lint/format and `git diff --check`
 passed. The comparison JSON records, case seal, and demo were regenerated.
 No paid model or GCP compute call was made in this source-and-trace analysis.
+
+## Reorder-buffer identity guard
+
+The historical VCD scanner now joins gadget dispatch to issue and valid LSU
+execute using reorder-buffer index as well as physical destination, load-queue
+slot, overlapping branch mask, and (at issue) physical source. These identifiers
+can each be reused after a flush; a synthetic regression reuses the register,
+source, branch mask, and load-queue slot with a different reorder-buffer index and
+confirms it cannot be misattributed to the gadget. All four raw waveforms were
+rescanned and their source-bound witnesses, comparison records, case seal, and
+demo regenerated (schema v10); the substantive security verdict is unchanged.
+No local BOOM simulator or cross-toolchain is present, so a new source-backed
+reproducing run needs provisioned compute after verifying the current trial
+credit and the resource's cost. Never claim a fix from the current baseline.
+Validation for schema v10: `.venv/bin/pytest -q` passed with 163 passed,
+2 skipped, including full recomputation of the four checked-in raw waveform
+witnesses and the new reorder-buffer-reuse regression. Ruff lint, format,
+`git diff --check`, seal verification, and demo regeneration passed.

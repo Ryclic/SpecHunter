@@ -374,8 +374,9 @@ The case seal binds this disassembly by SHA-256. This proves a static instructio
 dependency, not that the protected load supplied the value observed at runtime.
 The baseline waveform records the branch and gadget frontend PCs, a protected-page
 translation request, a later `0x59f` translation request, a load page fault, and
-branch resolution. Dispatch and load-queue identifiers establish that the `0x59f`
-request comes from the independent third instruction at gadget offset `+8`, not the
+branch resolution. Dispatch, reorder-buffer, and load-queue identifiers establish
+that the `0x59f` request comes from the independent third instruction at gadget
+offset `+8`, not the
 dependent load at `+4`. No recorded branch-masked translation request came from that dependent
 load. Thus this execution does **not** reproduce the protected-data-dependent
 mechanism or prove secret disclosure. A shared branch mask alone cannot establish

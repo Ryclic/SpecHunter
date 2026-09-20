@@ -71,6 +71,42 @@ def test_later_misprediction_cannot_extend_first_branch_window():
     ) == (False, False)
 
 
+def test_reused_destination_and_load_queue_slot_require_same_rob_entry():
+    dispatches = [
+        {
+            "cycle": 10,
+            "pdst": "0x15",
+            "prs1": "0x12",
+            "ldq_idx": "0x1",
+            "rob_idx": "0x1",
+            "branch_mask": "0x1",
+            "pc_lob": "0x4",
+        }
+    ]
+    match = SCANNER._match_dispatch(
+        dispatches,
+        cycle=12,
+        pdst="0x15",
+        prs1="0x12",
+        ldq_idx="0x1",
+        rob_idx="0x1",
+        branch_mask=1,
+    )
+    assert match == dispatches[0]
+    assert (
+        SCANNER._match_dispatch(
+            dispatches,
+            cycle=20,
+            pdst="0x15",
+            prs1="0x12",
+            ldq_idx="0x1",
+            rob_idx="0x9",
+            branch_mask=1,
+        )
+        is None
+    )
+
+
 def test_predicted_pc_alone_is_not_a_frontend_observation(tmp_path):
     path = tmp_path / "predictor-only.vcd"
     path.write_text(
@@ -97,10 +133,12 @@ def test_predicted_pc_alone_is_not_a_frontend_observation(tmp_path):
         "$var wire 1 e io_dis_uops_0_bits_prs1_busy $end\n"
         "$var wire 4 f io_dis_uops_0_bits_ldq_idx $end\n"
         "$var wire 4 g io_dis_uops_0_bits_br_mask $end\n"
+        "$var wire 5 u io_dis_uops_0_bits_rob_idx $end\n"
         "$var wire 1 h io_iss_valids_0 $end\n"
         "$var wire 6 i io_iss_uops_0_pdst $end\n"
         "$var wire 6 j io_iss_uops_0_prs1 $end\n"
         "$var wire 4 k io_iss_uops_0_ldq_idx $end\n"
+        "$var wire 5 v io_iss_uops_0_rob_idx $end\n"
         "$var wire 4 l io_iss_uops_0_br_mask $end\n"
         "$var wire 1 r io_iss_uops_0_iw_p1_poisoned $end\n"
         "$upscope $end\n"
@@ -114,6 +152,7 @@ def test_predicted_pc_alone_is_not_a_frontend_observation(tmp_path):
         "$var wire 1 m io_core_exe_0_req_valid $end\n"
         "$var wire 6 n io_core_exe_0_req_bits_uop_pdst $end\n"
         "$var wire 4 o io_core_exe_0_req_bits_uop_ldq_idx $end\n"
+        "$var wire 5 w io_core_exe_0_req_bits_uop_rob_idx $end\n"
         "$var wire 4 p io_core_exe_0_req_bits_uop_br_mask $end\n"
         "$var wire 40 q io_core_exe_0_req_bits_addr $end\n"
         "$upscope $end\n"

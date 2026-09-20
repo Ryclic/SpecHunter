@@ -1,5 +1,5 @@
 {
-  "schema_version": 9,
+  "schema_version": 10,
   "experiment": "boom-upstream-issue-715-attachment-before-after",
   "repair_variant": "historical-issue-715-fault-dependent-kill",
   "baseline_trace_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
@@ -24,6 +24,7 @@
       "load_miss": true,
       "register_read_valid": false,
       "ldq_idx": "0x1",
+      "rob_idx": "0x1",
       "branch_mask": "0x1",
       "dispatch_pc_lob": "0x4"
     }

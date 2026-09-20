@@ -1,5 +1,5 @@
 {
-  "schema_version": 9,
+  "schema_version": 10,
   "experiment": "boom-upstream-issue-715-vcd-witness",
   "trace_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
   "branch_pc": "0xd0100287d0",
@@ -66,6 +66,7 @@
       "prs1": "0x12",
       "prs1_busy": true,
       "ldq_idx": "0x1",
+      "rob_idx": "0x1",
       "branch_mask": "0x1"
     }
   ],
@@ -77,6 +78,7 @@
       "prs1": "0x3",
       "prs1_busy": false,
       "ldq_idx": "0x0",
+      "rob_idx": "0x0",
       "branch_mask": "0x1"
     },
     {
@@ -86,6 +88,7 @@
       "prs1": "0x12",
       "prs1_busy": true,
       "ldq_idx": "0x1",
+      "rob_idx": "0x1",
       "branch_mask": "0x1"
     },
     {
@@ -95,6 +98,7 @@
       "prs1": "0x11",
       "prs1_busy": false,
       "ldq_idx": "0x2",
+      "rob_idx": "0x2",
       "branch_mask": "0x1"
     }
   ],
@@ -107,6 +111,7 @@
       "load_miss": false,
       "register_read_valid": true,
       "ldq_idx": "0x0",
+      "rob_idx": "0x0",
       "branch_mask": "0x1",
       "dispatch_pc_lob": "0x0"
     },
@@ -118,6 +123,7 @@
       "load_miss": false,
       "register_read_valid": true,
       "ldq_idx": "0x2",
+      "rob_idx": "0x2",
       "branch_mask": "0x1",
       "dispatch_pc_lob": "0x8"
     },
@@ -129,6 +135,7 @@
       "load_miss": true,
       "register_read_valid": false,
       "ldq_idx": "0x1",
+      "rob_idx": "0x1",
       "branch_mask": "0x1",
       "dispatch_pc_lob": "0x4"
     }
@@ -142,6 +149,7 @@
       "load_miss": true,
       "register_read_valid": false,
       "ldq_idx": "0x1",
+      "rob_idx": "0x1",
       "branch_mask": "0x1",
       "dispatch_pc_lob": "0x4"
     }
@@ -151,6 +159,7 @@
       "cycle": 3807,
       "pdst": "0x12",
       "ldq_idx": "0x0",
+      "rob_idx": "0x0",
       "branch_mask": "0x1",
       "vaddr": "0xd010098000",
       "dispatch_pc_lob": "0x0"
@@ -159,6 +168,7 @@
       "cycle": 3809,
       "pdst": "0x16",
       "ldq_idx": "0x2",
+      "rob_idx": "0x2",
       "branch_mask": "0x1",
       "vaddr": "0x59f",
       "dispatch_pc_lob": "0x8"

@@ -41,6 +41,31 @@ def _one(values: dict[str, int], ids: dict[str, set[str]], name: str, default: i
     return found.pop()
 
 
+def _match_dispatch(
+    dispatches: list[dict],
+    *,
+    cycle: int,
+    pdst: str,
+    ldq_idx: str,
+    rob_idx: str,
+    branch_mask: int,
+    prs1: str | None = None,
+) -> dict | None:
+    return next(
+        (
+            dispatch
+            for dispatch in reversed(dispatches)
+            if dispatch["cycle"] <= cycle
+            and dispatch["pdst"] == pdst
+            and dispatch["ldq_idx"] == ldq_idx
+            and dispatch["rob_idx"] == rob_idx
+            and branch_mask & int(dispatch["branch_mask"], 16)
+            and (prs1 is None or dispatch["prs1"] == prs1)
+        ),
+        None,
+    )
+
+
 def _witness_flags(
     branch_frontend_pc_cycle: int | None,
     gadget_frontend_pc_cycles: dict[int, int],
@@ -139,6 +164,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                     "prs1": hex(_one(values, dispatch_ids, "io_dis_uops_0_bits_prs1")),
                     "prs1_busy": bool(_one(values, dispatch_ids, "io_dis_uops_0_bits_prs1_busy")),
                     "ldq_idx": hex(_one(values, dispatch_ids, "io_dis_uops_0_bits_ldq_idx")),
+                    "rob_idx": hex(_one(values, dispatch_ids, "io_dis_uops_0_bits_rob_idx")),
                     "branch_mask": hex(_one(values, dispatch_ids, "io_dis_uops_0_bits_br_mask")),
                 }
                 if not gadget_dispatches or gadget_dispatches[-1] != event:
@@ -147,17 +173,16 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
             values, issue_ids, "io_iss_valids_0"
         ):
             issued_pdst = hex(_one(values, issue_ids, "io_iss_uops_0_pdst"))
-            matches = [
-                dispatch
-                for dispatch in gadget_dispatches
-                if dispatch["pdst"] == issued_pdst
-                and dispatch["cycle"] <= cycle
-                and dispatch["prs1"] == hex(_one(values, issue_ids, "io_iss_uops_0_prs1"))
-                and dispatch["ldq_idx"] == hex(_one(values, issue_ids, "io_iss_uops_0_ldq_idx"))
-                and int(dispatch["branch_mask"], 16)
-                & _one(values, issue_ids, "io_iss_uops_0_br_mask")
-            ]
-            if matches:
+            dispatch = _match_dispatch(
+                gadget_dispatches,
+                cycle=cycle,
+                pdst=issued_pdst,
+                prs1=hex(_one(values, issue_ids, "io_iss_uops_0_prs1")),
+                ldq_idx=hex(_one(values, issue_ids, "io_iss_uops_0_ldq_idx")),
+                rob_idx=hex(_one(values, issue_ids, "io_iss_uops_0_rob_idx")),
+                branch_mask=_one(values, issue_ids, "io_iss_uops_0_br_mask"),
+            )
+            if dispatch is not None:
                 event = {
                     "cycle": cycle,
                     "pdst": issued_pdst,
@@ -168,8 +193,9 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         _one(values, core_gate_ids, "iregister_read_io_iss_valids_0")
                     ),
                     "ldq_idx": hex(_one(values, issue_ids, "io_iss_uops_0_ldq_idx")),
+                    "rob_idx": hex(_one(values, issue_ids, "io_iss_uops_0_rob_idx")),
                     "branch_mask": hex(_one(values, issue_ids, "io_iss_uops_0_br_mask")),
-                    "dispatch_pc_lob": matches[-1]["pc_lob"],
+                    "dispatch_pc_lob": dispatch["pc_lob"],
                 }
                 if not gadget_issues or gadget_issues[-1] != event:
                     gadget_issues.append(event)
@@ -178,23 +204,25 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         ):
             pdst = hex(_one(values, exe_ids, "io_core_exe_0_req_bits_uop_pdst"))
             ldq_idx = hex(_one(values, exe_ids, "io_core_exe_0_req_bits_uop_ldq_idx"))
+            rob_idx = hex(_one(values, exe_ids, "io_core_exe_0_req_bits_uop_rob_idx"))
             mask = _one(values, exe_ids, "io_core_exe_0_req_bits_uop_br_mask")
-            matches = [
-                dispatch
-                for dispatch in gadget_dispatches
-                if dispatch["cycle"] <= cycle
-                and dispatch["pdst"] == pdst
-                and dispatch["ldq_idx"] == ldq_idx
-                and mask & int(dispatch["branch_mask"], 16)
-            ]
-            if matches:
+            dispatch = _match_dispatch(
+                gadget_dispatches,
+                cycle=cycle,
+                pdst=pdst,
+                ldq_idx=ldq_idx,
+                rob_idx=rob_idx,
+                branch_mask=mask,
+            )
+            if dispatch is not None:
                 event = {
                     "cycle": cycle,
                     "pdst": pdst,
                     "ldq_idx": ldq_idx,
+                    "rob_idx": rob_idx,
                     "branch_mask": hex(mask),
                     "vaddr": hex(_one(values, exe_ids, "io_core_exe_0_req_bits_addr")),
-                    "dispatch_pc_lob": matches[-1]["pc_lob"],
+                    "dispatch_pc_lob": dispatch["pc_lob"],
                 }
                 if not gadget_exe_requests or gadget_exe_requests[-1] != event:
                     gadget_exe_requests.append(event)
@@ -304,6 +332,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         "io_dis_uops_0_bits_prs1",
                         "io_dis_uops_0_bits_prs1_busy",
                         "io_dis_uops_0_bits_ldq_idx",
+                        "io_dis_uops_0_bits_rob_idx",
                         "io_dis_uops_0_bits_br_mask",
                     }:
                         dispatch_ids.setdefault(name, set()).add(identifier)
@@ -313,6 +342,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         "io_iss_uops_0_prs1",
                         "io_iss_uops_0_iw_p1_poisoned",
                         "io_iss_uops_0_ldq_idx",
+                        "io_iss_uops_0_rob_idx",
                         "io_iss_uops_0_br_mask",
                     }:
                         issue_ids.setdefault(name, set()).add(identifier)
@@ -325,6 +355,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         "io_core_exe_0_req_valid",
                         "io_core_exe_0_req_bits_uop_pdst",
                         "io_core_exe_0_req_bits_uop_ldq_idx",
+                        "io_core_exe_0_req_bits_uop_rob_idx",
                         "io_core_exe_0_req_bits_uop_br_mask",
                         "io_core_exe_0_req_bits_addr",
                     }:
@@ -346,13 +377,13 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         )
                     ):
                         raise RuntimeError("historical LSU wakeup signals are missing")
-                    if len(dispatch_ids) != 7:
+                    if len(dispatch_ids) != 8:
                         raise RuntimeError("historical memory dispatch signals are missing")
-                    if len(issue_ids) != 6:
+                    if len(issue_ids) != 7:
                         raise RuntimeError("historical memory issue signals are missing")
                     if len(core_gate_ids) != 2:
                         raise RuntimeError("historical register-read gate signals are missing")
-                    if len(exe_ids) != 5:
+                    if len(exe_ids) != 6:
                         raise RuntimeError("historical LSU execute signals are missing")
                     header = False
                 continue
@@ -430,7 +461,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         target_mispredicts,
     )
     return {
-        "schema_version": 9,
+        "schema_version": 10,
         "experiment": "boom-upstream-issue-715-vcd-witness",
         "trace_sha256": _sha256(path),
         "branch_pc": hex(BRANCH_PC),
