@@ -68,7 +68,7 @@ footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:v
 <div class="card"><b>Clean</b><span>Current pin result</span></div>
 <div class="card"><b>No</b><span>Fix claimed</span></div></div></section>
 <section><h2>Original issue #715 attachment on historical BOOM</h2>
-<p>The original upstream ELF ran on the reported Chipyard/BOOM revisions. Its waveform records a wrong-path protected-page request and later dependent-address requests before the branch resolved. This is a correlated event chain, not direct proof of register-level dependence or secret disclosure.</p>
+<p>The original upstream ELF ran on the reported Chipyard/BOOM revisions. Its disassembly shows a load into <code>sp</code> followed by a load through <code>sp</code>. The waveform records a wrong-path protected-page request and later dependent-address requests before the branch resolved. The static dependency and correlated events do not prove which value the second load consumed or that a secret was disclosed.</p>
 <div class="grid"><div class="card"><b>3769</b><span>Branch frontend PC cycle</span></div>
 <div class="card"><b>2</b><span>Dependent-address requests</span></div>
 <div class="card"><b>3</b><span>RTL candidates rejected</span></div>
@@ -76,7 +76,7 @@ footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:v
 <p>The baseline shows a TLB miss and speculative load wakeup one cycle after the protected-page request, with no D-cache request firing; a dependent-address request follows. Candidate v3 suppressed that wakeup, yet the dependent-address requests persisted. This weakens the fast-wakeup-only repair hypothesis without establishing another causal path.</p>
 <p>The first three candidate repairs reproduced the dependent requests and failed the matched-trace gate. The fourth built and ran, but its waveform was not recovered; no security fix is claimed.</p>
 <div class="card"><span>Original waveform SHA-256</span><code>04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34</code></div>
-<div class="card"><span>Case seal SHA-256</span><code>0d4b8b0193c7bc4524e8b32d031bf33381273a7f91e0820bfe06eaeb1c48a8f9</code></div></section>
+<div class="card"><span>Case seal SHA-256</span><code>970440c2d6b6c88771d82dcc39045180c20dafc2abfb9d56490dc0dfaf867544</code></div></section>
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>0633c08ba9c242588babde4eb6941233397bc0255d0c87f7b33d77ea91ef2af4</code></div><div class="card"><span>Simulator SHA-256</span><code>230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{
   &quot;schema_version&quot;: 2,

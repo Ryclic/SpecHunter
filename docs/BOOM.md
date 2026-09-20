@@ -368,6 +368,10 @@ artifacts. See
 ## Original issue #715 attachment case
 
 The original upstream ELF was loaded into the historical `SmallBoomConfig` simulator.
+Its checked-in disassembly shows adjacent instructions `lb sp,-2048(t1)` and
+`ld s1,0(sp)`: the second address uses the first instruction's destination register.
+The case seal binds this disassembly by SHA-256. This proves a static instruction
+dependency, not that the protected load supplied the value observed at runtime.
 The baseline waveform records the reported branch PC through the frontend `s0_vpc`
 signal and the gadget PCs through `s0_vpc` and the fetch-buffer PC with enqueue valid,
 followed by a branch-masked protected-page request, dependent-address requests, a load page fault,
@@ -394,7 +398,7 @@ not recovered; its security outcome remains unresolved. The self-contained demo 
 shows this case separately from the clean current-pin adaptation and the intentional
 positive control. The [case seal](evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json)
 binds the original baseline, each rejected repair, all four compressed waveforms,
-build records, comparisons, and five run logs by SHA-256. Each bound log records the
+build records, comparisons, disassembly, and five run logs by SHA-256. Each bound log records the
 pinned seed and 10,000-cycle timeout; the v4 log establishes execution, while the
 missing v4 waveform still precludes a security verdict. No security fix is claimed.
 

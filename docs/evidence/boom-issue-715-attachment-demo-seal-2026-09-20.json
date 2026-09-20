@@ -1,6 +1,9 @@
 {
   "schema_version": 1,
   "classification": "original-attachment-event-chain-three-failed-repairs-v4-unresolved",
+  "disassembly": "boom-issue-715-attachment-disassembly-2026-09-17.txt",
+  "disassembly_sha256": "f6601937067c05ca5ea2d3514c6b4a020c00530ae2265aec28bf5f170bf702c2",
+  "static_gadget_register_dependency": true,
   "baseline": {
     "witness": "boom-issue-715-attachment-baseline-2026-09-17.json",
     "witness_sha256": "4ad27ff1e901d97368ce00bb160d4673015803e34753d80afc04aae9bfcadd8b",

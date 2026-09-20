@@ -609,4 +609,14 @@ TLB-miss fast-wakeup observation, not a proof of dependency. All four witnesses,
 the case seal, and the demo were regenerated; the demo notes that v3 weakens the
 fast-wakeup-only root-cause hypothesis. The v4 waveform and a causal explanation
 for the persistent request remain outstanding. Validation: 160 passed, 2 skipped;
-Ruff lint and format and `git diff --check` passed. Publication is next.
+Ruff lint and format and `git diff --check` passed. This was published as `dcbdd64`
+on PR #17, with all three GitHub checks passing.
+
+The original ELF disassembly at gadget offsets `0x80028e00` and `0x80028e04`
+shows `lb sp,-2048(t1)` immediately followed by `ld s1,0(sp)`. This proves the
+static address dependency between those instructions, while the VCD still cannot
+prove which runtime value reached the second load. The case seal now SHA-256-binds
+the checked-in disassembly and verifies the instruction pair. The demo and BOOM
+documentation explain this distinction; a tampered-disassembly regression checks
+the fail-closed path. Validation: 161 passed, 2 skipped; Ruff lint and format and
+`git diff --check` passed. Publication of the new seal is next.

@@ -331,7 +331,7 @@ def render(
             issue_715_attachment_seal_path.parent / attachment["baseline"]["witness"]
         )
         attachment_section = f"""<section><h2>Original issue #715 attachment on historical BOOM</h2>
-<p>The original upstream ELF ran on the reported Chipyard/BOOM revisions. Its waveform records a wrong-path protected-page request and later dependent-address requests before the branch resolved. This is a correlated event chain, not direct proof of register-level dependence or secret disclosure.</p>
+<p>The original upstream ELF ran on the reported Chipyard/BOOM revisions. Its disassembly shows a load into <code>sp</code> followed by a load through <code>sp</code>. The waveform records a wrong-path protected-page request and later dependent-address requests before the branch resolved. The static dependency and correlated events do not prove which value the second load consumed or that a secret was disclosed.</p>
 <div class="grid"><div class="card"><b>{baseline_witness["branch_frontend_pc_cycle"]}</b><span>Branch frontend PC cycle</span></div>
 <div class="card"><b>{len(baseline_witness["dependent_load_requests"])}</b><span>Dependent-address requests</span></div>
 <div class="card"><b>{len(attachment["repairs"])}</b><span>RTL candidates rejected</span></div>

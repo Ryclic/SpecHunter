@@ -40,6 +40,7 @@ REPAIRS = (
 )
 V4_BUILD = "repair-v4-build-2026-09-18.json"
 V4_RUN = "repair-v4-run-2026-09-18.log"
+DISASSEMBLY = "disassembly-2026-09-17.txt"
 SEED = 1789717734
 TIMEOUT = f"*** FAILED *** via trace_count (timeout, seed {SEED}) after 10000 cycles"
 FRONTEND_SOURCES = {
@@ -74,6 +75,13 @@ def _run_log(root: Path, suffix: str) -> tuple[str, str]:
 
 def build_seal(root: Path) -> dict:
     root = root.resolve()
+    disassembly_name = PREFIX + DISASSEMBLY
+    disassembly = root / disassembly_name
+    lines = disassembly.read_text().splitlines()
+    if not any("80028e00:" in line and "lb\tsp,-2048(t1)" in line for line in lines) or not any(
+        "80028e04:" in line and "ld\ts1,0(sp)" in line for line in lines
+    ):
+        raise AttachmentEvidenceError("original ELF gadget disassembly differs")
     baseline, baseline_name, baseline_hash = _read(root, BASELINE[0])
     baseline_trace_name = PREFIX + BASELINE[1]
     baseline_trace_hash = _digest(root / baseline_trace_name)
@@ -157,6 +165,9 @@ def build_seal(root: Path) -> dict:
     return {
         "schema_version": 1,
         "classification": CLASSIFICATION,
+        "disassembly": disassembly_name,
+        "disassembly_sha256": _digest(disassembly),
+        "static_gadget_register_dependency": True,
         "baseline": {
             "witness": baseline_name,
             "witness_sha256": baseline_hash,
