@@ -48,7 +48,7 @@ FRONTEND_SOURCES = {
     "0xd010028e00": "frontend.s0_vpc",
     "0xd010028e04": "frontend.fb.pc_2 with io_enq_valid",
 }
-CLASSIFICATION = "original-attachment-event-chain-three-failed-repairs-v4-unresolved"
+CLASSIFICATION = "original-attachment-dependent-request-not-reproduced-v4-unresolved"
 
 
 def _digest(path: Path) -> str:
@@ -87,11 +87,17 @@ def build_seal(root: Path) -> dict:
     baseline_trace_hash = _digest(root / baseline_trace_name)
     baseline_run_name, baseline_run_hash = _run_log(root, BASELINE[2])
     if (
-        baseline.get("schema_version") != 4
+        baseline.get("schema_version") != 5
         or baseline.get("experiment") != "boom-upstream-issue-715-vcd-witness"
         or baseline.get("frontend_pc_signal_sources") != FRONTEND_SOURCES
         or baseline.get("gadget_frontend_pc_cycles", {}).get("0xd010028e04") is None
-        or baseline.get("mechanism_witnessed") is not True
+        or baseline.get("mechanism_witnessed") is not False
+        or baseline.get("dependent_load_requests") != []
+        or not baseline.get("observed_address_requests")
+        or any(
+            request.get("dispatch_pc_lob") != "0x8"
+            for request in baseline["observed_address_requests"]
+        )
         or baseline.get("architectural_secret_disclosure_proven") is not False
         or baseline.get("trace_sha256") != baseline_trace_hash
         or not baseline.get("tlb_miss_fast_wakeup_observations")
@@ -114,14 +120,14 @@ def build_seal(root: Path) -> dict:
         run_name, run_hash = _run_log(root, run_suffix)
         revisions.add((build.get("chipyard_revision"), build.get("boom_revision")))
         if (
-            witness.get("schema_version") != 4
+            witness.get("schema_version") != 5
             or witness.get("frontend_pc_signal_sources") != FRONTEND_SOURCES
             or witness.get("experiment") != "boom-upstream-issue-715-vcd-witness"
             or witness.get("gadget_frontend_pc_cycles", {}).get("0xd010028e04") is None
             or witness.get("trace_sha256") != trace_hash
-            or witness.get("mechanism_witnessed") is not True
+            or witness.get("mechanism_witnessed") is not False
             or witness.get("architectural_secret_disclosure_proven") is not False
-            or comparison.get("schema_version") != 4
+            or comparison.get("schema_version") != 5
             or comparison.get("repair_variant") != build.get("variant")
             or comparison.get("repaired_simulator_sha256") != build.get("simulator_sha256")
             or comparison.get("baseline_trace_sha256") != baseline_trace_hash
@@ -130,15 +136,20 @@ def build_seal(root: Path) -> dict:
             or comparison.get("seed") != SEED
             or comparison.get("baseline_run_log_sha256") != baseline_run_hash
             or comparison.get("repaired_run_log_sha256") != run_hash
-            or comparison.get("baseline_mechanism_witnessed") is not True
-            or comparison.get("repaired_mechanism_witnessed") is not True
+            or comparison.get("baseline_mechanism_witnessed") is not False
+            or comparison.get("repaired_mechanism_witnessed") is not False
             or comparison.get("repair_effective") is not False
             or comparison.get("security_fix_validated") is not False
-            or comparison.get("verdict") != "repair-ineffective"
+            or comparison.get("verdict") != "inconclusive-baseline-not-reproduced"
             or bool(witness.get("tlb_miss_fast_wakeup_observations")) != (index < 2)
-            or not witness.get("dependent_load_requests")
+            or witness.get("dependent_load_requests") != []
+            or not witness.get("observed_address_requests")
+            or any(
+                request.get("dispatch_pc_lob") != "0x8"
+                for request in witness["observed_address_requests"]
+            )
         ):
-            raise AttachmentEvidenceError(f"rejected repair evidence differs: {build_name}")
+            raise AttachmentEvidenceError(f"candidate repair evidence differs: {build_name}")
         repairs.append(
             {
                 "variant": build["variant"],

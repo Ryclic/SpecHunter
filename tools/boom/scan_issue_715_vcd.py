@@ -13,7 +13,7 @@ from typing import TextIO
 BRANCH_PC = 0xD0100287D0
 GADGET_PCS = {0xD010028E00, 0xD010028E04}
 PROTECTED_VADDR = 0xD010098000
-DEPENDENT_VADDR = 0x59F
+OBSERVED_VADDR = 0x59F
 
 
 def _open(path: Path) -> TextIO:
@@ -51,7 +51,7 @@ def _witness_flags(
 ) -> tuple[bool, bool]:
     if branch_frontend_pc_cycle is None:
         return False, False
-    dataflow = False
+    correlated = False
     # A branch-mask bit can be reused after resolution. Later mispredictions
     # cannot extend the window opened by this first recorded branch fetch.
     resolutions = [
@@ -70,7 +70,7 @@ def _witness_flags(
             shared_mask = source_mask & int(sink["branch_mask"], 16)
             if not shared_mask:
                 continue
-            dataflow = True
+            correlated = True
             gadgets_in_window = all(
                 branch_frontend_pc_cycle < gadget_frontend_pc_cycles.get(pc, -1) < source["cycle"]
                 for pc in GADGET_PCS
@@ -81,13 +81,14 @@ def _witness_flags(
                 for fault in faults
             ):
                 return True, True
-    return dataflow, False
+    return correlated, False
 
 
 def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     ids: dict[str, set[str]] = {}
     frontend_pc_ids: dict[str, set[str]] = {}
     lsu_ids: dict[str, set[str]] = {}
+    dispatch_ids: dict[str, set[str]] = {}
     values: dict[str, int] = {}
     timestamp = 0
     header = True
@@ -99,6 +100,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     load_faults: list[dict] = []
     mispredicts: list[dict] = []
     fast_wakeups: list[dict] = []
+    gadget_dispatches: list[dict] = []
 
     def finish_timestamp() -> None:
         nonlocal branch_frontend_pc_cycle
@@ -118,10 +120,30 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         if changed & fb_ids and _one(values, frontend_pc_ids, "fb_io_enq_valid"):
             if _one(values, frontend_pc_ids, "fb_pc_2") == 0xD010028E04:
                 gadget_frontend_pc_cycles.setdefault(0xD010028E04, cycle)
+        if changed & set().union(*dispatch_ids.values()) and _one(
+            values, dispatch_ids, "io_dis_uops_0_valid"
+        ):
+            pc_lob = _one(values, dispatch_ids, "io_dis_uops_0_bits_pc_lob")
+            if pc_lob in (0, 4, 8) and cycle >= gadget_frontend_pc_cycles.get(
+                0xD010028E00, 1 << 60
+            ):
+                event = {
+                    "cycle": cycle,
+                    "pc_lob": hex(pc_lob),
+                    "pdst": hex(_one(values, dispatch_ids, "io_dis_uops_0_bits_pdst")),
+                    "prs1": hex(_one(values, dispatch_ids, "io_dis_uops_0_bits_prs1")),
+                    "prs1_busy": bool(_one(values, dispatch_ids, "io_dis_uops_0_bits_prs1_busy")),
+                    "ldq_idx": hex(_one(values, dispatch_ids, "io_dis_uops_0_bits_ldq_idx")),
+                    "branch_mask": hex(_one(values, dispatch_ids, "io_dis_uops_0_bits_br_mask")),
+                }
+                if not gadget_dispatches or gadget_dispatches[-1] != event:
+                    gadget_dispatches.append(event)
         tlb_related = set().union(
             ids.get("dtlb_io_req_0_valid", set()),
             ids.get("dtlb_io_req_0_bits_vaddr", set()),
             ids.get("exe_tlb_uop_0_br_mask", set()),
+            ids.get("exe_tlb_uop_0_pdst", set()),
+            ids.get("exe_tlb_uop_0_ldq_idx", set()),
         )
         if changed & tlb_related and _one(values, ids, "dtlb_io_req_0_valid"):
             mask = _one(values, ids, "exe_tlb_uop_0_br_mask")
@@ -130,6 +152,8 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                     "cycle": cycle,
                     "vaddr": hex(_one(values, ids, "dtlb_io_req_0_bits_vaddr")),
                     "branch_mask": hex(mask),
+                    "pdst": hex(_one(values, ids, "exe_tlb_uop_0_pdst")),
+                    "ldq_idx": hex(_one(values, ids, "exe_tlb_uop_0_ldq_idx")),
                 }
                 if not tlb_requests or tlb_requests[-1] != event:
                     tlb_requests.append(event)
@@ -213,6 +237,16 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         "dmem_req_fire_0",
                     }:
                         lsu_ids.setdefault(name, set()).add(identifier)
+                    if scope.endswith(".boom_tile.core.mem_issue_unit") and name in {
+                        "io_dis_uops_0_valid",
+                        "io_dis_uops_0_bits_pc_lob",
+                        "io_dis_uops_0_bits_pdst",
+                        "io_dis_uops_0_bits_prs1",
+                        "io_dis_uops_0_bits_prs1_busy",
+                        "io_dis_uops_0_bits_ldq_idx",
+                        "io_dis_uops_0_bits_br_mask",
+                    }:
+                        dispatch_ids.setdefault(name, set()).add(identifier)
                 elif "$enddefinitions" in line:
                     if not all(
                         frontend_pc_ids.get(name)
@@ -230,6 +264,8 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         )
                     ):
                         raise RuntimeError("historical LSU wakeup signals are missing")
+                    if len(dispatch_ids) != 7:
+                        raise RuntimeError("historical memory dispatch signals are missing")
                     header = False
                 continue
             if line.startswith("#"):
@@ -252,22 +288,60 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
 
     target_mispredicts = [event for event in mispredicts if event["pc"] == hex(BRANCH_PC)]
     protected = [event for event in tlb_requests if event["vaddr"] == hex(PROTECTED_VADDR)]
-    dependent = [event for event in tlb_requests if event["vaddr"] == hex(DEPENDENT_VADDR)]
+    observed = [event for event in tlb_requests if event["vaddr"] == hex(OBSERVED_VADDR)]
     faults = [
         event
         for event in load_faults
         if event["cause"] == "0xd" and event["badvaddr"] == hex(PROTECTED_VADDR)
     ]
-    dataflow, witness = _witness_flags(
+    correlated, _ = _witness_flags(
         branch_frontend_pc_cycle,
         gadget_frontend_pc_cycles,
         protected,
-        dependent,
+        observed,
+        faults,
+        target_mispredicts,
+    )
+    for request in protected + observed:
+        matches = [
+            dispatch
+            for dispatch in gadget_dispatches
+            if dispatch["cycle"] <= request["cycle"]
+            and dispatch["pdst"] == request["pdst"]
+            and dispatch["ldq_idx"] == request["ldq_idx"]
+        ]
+        request["dispatch_pc_lob"] = matches[-1]["pc_lob"] if matches else None
+    dependent_dispatches = [
+        dispatch
+        for dispatch in gadget_dispatches
+        if dispatch["pc_lob"] == "0x4"
+        and any(
+            source["dispatch_pc_lob"] == "0x0"
+            and source["pdst"] == dispatch["prs1"]
+            and source["cycle"] >= dispatch["cycle"]
+            for source in protected
+        )
+    ]
+    dependent_requests = [
+        request
+        for request in tlb_requests
+        if any(
+            request["pdst"] == dispatch["pdst"]
+            and request["ldq_idx"] == dispatch["ldq_idx"]
+            and request["cycle"] >= dispatch["cycle"]
+            for dispatch in dependent_dispatches
+        )
+    ]
+    _, dependent_chain = _witness_flags(
+        branch_frontend_pc_cycle,
+        gadget_frontend_pc_cycles,
+        protected,
+        dependent_requests,
         faults,
         target_mispredicts,
     )
     return {
-        "schema_version": 4,
+        "schema_version": 5,
         "experiment": "boom-upstream-issue-715-vcd-witness",
         "trace_sha256": _sha256(path),
         "branch_pc": hex(BRANCH_PC),
@@ -281,12 +355,16 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
             "0xd010028e04": "frontend.fb.pc_2 with io_enq_valid",
         },
         "protected_load_requests": protected,
-        "dependent_load_requests": dependent,
+        "observed_address_requests": observed,
+        "dependent_load_requests": dependent_requests,
+        "dependent_load_dispatches": dependent_dispatches,
+        "gadget_dispatches": gadget_dispatches,
         "tlb_miss_fast_wakeup_observations": fast_wakeups,
         "load_page_faults": faults,
         "target_mispredicts": target_mispredicts,
-        "transient_dataflow_witnessed": dataflow,
-        "mechanism_witnessed": witness,
+        "same_branch_mask_request_chain_witnessed": correlated,
+        "transient_dataflow_witnessed": bool(dependent_requests),
+        "mechanism_witnessed": dependent_chain,
         "architectural_secret_disclosure_proven": False,
     }
 

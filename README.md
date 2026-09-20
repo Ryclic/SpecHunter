@@ -50,6 +50,12 @@ dependent cache encode, and matched secret worlds. All observations were determi
 clean, so the sealed assessment records that the older reported issue was not reproduced
 on this revision and makes no vulnerability or fix claim.
 
+The separately executed original issue #715 ELF on historical BOOM also has no
+validated vulnerability or fix claim: waveform attribution identifies its later
+`0x59f` requests as coming from an independent third instruction, while the
+protected-data-dependent load issued no recorded branch-masked translation request. Three
+candidate repair comparisons are consequently inconclusive.
+
 Generate the presentation locally from its sealed evidence:
 
 ```bash

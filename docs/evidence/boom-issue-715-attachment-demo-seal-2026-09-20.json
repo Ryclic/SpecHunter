@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "classification": "original-attachment-event-chain-three-failed-repairs-v4-unresolved",
+  "classification": "original-attachment-dependent-request-not-reproduced-v4-unresolved",
   "disassembly": "boom-issue-715-attachment-disassembly-2026-09-17.txt",
   "disassembly_sha256": "f6601937067c05ca5ea2d3514c6b4a020c00530ae2265aec28bf5f170bf702c2",
   "static_gadget_register_dependency": true,
   "baseline": {
     "witness": "boom-issue-715-attachment-baseline-2026-09-17.json",
-    "witness_sha256": "4ad27ff1e901d97368ce00bb160d4673015803e34753d80afc04aae9bfcadd8b",
+    "witness_sha256": "b9644c9e7ed91214391fa703dcb990da38d74fa9e60de37ac9ed7fb86318c746",
     "waveform": "boom-issue-715-attachment-baseline-seed-1789717734-2026-09-17.vcd.gz",
     "waveform_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
     "run_log": "boom-issue-715-attachment-baseline-seed-1789717734-2026-09-17.log",
@@ -17,13 +17,13 @@
     {
       "variant": "historical-issue-715-repaired",
       "witness": "boom-issue-715-attachment-repaired-2026-09-17.json",
-      "witness_sha256": "d7458db4cf56bded204d9c1d7032d6663d3535143568803471ff038be52dcdd7",
+      "witness_sha256": "b21a93d9dfee115ab5c7a1d9f5a19085072729a25c2e53171c486315934d9596",
       "waveform": "boom-issue-715-attachment-repaired-seed-1789717734-2026-09-17.vcd.gz",
       "waveform_sha256": "1df480bb1d27dd1ef50e8ef47ff6d3f26bf4d07c51a264aaccacd57b1aa24d0e",
       "build": "boom-issue-715-attachment-repair-build-2026-09-17.json",
       "build_sha256": "9fef1a3fd636ff03723703710d0d5de9502875a5d75b2ffa3bc830ce1c23221b",
       "comparison": "boom-issue-715-attachment-comparison-2026-09-17.json",
-      "comparison_sha256": "865bab5e4bb1e1c2ce2c81d4a3ce84cf0a0a08ea0accdbc15e8eb020256dcdba",
+      "comparison_sha256": "d2c85b25167dc29ee8922db0afd4a54d09e6e9285a077b026d043743834d7358",
       "run_log": "boom-issue-715-attachment-repaired-seed-1789717734-2026-09-17.log",
       "run_log_sha256": "deafd4693db1b80b90b82220ae9d47f0ca02147edc65086bc93c334b21d2dc59",
       "tlb_miss_fast_wakeup_count": 1
@@ -31,13 +31,13 @@
     {
       "variant": "historical-issue-715-speculative-load-block",
       "witness": "boom-issue-715-attachment-repair-v2-2026-09-18.json",
-      "witness_sha256": "85040c08fea174254e615fd8c5bb5938f5725aa415a8b801bbc64d18f5605c56",
+      "witness_sha256": "8d7e031473d87a470ac172625c949d0d7763f4346ab2f00220d6a0b3ec50543d",
       "waveform": "boom-issue-715-attachment-repair-v2-seed-1789717734-2026-09-18.vcd.gz",
       "waveform_sha256": "8dd92d61415419a1d6faa89197cc12445ed058252f3b5dfdd9c9983533c44317",
       "build": "boom-issue-715-attachment-repair-v2-build-2026-09-18.json",
       "build_sha256": "697732738f8d1cce91eae939074c8ee929991575e4fb98a37f2dc71437ce7367",
       "comparison": "boom-issue-715-attachment-repair-v2-comparison-2026-09-18.json",
-      "comparison_sha256": "158f3cd9bcc48fffc7683049dc5da3464a43218ab00ab550e49dd362801d07d8",
+      "comparison_sha256": "7aebc89fa6d4859e17b1ee362f7d3474a3bac7b9603165a6c54b87053313aa78",
       "run_log": "boom-issue-715-attachment-repair-v2-seed-1789717734-2026-09-18.log",
       "run_log_sha256": "a031c4a5ca7c001d413998f9d7ba5693b8097ec01c25021a42816eea2c040bf8",
       "tlb_miss_fast_wakeup_count": 1
@@ -45,13 +45,13 @@
     {
       "variant": "historical-issue-715-fault-dependent-kill",
       "witness": "boom-issue-715-attachment-repair-v3-witness-2026-09-18.json",
-      "witness_sha256": "ffedc9efa0ca5559e36851364b572ca2fb75366a28f49a274949c7bbacb82c4b",
+      "witness_sha256": "8a17c69cee63f4d4b0e283c3413464e5720ef9e5c9d18f8ad5522b172446edfd",
       "waveform": "boom-issue-715-attachment-repair-v3-seed-1789717734-2026-09-18.vcd.gz",
       "waveform_sha256": "5f7250b931c825e83ad36040d8bec2ed90d885da205a7359a53e6556d21ca1af",
       "build": "boom-issue-715-attachment-repair-v3-build-2026-09-18.json",
       "build_sha256": "7d14890972c18192e6bcf2eac8a95c6ae276e2b33a464598d4694aadcc026e48",
       "comparison": "boom-issue-715-attachment-repair-v3-comparison-2026-09-18.json",
-      "comparison_sha256": "c955d7817b6b02b75612fc17d8a1b4b7314f83f803e92488ac61444706201436",
+      "comparison_sha256": "17f376310a3acb8f16beee92a61f0d9e83b2886cf3403e51f168b820eac92302",
       "run_log": "boom-issue-715-attachment-repair-v3-run-2026-09-18.log",
       "run_log_sha256": "a1fa06affcd17862a9f13e79b831ec3a1902a87c1ddd0e4d4b6d6df059511fd7",
       "tlb_miss_fast_wakeup_count": 0

@@ -12,10 +12,12 @@ assert SPEC.loader
 SPEC.loader.exec_module(MODULE)
 
 
-def _seal(tmp_path, monkeypatch, repaired):
+def _seal(tmp_path, monkeypatch, repaired, baseline_override=None):
     baseline = json.loads(
         (ROOT / "docs/evidence/boom-issue-715-attachment-baseline-2026-09-17.json").read_text()
     )
+    if baseline_override is not None:
+        baseline = baseline_override
     build = json.loads(
         (
             ROOT / "docs/evidence/boom-issue-715-attachment-repair-v3-build-2026-09-18.json"
@@ -50,15 +52,30 @@ def test_matched_replay_requires_attacker_return(tmp_path, monkeypatch):
     repaired["dependent_load_requests"] = []
     repaired["mechanism_witnessed"] = False
     result = _seal(tmp_path, monkeypatch, repaired)
-    assert result["repair_effective"] is True
+    assert result["repair_effective"] is False
     assert result["repaired_trigger_preserved"] is True
-    assert result["schema_version"] == 4
+    assert result["schema_version"] == 5
     assert result["matched_control_flow"] is True
     assert result["seed_provenance"] == "bound-by-run-logs"
     assert result["seed"] == 1789717734
     assert result["security_fix_validated"] is False
-    assert result["attacker_retest_required"] is True
+    assert result["attacker_retest_required"] is False
+    assert result["verdict"] == "inconclusive-baseline-not-reproduced"
+
+
+def test_reproducing_baseline_still_requires_attacker_retest(tmp_path, monkeypatch):
+    baseline = json.loads(
+        (ROOT / "docs/evidence/boom-issue-715-attachment-baseline-2026-09-17.json").read_text()
+    )
+    baseline["dependent_load_requests"] = [{"cycle": 3809, "branch_mask": "0x1"}]
+    baseline["mechanism_witnessed"] = True
+    repaired = json.loads(json.dumps(baseline))
+    repaired["dependent_load_requests"] = []
+    repaired["mechanism_witnessed"] = False
+    result = _seal(tmp_path, monkeypatch, repaired, baseline_override=baseline)
     assert result["verdict"] == "repair-blocked-witness"
+    assert result["attacker_retest_required"] is True
+    assert result["security_fix_validated"] is False
 
 
 def test_missing_protected_load_is_not_a_valid_repair(tmp_path, monkeypatch):
@@ -125,7 +142,7 @@ def test_timing_shift_still_counts_as_matched_trigger(tmp_path, monkeypatch):
     result = _seal(tmp_path, monkeypatch, repaired)
     assert result["matched_control_flow"] is True
     assert result["repaired_trigger_preserved"] is True
-    assert result["repair_effective"] is True
+    assert result["repair_effective"] is False
 
 
 def test_unmatched_trigger_is_inconclusive(tmp_path, monkeypatch):
@@ -136,7 +153,7 @@ def test_unmatched_trigger_is_inconclusive(tmp_path, monkeypatch):
     repaired["protected_load_requests"] = []
     repaired["mechanism_witnessed"] = False
     result = _seal(tmp_path, monkeypatch, repaired)
-    assert result["verdict"] == "inconclusive-unmatched-trigger"
+    assert result["verdict"] == "inconclusive-baseline-not-reproduced"
 
 
 def test_comparison_rejects_different_run_seed(tmp_path, monkeypatch):

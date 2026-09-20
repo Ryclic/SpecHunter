@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "experiment": "boom-upstream-issue-715-vcd-witness",
   "trace_sha256": "8dd92d61415419a1d6faa89197cc12445ed058252f3b5dfdd9c9983533c44317",
   "branch_pc": "0xd0100287d0",
@@ -17,28 +17,84 @@
     {
       "cycle": 3807,
       "vaddr": "0xd010098000",
-      "branch_mask": "0x1"
+      "branch_mask": "0x1",
+      "pdst": "0x12",
+      "ldq_idx": "0x0",
+      "dispatch_pc_lob": "0x0"
     },
     {
       "cycle": 3852,
       "vaddr": "0xd010098000",
-      "branch_mask": "0x1"
+      "branch_mask": "0x1",
+      "pdst": "0x12",
+      "ldq_idx": "0x0",
+      "dispatch_pc_lob": "0x0"
     },
     {
       "cycle": 3888,
       "vaddr": "0xd010098000",
-      "branch_mask": "0x1"
+      "branch_mask": "0x1",
+      "pdst": "0x12",
+      "ldq_idx": "0x0",
+      "dispatch_pc_lob": "0x0"
     }
   ],
-  "dependent_load_requests": [
+  "observed_address_requests": [
     {
       "cycle": 3809,
       "vaddr": "0x59f",
-      "branch_mask": "0x1"
+      "branch_mask": "0x1",
+      "pdst": "0x16",
+      "ldq_idx": "0x2",
+      "dispatch_pc_lob": "0x8"
     },
     {
       "cycle": 3853,
       "vaddr": "0x59f",
+      "branch_mask": "0x1",
+      "pdst": "0x16",
+      "ldq_idx": "0x2",
+      "dispatch_pc_lob": "0x8"
+    }
+  ],
+  "dependent_load_requests": [],
+  "dependent_load_dispatches": [
+    {
+      "cycle": 3805,
+      "pc_lob": "0x4",
+      "pdst": "0x15",
+      "prs1": "0x12",
+      "prs1_busy": true,
+      "ldq_idx": "0x1",
+      "branch_mask": "0x1"
+    }
+  ],
+  "gadget_dispatches": [
+    {
+      "cycle": 3804,
+      "pc_lob": "0x0",
+      "pdst": "0x12",
+      "prs1": "0x3",
+      "prs1_busy": false,
+      "ldq_idx": "0x0",
+      "branch_mask": "0x1"
+    },
+    {
+      "cycle": 3805,
+      "pc_lob": "0x4",
+      "pdst": "0x15",
+      "prs1": "0x12",
+      "prs1_busy": true,
+      "ldq_idx": "0x1",
+      "branch_mask": "0x1"
+    },
+    {
+      "cycle": 3806,
+      "pc_lob": "0x8",
+      "pdst": "0x16",
+      "prs1": "0x11",
+      "prs1_busy": false,
+      "ldq_idx": "0x2",
       "branch_mask": "0x1"
     }
   ],
@@ -65,7 +121,8 @@
       "pc": "0xd0100287d0"
     }
   ],
-  "transient_dataflow_witnessed": true,
-  "mechanism_witnessed": true,
+  "same_branch_mask_request_chain_witnessed": true,
+  "transient_dataflow_witnessed": false,
+  "mechanism_witnessed": false,
   "architectural_secret_disclosure_proven": false
 }

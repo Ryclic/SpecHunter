@@ -152,7 +152,8 @@ def test_renderer_adds_original_attachment_case(tmp_path):
     )
     page = output.read_text()
     assert "Original issue #715 attachment on historical BOOM" in page
-    assert "RTL candidates rejected" in page
+    assert "RTL candidates assessed" in page
+    assert "The reported protected-data-dependent mechanism is not reproduced" in page
     assert "Fourth candidate verdict" in page
     assert "no security fix is claimed" in page
     assert "load through" in page

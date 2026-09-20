@@ -620,3 +620,25 @@ the checked-in disassembly and verifies the instruction pair. The demo and BOOM
 documentation explain this distinction; a tampered-disassembly regression checks
 the fail-closed path. Validation: 161 passed, 2 skipped; Ruff lint and format and
 `git diff --check` passed. Publication of the new seal is next.
+
+## Correction: original issue #715 attachment does not reproduce dependent requests
+
+A fresh dispatch-to-LSU attribution of all four saved historical waveforms corrected
+an earlier false-positive case verdict. At cycles 3804/3805/3806 the gadget dispatches
+loads at offsets +0/+4/+8 with physical destinations `0x12`/`0x15`/`0x16` and
+load-queue slots 0/1/2. The protected request at 3807 carries destination `0x12`,
+slot 0. The later `0x59f` requests at 3809 and 3853 carry destination `0x16`, slot 2:
+they belong to the independent instruction at +8. The actually dependent load at +4
+reads physical register `0x12` but issued no recorded branch-masked translation request. Static
+ELF dependency does not establish a runtime leak. Contrary to the earlier sections
+of this handoff, the reported protected-data-dependent mechanism has **not** been
+reproduced and the three candidate repair comparisons are inconclusive. V4 still has
+no waveform. The VCD scanner, four witnesses, three comparisons, case seal, demo,
+tests, and BOOM documentation were corrected; next obtain a truly dependent baseline
+before attempting a repair claim or independent attacker retests. No paid cloud calls
+were made in this correction.
+Validation of the correction: `.venv/bin/pytest -q` — 162 passed, 2 skipped;
+`.venv/bin/ruff check .`, `.venv/bin/ruff format --check .`, and
+`git diff --check` passed. `docs/demo.html` was regenerated from the corrected
+case seal. The existing original-attachment PR title and body must reflect this
+non-reproduction before review; do not merge the previous claim.

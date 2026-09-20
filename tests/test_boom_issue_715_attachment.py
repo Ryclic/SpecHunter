@@ -98,7 +98,7 @@ def test_historical_trace_seal_records_ordered_issue_mechanism():
         (ROOT / "docs/evidence/boom-issue-715-attachment-baseline-2026-09-17.json").read_text()
     )
     assert hashlib.sha256(trace.read_bytes()).hexdigest() == evidence["trace_sha256"]
-    assert evidence["mechanism_witnessed"] is True
+    assert evidence["mechanism_witnessed"] is False
     assert evidence["architectural_secret_disclosure_proven"] is False
     assert (
         evidence["branch_frontend_pc_cycle"] < evidence["gadget_frontend_pc_cycles"]["0xd010028e00"]
@@ -114,9 +114,12 @@ def test_historical_trace_seal_records_ordered_issue_mechanism():
         }
     ]
     protected = evidence["protected_load_requests"][0]
-    request = evidence["dependent_load_requests"][0]
+    request = evidence["observed_address_requests"][0]
     resolution = evidence["target_mispredicts"][0]
-    assert evidence["transient_dataflow_witnessed"] is True
+    assert evidence["transient_dataflow_witnessed"] is False
+    assert evidence["dependent_load_requests"] == []
+    assert evidence["dependent_load_dispatches"][0]["prs1"] == protected["pdst"]
+    assert request["dispatch_pc_lob"] == "0x8"
     assert protected["vaddr"] == "0xd010098000"
     assert protected["cycle"] < request["cycle"]
     assert request["vaddr"] == "0x59f"
@@ -132,8 +135,9 @@ def test_v3_suppressed_fast_wakeup_without_blocking_request_chain():
         ).read_text()
     )
     assert evidence["tlb_miss_fast_wakeup_observations"] == []
-    assert evidence["dependent_load_requests"]
-    assert evidence["mechanism_witnessed"] is True
+    assert evidence["dependent_load_requests"] == []
+    assert all(event["dispatch_pc_lob"] == "0x8" for event in evidence["observed_address_requests"])
+    assert evidence["mechanism_witnessed"] is False
 
 
 def test_matched_repair_result_is_fail_closed():
@@ -143,8 +147,8 @@ def test_matched_repair_result_is_fail_closed():
     assert evidence["matched_control_flow"] is True
     assert evidence["seed_provenance"] == "bound-by-run-logs"
     assert evidence["seed"] == 1789717734
-    assert evidence["baseline_mechanism_witnessed"] is True
-    assert evidence["repaired_mechanism_witnessed"] is True
+    assert evidence["baseline_mechanism_witnessed"] is False
+    assert evidence["repaired_mechanism_witnessed"] is False
     assert evidence["repair_effective"] is False
     assert evidence["security_fix_validated"] is False
-    assert evidence["verdict"] == "repair-ineffective"
+    assert evidence["verdict"] == "inconclusive-baseline-not-reproduced"

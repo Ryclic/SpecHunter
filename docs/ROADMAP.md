@@ -37,14 +37,10 @@
    secret. All four executions returned probe bit zero. The sealed deterministic-clean
    result does not reproduce the upstream report and therefore does not validate a repair.
    The original stripped Cascade attachment was later executed separately; see item 9.
-9. **Original issue #715 attachment executed 2026-09-17–18:** its historical BOOM
-   waveform shows an ordered branch, gadget, protected request, dependent-address
-   request, page fault, and misprediction chain. Three rebuilt RTL candidates failed
-   the same-seed replay and are rejected. A fourth candidate built and ran, but its
-   waveform was not recovered, so its security result is unresolved. The demo seal
-   binds baseline and failed-repair waveforms, witnesses, builds, comparisons, and
-   all five run logs. Recovering a v4 waveform and running independent attacker seeds
-   and variants remain necessary before accepting any fix. V3 removed the observed
-   TLB-miss fast wakeup but did not remove the request chain, so another release/data
-   path needs investigation before attributing root cause to that wakeup. The waveform
-   does not prove register-level dependence or architectural secret disclosure.
+9. **Original issue #715 attachment executed 2026-09-17–18:** the historical BOOM
+   waveform shows a protected-page request and subsequent `0x59f` request under the
+   same branch mask, but dispatch/register and load-queue identifiers attribute the
+   latter to an independent third instruction. No branch-masked dependent-load translation request
+   was recorded, so the reported mechanism was not reproduced. Three candidate RTL
+   comparisons are inconclusive; a fourth has no recovered waveform. Next obtain a
+   truly dependent baseline, then evaluate repairs and attacker retests.

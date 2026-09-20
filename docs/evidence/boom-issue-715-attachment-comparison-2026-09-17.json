@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "experiment": "boom-upstream-issue-715-attachment-before-after",
   "repair_variant": "historical-issue-715-repaired",
   "baseline_trace_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
@@ -10,35 +10,49 @@
   "seed": 1789717734,
   "baseline_run_log_sha256": "a2df4627f320366ae8b38645298c9fccd8193abaa54ada3385617ce4fe0e989d",
   "repaired_run_log_sha256": "deafd4693db1b80b90b82220ae9d47f0ca02147edc65086bc93c334b21d2dc59",
-  "baseline_mechanism_witnessed": true,
-  "repaired_mechanism_witnessed": true,
+  "baseline_mechanism_witnessed": false,
+  "repaired_mechanism_witnessed": false,
   "repaired_trigger_preserved": true,
-  "baseline_dependent_requests": [
+  "baseline_dependent_requests": [],
+  "repaired_dependent_requests": [],
+  "baseline_observed_address_requests": [
     {
       "cycle": 3809,
       "vaddr": "0x59f",
-      "branch_mask": "0x1"
+      "branch_mask": "0x1",
+      "pdst": "0x16",
+      "ldq_idx": "0x2",
+      "dispatch_pc_lob": "0x8"
     },
     {
       "cycle": 3853,
       "vaddr": "0x59f",
-      "branch_mask": "0x1"
+      "branch_mask": "0x1",
+      "pdst": "0x16",
+      "ldq_idx": "0x2",
+      "dispatch_pc_lob": "0x8"
     }
   ],
-  "repaired_dependent_requests": [
+  "repaired_observed_address_requests": [
     {
       "cycle": 3809,
       "vaddr": "0x59f",
-      "branch_mask": "0x1"
+      "branch_mask": "0x1",
+      "pdst": "0x16",
+      "ldq_idx": "0x2",
+      "dispatch_pc_lob": "0x8"
     },
     {
       "cycle": 3853,
       "vaddr": "0x59f",
-      "branch_mask": "0x1"
+      "branch_mask": "0x1",
+      "pdst": "0x16",
+      "ldq_idx": "0x2",
+      "dispatch_pc_lob": "0x8"
     }
   ],
   "repair_effective": false,
   "security_fix_validated": false,
   "attacker_retest_required": false,
-  "verdict": "repair-ineffective"
+  "verdict": "inconclusive-baseline-not-reproduced"
 }

@@ -372,35 +372,24 @@ Its checked-in disassembly shows adjacent instructions `lb sp,-2048(t1)` and
 `ld s1,0(sp)`: the second address uses the first instruction's destination register.
 The case seal binds this disassembly by SHA-256. This proves a static instruction
 dependency, not that the protected load supplied the value observed at runtime.
-The baseline waveform records the reported branch PC through the frontend `s0_vpc`
-signal and the gadget PCs through `s0_vpc` and the fetch-buffer PC with enqueue valid,
-followed by a branch-masked protected-page request, dependent-address requests, a load page fault,
-and the first target-branch misprediction in one ordered window. This is direct
-evidence of a correlated transient request sequence. The waveform does not itself
-prove register-level dependence or architectural secret disclosure.
-The second gadget PC is observed at cycle 3802; its earlier branch-predictor guess at
-3773 is not counted as a frontend observation. These PC observations do not by
-themselves prove either gadget instruction retired or that the dependent request used
-a value from the protected load.
+The baseline waveform records the branch and gadget frontend PCs, a protected-page
+translation request, a later `0x59f` translation request, a load page fault, and
+branch resolution. Dispatch and load-queue identifiers establish that the `0x59f`
+request comes from the independent third instruction at gadget offset `+8`, not the
+dependent load at `+4`. No recorded branch-masked translation request came from that dependent
+load. Thus this execution does **not** reproduce the protected-data-dependent
+mechanism or prove secret disclosure. A shared branch mask alone cannot establish
+data dependence.
 
-The LSU trace narrows the repair investigation. One cycle after the baseline's
-protected TLB request, it shows a TLB miss and a speculative load wakeup while the
-D-cache request did not fire; the `0x59f` request follows in the next cycle. V1 and
-v2 show the same sequence. V3 suppresses that fast wakeup, but the `0x59f` requests
-persist. Thus the observed fast wakeup is not sufficient to explain the dependent-
-address request chain; the remaining release/data path needs analysis. These
-signals still do not prove that protected data reached a consumer.
-
-Three separately built RTL candidates were retested against the same attachment and
-seed. All reproduced the dependent requests, so the comparison records reject all
-three. A fourth candidate built and completed a simulator run, but its waveform was
-not recovered; its security outcome remains unresolved. The self-contained demo now
-shows this case separately from the clean current-pin adaptation and the intentional
-positive control. The [case seal](evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json)
-binds the original baseline, each rejected repair, all four compressed waveforms,
-build records, comparisons, disassembly, and five run logs by SHA-256. Each bound log records the
-pinned seed and 10,000-cycle timeout; the v4 log establishes execution, while the
-missing v4 waveform still precludes a security verdict. No security fix is claimed.
+The baseline shows a TLB miss and speculative load wakeup without a D-cache request;
+v3 suppresses the wakeup while the independent third instruction still requests
+`0x59f`. The three waveformed candidate repairs cannot be evaluated as security
+fixes because the baseline did not reproduce the target mechanism. A fourth
+candidate built and ran, but its waveform was not recovered. The
+[case seal](evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json) binds the
+four raw waveforms, their corrected witnesses, three inconclusive comparisons,
+builds, original disassembly, and pinned-seed simulator logs. A reproducing baseline
+and attacker retest are required before any repair can be called effective.
 
 The comparison now binds the baseline and repaired run-log hashes and requires the
 same seed in both logs. It compares the ordered branch/gadget/protected-request/fault/
