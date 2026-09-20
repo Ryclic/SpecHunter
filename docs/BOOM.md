@@ -384,3 +384,9 @@ binds the original baseline, each rejected repair, all four compressed waveforms
 build records, comparisons, and five run logs by SHA-256. Each bound log records the
 pinned seed and 10,000-cycle timeout; the v4 log establishes execution, while the
 missing v4 waveform still precludes a security verdict. No security fix is claimed.
+
+The comparison now binds the baseline and repaired run-log hashes and requires the
+same seed in both logs. It compares the ordered branch/gadget/protected-request/fault/
+misprediction trigger while allowing cycle timing to shift under a repair. A missing
+trigger is inconclusive, even if dependent requests disappear. A blocked matched
+witness only starts the attacker retest; it does not validate the security fix.

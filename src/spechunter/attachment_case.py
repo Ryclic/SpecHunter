@@ -94,11 +94,15 @@ def build_seal(root: Path) -> dict:
             witness.get("trace_sha256") != trace_hash
             or witness.get("mechanism_witnessed") is not True
             or witness.get("architectural_secret_disclosure_proven") is not False
-            or comparison.get("schema_version") != 3
+            or comparison.get("schema_version") != 4
             or comparison.get("repair_variant") != build.get("variant")
             or comparison.get("repaired_simulator_sha256") != build.get("simulator_sha256")
             or comparison.get("baseline_trace_sha256") != baseline_trace_hash
             or comparison.get("repaired_trace_sha256") != trace_hash
+            or comparison.get("seed_provenance") != "bound-by-run-logs"
+            or comparison.get("seed") != SEED
+            or comparison.get("baseline_run_log_sha256") != baseline_run_hash
+            or comparison.get("repaired_run_log_sha256") != run_hash
             or comparison.get("baseline_mechanism_witnessed") is not True
             or comparison.get("repaired_mechanism_witnessed") is not True
             or comparison.get("repair_effective") is not False

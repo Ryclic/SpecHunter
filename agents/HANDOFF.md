@@ -567,4 +567,16 @@ making the execution claim auditable and preventing the v4 build alone from stan
 in for a run. The new seal and self-contained demo were regenerated; a presentation
 regression rejects a mismatched v4 log seed. The v4 waveform and security verdict
 remain unavailable. Validation: 151 passed, 2 skipped; Ruff lint and format and
-`git diff --check` passed. Publication of this log binding is next.
+`git diff --check` passed. This was published as `261e0c7` on PR #17, and all three
+GitHub checks passed. All other open PRs also had successful checks.
+
+The issue #715 matched-trace comparison now uses schema v4. Exact cycle equality
+could have marked a repair ineffective solely because it shifted timing; the new
+comparison requires the ordered attack trigger and same seed from hash-bound run
+logs instead. It classifies a missing trigger as inconclusive, not ineffective.
+All three historical failed-repair comparisons were regenerated and still reject
+those candidates. The attachment-case seal and demo were regenerated to bind the
+new comparison records. Regressions cover shifted timing, missing trigger, and
+different seeds. Validation: 154 passed, 2 skipped; Ruff lint and format and
+`git diff --check` passed. Publication is next; v4 still lacks a
+waveform and security verdict.
