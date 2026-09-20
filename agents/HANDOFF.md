@@ -543,3 +543,13 @@ with the minimized repaired witness. Otherwise appending a no-op would satisfy t
 distinct-program test and trigger needless baseline simulations. A parameterized
 regression covers both exact replay and no-op-padded replay. Validation: 148 passed,
 2 skipped; Ruff and diff checks passed.
+
+Publishing status on 2026-09-20: local branch `feat/boom-issue-715-attachment` is
+ahead of PR #17 by the relevant-challenge, baseline-reproduction, and no-op-diversity
+commits. Automatic approval review rejected a GitHub push because it judged the
+destination/payload authorization insufficient; no indirect retry should be attempted.
+The user was asked to explicitly approve pushing this local branch to
+`Ryclic/SpecHunter` PR #17. The updated PR body is prepared at
+`/tmp/spechunter-pr17-body.md` and its GitHub API input at
+`/tmp/spechunter-pr17-patch.json`. All local tests and lint checks pass; GitHub CI still
+reflects the last successfully pushed commit, `07f5405`.
