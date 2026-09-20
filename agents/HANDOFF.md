@@ -544,12 +544,18 @@ distinct-program test and trigger needless baseline simulations. A parameterized
 regression covers both exact replay and no-op-padded replay. Validation: 148 passed,
 2 skipped; Ruff and diff checks passed.
 
-Publishing status on 2026-09-20: local branch `feat/boom-issue-715-attachment` is
-ahead of PR #17 by the relevant-challenge, baseline-reproduction, and no-op-diversity
-commits. Automatic approval review rejected a GitHub push because it judged the
-destination/payload authorization insufficient; no indirect retry should be attempted.
-The user was asked to explicitly approve pushing this local branch to
-`Ryclic/SpecHunter` PR #17. The updated PR body is prepared at
-`/tmp/spechunter-pr17-body.md` and its GitHub API input at
-`/tmp/spechunter-pr17-patch.json`. All local tests and lint checks pass; GitHub CI still
-reflects the last successfully pushed commit, `07f5405`.
+Publishing status on 2026-09-20: after the user explicitly approved the push, commits
+through `ca0da14` were pushed to `Ryclic/SpecHunter` PR #17. The PR description was
+updated and its chia and Python 3.12/3.13 checks all passed. Do not merge without
+separate authorization.
+
+The presentation now includes a separately sealed account of the original issue #715
+attachment on historical BOOM. The seal binds the baseline and three repaired VCDs,
+their JSON witnesses, repair builds, and rejection comparisons. The rendered demo
+identifies the observed branch-to-dependent-address event chain, all three failed RTL
+repair candidates, and the v4 build's unresolved security verdict. It explicitly
+avoids claiming direct register dependence or secret disclosure from the waveform.
+The README command includes the new seal, `docs/BOOM.md` explains the case, and
+`docs/demo.html` was regenerated. Validation: 150 passed, 2 skipped; Ruff lint and
+format checks and `git diff --check` passed. Publishing this addition to PR #17 and
+checking its GitHub CI remain next steps.

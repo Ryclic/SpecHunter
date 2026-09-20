@@ -10,6 +10,8 @@ from hashlib import sha256
 from html import escape
 from pathlib import Path
 
+from spechunter.attachment_case import AttachmentEvidenceError, verify_seal
+
 
 class PresentationError(ValueError):
     pass
@@ -193,6 +195,7 @@ def render(
     chia_seal_path: Path | None = None,
     rtl_repair_seal_path: Path | None = None,
     issue_715_seal_path: Path | None = None,
+    issue_715_attachment_seal_path: Path | None = None,
 ) -> dict:
     report_path = report_path.resolve()
     seal_path = seal_path.resolve()
@@ -316,6 +319,26 @@ def render(
 <div class="card"><b>{issue_715["executions"]}</b><span>BOOM executions</span></div>
 <div class="card"><b>Clean</b><span>Current pin result</span></div>
 <div class="card"><b>No</b><span>Fix claimed</span></div></div></section>"""
+    attachment_section = ""
+    attachment_hash = None
+    if issue_715_attachment_seal_path is not None:
+        try:
+            attachment = verify_seal(issue_715_attachment_seal_path.resolve())
+        except (AttachmentEvidenceError, OSError, ValueError) as exc:
+            raise PresentationError(f"original attachment evidence differs: {exc}") from exc
+        attachment_hash = _digest(issue_715_attachment_seal_path)
+        baseline_witness = _read(
+            issue_715_attachment_seal_path.parent / attachment["baseline"]["witness"]
+        )
+        attachment_section = f"""<section><h2>Original issue #715 attachment on historical BOOM</h2>
+<p>The original upstream ELF ran on the reported Chipyard/BOOM revisions. Its waveform records a wrong-path protected-page request and later dependent-address requests before the branch resolved. This is a correlated event chain, not direct proof of register-level dependence or secret disclosure.</p>
+<div class="grid"><div class="card"><b>{baseline_witness["branch_fetch_cycle"]}</b><span>Branch fetch cycle</span></div>
+<div class="card"><b>{len(baseline_witness["dependent_load_requests"])}</b><span>Dependent-address requests</span></div>
+<div class="card"><b>{len(attachment["repairs"])}</b><span>RTL candidates rejected</span></div>
+<div class="card"><b>Unresolved</b><span>Fourth candidate verdict</span></div></div>
+<p>The first three candidate repairs reproduced the dependent requests and failed the matched-trace gate. The fourth built and ran, but its waveform was not recovered; no security fix is claimed.</p>
+<div class="card"><span>Original waveform SHA-256</span><code>{escape(attachment["baseline"]["waveform_sha256"])}</code></div>
+<div class="card"><span>Case seal SHA-256</span><code>{escape(attachment_hash)}</code></div></section>"""
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpecHunter · Verified Agent Loop</title>
@@ -352,6 +375,7 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
 {chia_section}
 {rtl_repair_section}
 {issue_715_section}
+{attachment_section}
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>{report_hash}</code></div><div class="card"><span>Simulator SHA-256</span><code>{simulator_hash}</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{raw_report}</pre></details></section>
 <footer>Generated locally from the sealed SpecHunter report. No network requests or external assets are required.</footer>
@@ -370,4 +394,5 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
         "chia_evidence_sha256": chia_hash,
         "rtl_repair_seal_sha256": rtl_repair_hash,
         "issue_715_seal_sha256": issue_715_hash,
+        "issue_715_attachment_seal_sha256": attachment_hash,
     }

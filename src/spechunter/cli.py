@@ -41,6 +41,11 @@ def main() -> int:
         "--issue-715-seal", type=Path, help="Optional sealed BOOM issue #715 assessment"
     )
     parser.add_argument(
+        "--issue-715-attachment-seal",
+        type=Path,
+        help="Optional sealed original issue #715 attachment case",
+    )
+    parser.add_argument(
         "--runner", type=Path, help="Trusted BOOM runner executable (absolute path)"
     )
     parser.add_argument(
@@ -98,6 +103,7 @@ def main() -> int:
                         chia_seal_path=args.chia_seal,
                         rtl_repair_seal_path=args.rtl_repair_seal,
                         issue_715_seal_path=args.issue_715_seal,
+                        issue_715_attachment_seal_path=args.issue_715_attachment_seal,
                     ),
                     indent=2,
                 )

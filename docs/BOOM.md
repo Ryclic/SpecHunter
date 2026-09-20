@@ -311,8 +311,9 @@ as soon as its artifacts or failure evidence have been collected.
 Upstream BOOM issue #715 reports that a delayed mispredicted branch on BOOM revision
 `fac2c370…` allowed a faulting privileged load and dependent access to execute transiently.
 The report includes a stripped Cascade ELF. SpecHunter records that attachment's SHA-256
-but does not execute it because its runtime and simulator assumptions differ from the pinned
-HTIF/Verilator environment.
+but the current-pin HTIF/Verilator adaptation below is a different program. The original
+attachment was later executed on the exact historical revisions; see the separate case
+study below.
 
 The trusted runner instead provides the fixed `issue-715-baseline` adaptation. It trains a
 delayed conditional branch twelve times with a safe pointer, evicts the training cache
@@ -363,3 +364,21 @@ provenance, and records both `vulnerability_reproduced` and `security_fix_valida
 false. The worker and its disk were deleted after recovered hashes matched the remote
 artifacts. See
 [`boom-issue-715-historical-seal-2026-09-17.json`](evidence/boom-issue-715-historical-seal-2026-09-17.json).
+
+## Original issue #715 attachment case
+
+The original upstream ELF was loaded into the historical `SmallBoomConfig` simulator.
+The baseline waveform records the reported branch, both wrong-path gadget PCs, a
+branch-masked protected-page request, dependent-address requests, a load page fault,
+and the first target-branch misprediction in one ordered window. This is direct
+evidence of a correlated transient request sequence. The waveform does not itself
+prove register-level dependence or architectural secret disclosure.
+
+Three separately built RTL candidates were retested against the same attachment and
+seed. All reproduced the dependent requests, so the comparison records reject all
+three. A fourth candidate built and completed a simulator run, but its waveform was
+not recovered; its security outcome remains unresolved. The self-contained demo now
+shows this case separately from the clean current-pin adaptation and the intentional
+positive control. The [case seal](evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json)
+binds the original baseline, each rejected repair, all four compressed waveforms,
+build records, and comparisons by SHA-256. No security fix is claimed.

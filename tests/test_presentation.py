@@ -140,6 +140,45 @@ def test_renderer_adds_sealed_issue_715_assessment(tmp_path):
     assert result["issue_715_seal_sha256"]
 
 
+def test_renderer_adds_original_attachment_case(tmp_path):
+    output = tmp_path / "demo.html"
+    result = render(
+        EVIDENCE / "vertex-boom-demo-2026-09-11.json",
+        EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+        output,
+        issue_715_attachment_seal_path=(
+            EVIDENCE / "boom-issue-715-attachment-demo-seal-2026-09-20.json"
+        ),
+    )
+    page = output.read_text()
+    assert "Original issue #715 attachment on historical BOOM" in page
+    assert "RTL candidates rejected" in page
+    assert "Fourth candidate verdict" in page
+    assert "no security fix is claimed" in page
+    assert result["issue_715_attachment_seal_sha256"] in page
+
+
+def test_original_attachment_seal_rejects_tampered_witness(tmp_path):
+    seal_path = EVIDENCE / "boom-issue-715-attachment-demo-seal-2026-09-20.json"
+    seal = json.loads(seal_path.read_text())
+    (tmp_path / seal_path.name).write_text(seal_path.read_text())
+    names = {seal["baseline"]["witness"], seal["baseline"]["waveform"], seal["v4_build"]}
+    for repair in seal["repairs"]:
+        names.update(repair[key] for key in ("witness", "waveform", "build", "comparison"))
+    for name in names - {seal["baseline"]["witness"]}:
+        (tmp_path / name).symlink_to(EVIDENCE / name)
+    baseline = json.loads((EVIDENCE / seal["baseline"]["witness"]).read_text())
+    baseline["mechanism_witnessed"] = False
+    (tmp_path / seal["baseline"]["witness"]).write_text(json.dumps(baseline))
+    with pytest.raises(PresentationError, match="original attachment evidence differs"):
+        render(
+            EVIDENCE / "vertex-boom-demo-2026-09-11.json",
+            EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+            tmp_path / "demo.html",
+            issue_715_attachment_seal_path=tmp_path / seal_path.name,
+        )
+
+
 def test_renderer_rejects_tampered_report(tmp_path):
     report = json.loads((EVIDENCE / "vertex-boom-demo-2026-09-11.json").read_text())
     report["metrics"]["executions"] = 0

@@ -66,6 +66,7 @@ uv run spechunter present \
   --chia-seal docs/evidence/chia-vertex-loop-seal-2026-09-16.json \
   --rtl-repair-seal docs/evidence/boom-load-gate-regression-seal-2026-09-16.json \
   --issue-715-seal docs/evidence/boom-issue-715-assessment-seal-2026-09-16.json \
+  --issue-715-attachment-seal docs/evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json \
   --output artifacts/demo.html
 ```
 

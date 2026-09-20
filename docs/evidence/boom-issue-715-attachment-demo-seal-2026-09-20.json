@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "classification": "original-attachment-event-chain-three-failed-repairs-v4-unresolved",
+  "baseline": {
+    "witness": "boom-issue-715-attachment-baseline-2026-09-17.json",
+    "witness_sha256": "4c1801d604217fb437b62bc9ffd2690d99bd2cace7c4347fbe0a326924cb3910",
+    "waveform": "boom-issue-715-attachment-baseline-seed-1789717734-2026-09-17.vcd.gz",
+    "waveform_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34"
+  },
+  "repairs": [
+    {
+      "variant": "historical-issue-715-repaired",
+      "witness": "boom-issue-715-attachment-repaired-2026-09-17.json",
+      "witness_sha256": "78530c87ce0d034f107ae6de00bdf0f28d9eb24ce11b5269f5df70f431249271",
+      "waveform": "boom-issue-715-attachment-repaired-seed-1789717734-2026-09-17.vcd.gz",
+      "waveform_sha256": "1df480bb1d27dd1ef50e8ef47ff6d3f26bf4d07c51a264aaccacd57b1aa24d0e",
+      "build": "boom-issue-715-attachment-repair-build-2026-09-17.json",
+      "build_sha256": "9fef1a3fd636ff03723703710d0d5de9502875a5d75b2ffa3bc830ce1c23221b",
+      "comparison": "boom-issue-715-attachment-comparison-2026-09-17.json",
+      "comparison_sha256": "bab777a6958ba3df57aef9b7a56caf7ea50a8e3f02717571b7d4098b2d7a236f"
+    },
+    {
+      "variant": "historical-issue-715-speculative-load-block",
+      "witness": "boom-issue-715-attachment-repair-v2-2026-09-18.json",
+      "witness_sha256": "8ee998765b657c778ff3714e4a673e0a49e4b0584086aaeab44ea51b05082665",
+      "waveform": "boom-issue-715-attachment-repair-v2-seed-1789717734-2026-09-18.vcd.gz",
+      "waveform_sha256": "8dd92d61415419a1d6faa89197cc12445ed058252f3b5dfdd9c9983533c44317",
+      "build": "boom-issue-715-attachment-repair-v2-build-2026-09-18.json",
+      "build_sha256": "697732738f8d1cce91eae939074c8ee929991575e4fb98a37f2dc71437ce7367",
+      "comparison": "boom-issue-715-attachment-repair-v2-comparison-2026-09-18.json",
+      "comparison_sha256": "028a6a38e4ee105a0cf90dd63846b430d802809349321357b8a794974eeac502"
+    },
+    {
+      "variant": "historical-issue-715-fault-dependent-kill",
+      "witness": "boom-issue-715-attachment-repair-v3-witness-2026-09-18.json",
+      "witness_sha256": "4164c7907d99cfc40ecfb45350c149cac19097d9784fedb0b9350fb395e3360f",
+      "waveform": "boom-issue-715-attachment-repair-v3-seed-1789717734-2026-09-18.vcd.gz",
+      "waveform_sha256": "5f7250b931c825e83ad36040d8bec2ed90d885da205a7359a53e6556d21ca1af",
+      "build": "boom-issue-715-attachment-repair-v3-build-2026-09-18.json",
+      "build_sha256": "7d14890972c18192e6bcf2eac8a95c6ae276e2b33a464598d4694aadcc026e48",
+      "comparison": "boom-issue-715-attachment-repair-v3-comparison-2026-09-18.json",
+      "comparison_sha256": "5ade97b97be59ed945fccde1ab717080502a0be26fd647cd2bb487daf9d6c32a"
+    }
+  ],
+  "historical_revisions": {
+    "chipyard": "004297b6a8c01be1b2110c4cf4f9393ae1ff8805",
+    "boom": "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d"
+  },
+  "v4_build": "boom-issue-715-attachment-repair-v4-build-2026-09-18.json",
+  "v4_build_sha256": "9155ef2495063fd715a4cc816b9003c74c8ca710f05451801b25af400372692e",
+  "v4_security_verdict": "unresolved-no-waveform",
+  "security_fix_validated": false
+}
