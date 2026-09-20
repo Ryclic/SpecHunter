@@ -90,6 +90,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     lsu_ids: dict[str, set[str]] = {}
     dispatch_ids: dict[str, set[str]] = {}
     issue_ids: dict[str, set[str]] = {}
+    exe_ids: dict[str, set[str]] = {}
     values: dict[str, int] = {}
     timestamp = 0
     header = True
@@ -103,6 +104,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     fast_wakeups: list[dict] = []
     gadget_dispatches: list[dict] = []
     gadget_issues: list[dict] = []
+    gadget_exe_requests: list[dict] = []
 
     def finish_timestamp() -> None:
         nonlocal branch_frontend_pc_cycle
@@ -165,6 +167,31 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                 }
                 if not gadget_issues or gadget_issues[-1] != event:
                     gadget_issues.append(event)
+        if changed & set().union(*exe_ids.values()) and _one(
+            values, exe_ids, "io_core_exe_0_req_valid"
+        ):
+            pdst = hex(_one(values, exe_ids, "io_core_exe_0_req_bits_uop_pdst"))
+            ldq_idx = hex(_one(values, exe_ids, "io_core_exe_0_req_bits_uop_ldq_idx"))
+            mask = _one(values, exe_ids, "io_core_exe_0_req_bits_uop_br_mask")
+            matches = [
+                dispatch
+                for dispatch in gadget_dispatches
+                if dispatch["cycle"] <= cycle
+                and dispatch["pdst"] == pdst
+                and dispatch["ldq_idx"] == ldq_idx
+                and mask & int(dispatch["branch_mask"], 16)
+            ]
+            if matches:
+                event = {
+                    "cycle": cycle,
+                    "pdst": pdst,
+                    "ldq_idx": ldq_idx,
+                    "branch_mask": hex(mask),
+                    "vaddr": hex(_one(values, exe_ids, "io_core_exe_0_req_bits_addr")),
+                    "dispatch_pc_lob": matches[-1]["pc_lob"],
+                }
+                if not gadget_exe_requests or gadget_exe_requests[-1] != event:
+                    gadget_exe_requests.append(event)
         tlb_related = set().union(
             ids.get("dtlb_io_req_0_valid", set()),
             ids.get("dtlb_io_req_0_bits_vaddr", set()),
@@ -282,6 +309,14 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         "io_iss_uops_0_br_mask",
                     }:
                         issue_ids.setdefault(name, set()).add(identifier)
+                    if scope.endswith(".boom_tile.lsu") and name in {
+                        "io_core_exe_0_req_valid",
+                        "io_core_exe_0_req_bits_uop_pdst",
+                        "io_core_exe_0_req_bits_uop_ldq_idx",
+                        "io_core_exe_0_req_bits_uop_br_mask",
+                        "io_core_exe_0_req_bits_addr",
+                    }:
+                        exe_ids.setdefault(name, set()).add(identifier)
                 elif "$enddefinitions" in line:
                     if not all(
                         frontend_pc_ids.get(name)
@@ -303,6 +338,8 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         raise RuntimeError("historical memory dispatch signals are missing")
                     if len(issue_ids) != 5:
                         raise RuntimeError("historical memory issue signals are missing")
+                    if len(exe_ids) != 5:
+                        raise RuntimeError("historical LSU execute signals are missing")
                     header = False
                 continue
             if line.startswith("#"):
@@ -379,7 +416,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         target_mispredicts,
     )
     return {
-        "schema_version": 6,
+        "schema_version": 7,
         "experiment": "boom-upstream-issue-715-vcd-witness",
         "trace_sha256": _sha256(path),
         "branch_pc": hex(BRANCH_PC),
@@ -400,6 +437,10 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         "gadget_issues": gadget_issues,
         "dependent_load_issues": [
             event for event in gadget_issues if event["dispatch_pc_lob"] == "0x4"
+        ],
+        "gadget_exe_requests": gadget_exe_requests,
+        "dependent_load_exe_requests": [
+            event for event in gadget_exe_requests if event["dispatch_pc_lob"] == "0x4"
         ],
         "tlb_miss_fast_wakeup_observations": fast_wakeups,
         "load_page_faults": faults,

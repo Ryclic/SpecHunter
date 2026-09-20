@@ -118,6 +118,7 @@ def test_historical_trace_seal_records_ordered_issue_mechanism():
     resolution = evidence["target_mispredicts"][0]
     assert evidence["transient_dataflow_witnessed"] is False
     assert evidence["dependent_load_requests"] == []
+    assert evidence["dependent_load_exe_requests"] == []
     assert evidence["dependent_load_dispatches"][0]["prs1"] == protected["pdst"]
     assert evidence["dependent_load_issues"] == [
         {
@@ -146,6 +147,7 @@ def test_v3_suppressed_wakeup_and_dependent_issue_not_independent_request():
     )
     assert evidence["tlb_miss_fast_wakeup_observations"] == []
     assert evidence["dependent_load_requests"] == []
+    assert evidence["dependent_load_exe_requests"] == []
     assert evidence["dependent_load_issues"] == []
     assert all(event["dispatch_pc_lob"] == "0x8" for event in evidence["observed_address_requests"])
     assert evidence["mechanism_witnessed"] is False

@@ -663,3 +663,17 @@ Validation of the issue-queue follow-up: four waveform rescans exactly match the
 regenerated witnesses; 162 passed and 2 skipped in `.venv/bin/pytest -q`; Ruff
 lint/format and `git diff --check` passed. The comparison records, case seal, and
 self-contained demo were regenerated. No GCP calls or compute resources were used.
+
+The next stage was checked against the raw LSU interface: at cycle 3811 the
+baseline waveform contains fields naming dependent destination `0x15`, queue slot
+1, and address `0x10098800`, but `io_core_exe_0_req_valid` is zero. Those fields
+are an invalid payload and cannot be interpreted as a memory request. A scanner
+revision requires the LSU execute-valid signal and dispatch identity before
+reporting an execute request; none of the four waveforms has a valid dependent
+execute request. All four witnesses, three comparisons, the seal and demo have
+been regenerated with that fail-closed distinction. Baseline issue to LSU
+execute-valid gating remains the next diagnostic question; a valid translation
+or leak is still not established.
+Validation: four raw VCD rescans matched their schema-v7 witnesses; 162 passed,
+2 skipped; Ruff lint/format and `git diff --check` passed. The corrected case
+seal and demo rendered successfully. No GCP calls were made.

@@ -54,7 +54,8 @@ The separately executed original issue #715 ELF on historical BOOM also has no
 validated vulnerability or fix claim: waveform attribution identifies its later
 `0x59f` requests as coming from an independent third instruction. The
 protected-data-dependent load issues from the memory queue in baseline and v1/v2
-but has no recorded branch-masked translation request; v3 lacks its matched issue.
+but has no matching valid LSU execute request or branch-masked translation request;
+v3 lacks its matched issue.
 Three candidate repair comparisons are consequently inconclusive.
 
 Generate the presentation locally from its sealed evidence:

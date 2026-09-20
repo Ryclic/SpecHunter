@@ -382,7 +382,10 @@ mechanism or prove secret disclosure. A shared branch mask alone cannot establis
 data dependence.
 
 The baseline and v1/v2 issue the dependent load from the memory queue at cycle
-3809, but it never reaches the branch-masked TLB request stage. The baseline also
+3809, but there is no matching valid LSU execute request or branch-masked TLB
+request. At cycle 3811 the LSU carries fields for that load, including an address,
+but its execute-request valid signal is low; those fields cannot prove execution
+or a data leak. The baseline also
 shows a TLB miss and speculative load wakeup without a D-cache request. V3
 suppresses that wakeup and no dependent-load issue is observed under the target
 branch mask, while the independent third instruction still requests `0x59f`.

@@ -54,7 +54,7 @@ def test_matched_replay_requires_attacker_return(tmp_path, monkeypatch):
     result = _seal(tmp_path, monkeypatch, repaired)
     assert result["repair_effective"] is False
     assert result["repaired_trigger_preserved"] is True
-    assert result["schema_version"] == 6
+    assert result["schema_version"] == 7
     assert result["matched_control_flow"] is True
     assert result["seed_provenance"] == "bound-by-run-logs"
     assert result["seed"] == 1789717734
