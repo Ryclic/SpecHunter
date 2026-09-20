@@ -87,7 +87,7 @@ def build_seal(root: Path) -> dict:
     baseline_trace_hash = _digest(root / baseline_trace_name)
     baseline_run_name, baseline_run_hash = _run_log(root, BASELINE[2])
     if (
-        baseline.get("schema_version") != 7
+        baseline.get("schema_version") != 9
         or baseline.get("experiment") != "boom-upstream-issue-715-vcd-witness"
         or baseline.get("frontend_pc_signal_sources") != FRONTEND_SOURCES
         or baseline.get("gadget_frontend_pc_cycles", {}).get("0xd010028e04") is None
@@ -95,6 +95,12 @@ def build_seal(root: Path) -> dict:
         or baseline.get("dependent_load_requests") != []
         or baseline.get("dependent_load_exe_requests") != []
         or not baseline.get("dependent_load_issues")
+        or not all(
+            event.get("prs1_poisoned") is True
+            and event.get("load_miss") is True
+            and event.get("register_read_valid") is False
+            for event in baseline["dependent_load_issues"]
+        )
         or not baseline.get("observed_address_requests")
         or any(
             request.get("dispatch_pc_lob") != "0x8"
@@ -122,14 +128,14 @@ def build_seal(root: Path) -> dict:
         run_name, run_hash = _run_log(root, run_suffix)
         revisions.add((build.get("chipyard_revision"), build.get("boom_revision")))
         if (
-            witness.get("schema_version") != 7
+            witness.get("schema_version") != 9
             or witness.get("frontend_pc_signal_sources") != FRONTEND_SOURCES
             or witness.get("experiment") != "boom-upstream-issue-715-vcd-witness"
             or witness.get("gadget_frontend_pc_cycles", {}).get("0xd010028e04") is None
             or witness.get("trace_sha256") != trace_hash
             or witness.get("mechanism_witnessed") is not False
             or witness.get("architectural_secret_disclosure_proven") is not False
-            or comparison.get("schema_version") != 7
+            or comparison.get("schema_version") != 9
             or comparison.get("baseline_dependent_issues") != baseline["dependent_load_issues"]
             or comparison.get("repaired_dependent_issues") != witness["dependent_load_issues"]
             or comparison.get("baseline_dependent_exe_requests")
@@ -153,6 +159,12 @@ def build_seal(root: Path) -> dict:
             or witness.get("dependent_load_requests") != []
             or witness.get("dependent_load_exe_requests") != []
             or bool(witness.get("dependent_load_issues")) != (index < 2)
+            or not all(
+                event.get("prs1_poisoned") is True
+                and event.get("load_miss") is True
+                and event.get("register_read_valid") is False
+                for event in witness.get("dependent_load_issues", [])
+            )
             or not witness.get("observed_address_requests")
             or any(
                 request.get("dispatch_pc_lob") != "0x8"

@@ -106,7 +106,7 @@ def main() -> int:
         and repaired_trigger_preserved
     )
     result = {
-        "schema_version": 7,
+        "schema_version": 9,
         "experiment": "boom-upstream-issue-715-attachment-before-after",
         "repair_variant": build["variant"],
         "baseline_trace_sha256": baseline["trace_sha256"],

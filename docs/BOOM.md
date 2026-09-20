@@ -383,10 +383,16 @@ data dependence.
 
 The baseline and v1/v2 issue the dependent load from the memory queue at cycle
 3809, but there is no matching valid LSU execute request or branch-masked TLB
-request. At cycle 3811 the LSU carries fields for that load, including an address,
+request. Its first source operand is marked poisoned when it issues. The pinned
+[BOOM core source](https://github.com/riscv-boom/riscv-boom/blob/fac2c370c9deae97ca52aca6b34857e9ac0f6e9d/src/main/scala/exu/core.scala#L973-L978)
+gates register-read validity when an issued instruction has a poisoned operand
+and the LSU reports a load miss. At cycle 3809, both inputs are high and
+register-read validity is low in baseline and v1/v2, explaining the absent valid
+LSU request in this run. At cycle 3811 the LSU carries fields
+for that load, including an address,
 but its execute-request valid signal is low; those fields cannot prove execution
-or a data leak. The baseline also
-shows a TLB miss and speculative load wakeup without a D-cache request. V3
+or a data leak. The baseline also shows a TLB miss and speculative load wakeup
+without a D-cache request. V3
 suppresses that wakeup and no dependent-load issue is observed under the target
 branch mask, while the independent third instruction still requests `0x59f`.
 This is an issue-stage effect, not evidence of a security fix: the three waveformed

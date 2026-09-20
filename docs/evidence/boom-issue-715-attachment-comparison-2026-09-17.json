@@ -1,5 +1,5 @@
 {
-  "schema_version": 7,
+  "schema_version": 9,
   "experiment": "boom-upstream-issue-715-attachment-before-after",
   "repair_variant": "historical-issue-715-repaired",
   "baseline_trace_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
@@ -20,6 +20,9 @@
       "cycle": 3809,
       "pdst": "0x15",
       "prs1": "0x12",
+      "prs1_poisoned": true,
+      "load_miss": true,
+      "register_read_valid": false,
       "ldq_idx": "0x1",
       "branch_mask": "0x1",
       "dispatch_pc_lob": "0x4"
@@ -30,6 +33,9 @@
       "cycle": 3809,
       "pdst": "0x15",
       "prs1": "0x12",
+      "prs1_poisoned": true,
+      "load_miss": true,
+      "register_read_valid": false,
       "ldq_idx": "0x1",
       "branch_mask": "0x1",
       "dispatch_pc_lob": "0x4"

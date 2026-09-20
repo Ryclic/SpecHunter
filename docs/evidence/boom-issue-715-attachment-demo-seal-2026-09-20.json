@@ -6,7 +6,7 @@
   "static_gadget_register_dependency": true,
   "baseline": {
     "witness": "boom-issue-715-attachment-baseline-2026-09-17.json",
-    "witness_sha256": "2f6a13fe78e12c1d0eb1c7fa32f9f1484f40b77cb99938099a9d3d85554af3d3",
+    "witness_sha256": "c90702a2bdd85a45c26555eabaf0edf2c2dc368313e07fcc0c715ac76b8dda95",
     "waveform": "boom-issue-715-attachment-baseline-seed-1789717734-2026-09-17.vcd.gz",
     "waveform_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
     "run_log": "boom-issue-715-attachment-baseline-seed-1789717734-2026-09-17.log",
@@ -17,13 +17,13 @@
     {
       "variant": "historical-issue-715-repaired",
       "witness": "boom-issue-715-attachment-repaired-2026-09-17.json",
-      "witness_sha256": "d35b4594f7227d4688b82e835a09e4efaae42d86893b55d46c29a368e79fa84d",
+      "witness_sha256": "85e61062aa1273ac24e5b823eb3ebd88c0ddadf4a83561d6cbf2113a0f3cd281",
       "waveform": "boom-issue-715-attachment-repaired-seed-1789717734-2026-09-17.vcd.gz",
       "waveform_sha256": "1df480bb1d27dd1ef50e8ef47ff6d3f26bf4d07c51a264aaccacd57b1aa24d0e",
       "build": "boom-issue-715-attachment-repair-build-2026-09-17.json",
       "build_sha256": "9fef1a3fd636ff03723703710d0d5de9502875a5d75b2ffa3bc830ce1c23221b",
       "comparison": "boom-issue-715-attachment-comparison-2026-09-17.json",
-      "comparison_sha256": "9bc1c165723e8b6ad57a662b8f68e3dd39117f6ae13c1a271f52f343e45dac7c",
+      "comparison_sha256": "eb00868e22f93ffbe8626052b2a03638d4866e9d94b764951b8a4a926e1d3dc3",
       "run_log": "boom-issue-715-attachment-repaired-seed-1789717734-2026-09-17.log",
       "run_log_sha256": "deafd4693db1b80b90b82220ae9d47f0ca02147edc65086bc93c334b21d2dc59",
       "tlb_miss_fast_wakeup_count": 1
@@ -31,13 +31,13 @@
     {
       "variant": "historical-issue-715-speculative-load-block",
       "witness": "boom-issue-715-attachment-repair-v2-2026-09-18.json",
-      "witness_sha256": "c4151274952f1707372ab7e7d2cafbcf8ecf3104af62071356bdf522ee8e32cd",
+      "witness_sha256": "1ddc6b6b8a641e727107d23fa25a15ff96e2587dbfcfa13d889cc9b7fc679a20",
       "waveform": "boom-issue-715-attachment-repair-v2-seed-1789717734-2026-09-18.vcd.gz",
       "waveform_sha256": "8dd92d61415419a1d6faa89197cc12445ed058252f3b5dfdd9c9983533c44317",
       "build": "boom-issue-715-attachment-repair-v2-build-2026-09-18.json",
       "build_sha256": "697732738f8d1cce91eae939074c8ee929991575e4fb98a37f2dc71437ce7367",
       "comparison": "boom-issue-715-attachment-repair-v2-comparison-2026-09-18.json",
-      "comparison_sha256": "33801165ad07f1c089ae5df35c19936408bb1448bd115cb45c35fca103a2d3ce",
+      "comparison_sha256": "52874a799bd6be4a1d6d559f281e57b213a7b5d50a1646989bb9c6b51c57c886",
       "run_log": "boom-issue-715-attachment-repair-v2-seed-1789717734-2026-09-18.log",
       "run_log_sha256": "a031c4a5ca7c001d413998f9d7ba5693b8097ec01c25021a42816eea2c040bf8",
       "tlb_miss_fast_wakeup_count": 1
@@ -45,13 +45,13 @@
     {
       "variant": "historical-issue-715-fault-dependent-kill",
       "witness": "boom-issue-715-attachment-repair-v3-witness-2026-09-18.json",
-      "witness_sha256": "7745b0d8a7b9cf245c0b659fe9e56df402778218376ffb4478428a76956d7e6d",
+      "witness_sha256": "be33dbad20e0ab1b60de5c4b23d4dffad6bca2448599e0dbbb95255301ab8e5f",
       "waveform": "boom-issue-715-attachment-repair-v3-seed-1789717734-2026-09-18.vcd.gz",
       "waveform_sha256": "5f7250b931c825e83ad36040d8bec2ed90d885da205a7359a53e6556d21ca1af",
       "build": "boom-issue-715-attachment-repair-v3-build-2026-09-18.json",
       "build_sha256": "7d14890972c18192e6bcf2eac8a95c6ae276e2b33a464598d4694aadcc026e48",
       "comparison": "boom-issue-715-attachment-repair-v3-comparison-2026-09-18.json",
-      "comparison_sha256": "5568de0efbf332a4f51c6fa55e6251df0302f649c233cef2d03c22f101ccc5cb",
+      "comparison_sha256": "b83fc8fc30bae862bc72da03ba090e3895a98b5075f16702e108a0703ca1237a",
       "run_log": "boom-issue-715-attachment-repair-v3-run-2026-09-18.log",
       "run_log_sha256": "a1fa06affcd17862a9f13e79b831ec3a1902a87c1ddd0e4d4b6d6df059511fd7",
       "tlb_miss_fast_wakeup_count": 0

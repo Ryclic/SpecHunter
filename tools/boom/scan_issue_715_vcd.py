@@ -90,6 +90,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     lsu_ids: dict[str, set[str]] = {}
     dispatch_ids: dict[str, set[str]] = {}
     issue_ids: dict[str, set[str]] = {}
+    core_gate_ids: dict[str, set[str]] = {}
     exe_ids: dict[str, set[str]] = {}
     values: dict[str, int] = {}
     timestamp = 0
@@ -161,6 +162,11 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                     "cycle": cycle,
                     "pdst": issued_pdst,
                     "prs1": hex(_one(values, issue_ids, "io_iss_uops_0_prs1")),
+                    "prs1_poisoned": bool(_one(values, issue_ids, "io_iss_uops_0_iw_p1_poisoned")),
+                    "load_miss": bool(_one(values, core_gate_ids, "io_lsu_ld_miss")),
+                    "register_read_valid": bool(
+                        _one(values, core_gate_ids, "iregister_read_io_iss_valids_0")
+                    ),
                     "ldq_idx": hex(_one(values, issue_ids, "io_iss_uops_0_ldq_idx")),
                     "branch_mask": hex(_one(values, issue_ids, "io_iss_uops_0_br_mask")),
                     "dispatch_pc_lob": matches[-1]["pc_lob"],
@@ -305,10 +311,16 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         "io_iss_valids_0",
                         "io_iss_uops_0_pdst",
                         "io_iss_uops_0_prs1",
+                        "io_iss_uops_0_iw_p1_poisoned",
                         "io_iss_uops_0_ldq_idx",
                         "io_iss_uops_0_br_mask",
                     }:
                         issue_ids.setdefault(name, set()).add(identifier)
+                    if scope.endswith(".boom_tile.core") and name in {
+                        "io_lsu_ld_miss",
+                        "iregister_read_io_iss_valids_0",
+                    }:
+                        core_gate_ids.setdefault(name, set()).add(identifier)
                     if scope.endswith(".boom_tile.lsu") and name in {
                         "io_core_exe_0_req_valid",
                         "io_core_exe_0_req_bits_uop_pdst",
@@ -336,8 +348,10 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         raise RuntimeError("historical LSU wakeup signals are missing")
                     if len(dispatch_ids) != 7:
                         raise RuntimeError("historical memory dispatch signals are missing")
-                    if len(issue_ids) != 5:
+                    if len(issue_ids) != 6:
                         raise RuntimeError("historical memory issue signals are missing")
+                    if len(core_gate_ids) != 2:
+                        raise RuntimeError("historical register-read gate signals are missing")
                     if len(exe_ids) != 5:
                         raise RuntimeError("historical LSU execute signals are missing")
                     header = False
@@ -416,7 +430,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         target_mispredicts,
     )
     return {
-        "schema_version": 7,
+        "schema_version": 9,
         "experiment": "boom-upstream-issue-715-vcd-witness",
         "trace_sha256": _sha256(path),
         "branch_pc": hex(BRANCH_PC),

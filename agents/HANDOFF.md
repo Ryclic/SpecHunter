@@ -677,3 +677,32 @@ or leak is still not established.
 Validation: four raw VCD rescans matched their schema-v7 witnesses; 162 passed,
 2 skipped; Ruff lint/format and `git diff --check` passed. The corrected case
 seal and demo rendered successfully. No GCP calls were made.
+
+## Poisoned issue-queue operand, 2026-09-20
+
+Inspecting the historical memory issue unit's `io_iss_uops_0_iw_p1_poisoned` bit
+showed that the dependent load at cycle 3809 issues with its first (physical
+register `0x12`) operand poisoned in baseline and v1/v2. The independent +8
+load at 3807 has this bit clear. V3 shows no matching issue. The poisoned bit
+is consistent with the later absent valid LSU execute request, but the waveform
+alone does not prove the exact gating logic or a leak. The scanner now records
+the bit only alongside a valid matched issue. All four raw VCD witnesses, three
+comparisons, case seal, and demo have been regenerated to bind this distinction.
+Next inspect the pinned BOOM register-read/memory execution gating source or
+collect a targeted waveform to determine exactly where the poisoned uop is
+suppressed; only then construct a reproducing baseline to test a repair.
+
+Pinned source review identified the exact issue-to-register-read gate. Historical
+BOOM `fac2c370…` in `src/main/scala/exu/core.scala` lines 973–978 sets
+`iregister_read.io.iss_valids(w)` to issue-valid AND NOT (`io.lsu.ld_miss`
+AND (`iw_p1_poisoned` OR `iw_p2_poisoned`)). The four raw VCDs show baseline
+and v1/v2 at cycle 3809 with dependent issue valid, physical source `0x12`
+poisoned, LSU load miss high, and register-read issue valid low. V3 has no
+matching dependent issue. The scanner's schema-v9 issue event now binds the
+three gate signals, and the seal requires those observations. This identifies
+why this issued uop does not reach the LSU execute-valid interface in the
+recorded run. It does not prove a security fix or any secret disclosure.
+Validation: raw baseline/v1-v3 VCD rescans matched all four schema-v9 witness
+JSON files; 162 passed, 2 skipped; Ruff lint/format and `git diff --check`
+passed. The comparison JSON records, case seal, and demo were regenerated.
+No paid model or GCP compute call was made in this source-and-trace analysis.

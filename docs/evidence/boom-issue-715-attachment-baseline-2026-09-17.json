@@ -1,5 +1,5 @@
 {
-  "schema_version": 7,
+  "schema_version": 9,
   "experiment": "boom-upstream-issue-715-vcd-witness",
   "trace_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
   "branch_pc": "0xd0100287d0",
@@ -103,6 +103,9 @@
       "cycle": 3805,
       "pdst": "0x12",
       "prs1": "0x3",
+      "prs1_poisoned": false,
+      "load_miss": false,
+      "register_read_valid": true,
       "ldq_idx": "0x0",
       "branch_mask": "0x1",
       "dispatch_pc_lob": "0x0"
@@ -111,6 +114,9 @@
       "cycle": 3807,
       "pdst": "0x16",
       "prs1": "0x11",
+      "prs1_poisoned": false,
+      "load_miss": false,
+      "register_read_valid": true,
       "ldq_idx": "0x2",
       "branch_mask": "0x1",
       "dispatch_pc_lob": "0x8"
@@ -119,6 +125,9 @@
       "cycle": 3809,
       "pdst": "0x15",
       "prs1": "0x12",
+      "prs1_poisoned": true,
+      "load_miss": true,
+      "register_read_valid": false,
       "ldq_idx": "0x1",
       "branch_mask": "0x1",
       "dispatch_pc_lob": "0x4"
@@ -129,6 +138,9 @@
       "cycle": 3809,
       "pdst": "0x15",
       "prs1": "0x12",
+      "prs1_poisoned": true,
+      "load_miss": true,
+      "register_read_valid": false,
       "ldq_idx": "0x1",
       "branch_mask": "0x1",
       "dispatch_pc_lob": "0x4"
