@@ -14,7 +14,9 @@ diagnostic it now refuses a simulator without VCD support, fixes the seed to
 `1789717734`, and requires and hashes a captured waveform. Diagnostic
 waveform attribution requires a valid same-cycle LSU execute request matched
 to the dispatch ROB entry; all four checked-in raw waveforms recompute to
-their existing witnesses (16 focused tests pass). GCP `gcloud auth list`
+their existing witnesses (16 focused tests pass).
+`transient_dataflow_witnessed` now also requires the protected and dependent
+requests to be ordered within the first speculative branch window. GCP `gcloud auth list`
 shows the selected account, but a read-only `gcloud billing projects describe
 spechunter` failed on 2026-09-20 because its token could not be refreshed
 without interactive reauthentication. The trial balance and expiry remain

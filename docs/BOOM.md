@@ -440,3 +440,7 @@ same address, destination register, load-queue slot, and branch mask as a
 dependent translation request. It binds the execute request to the gadget's
 dispatch by reorder-buffer index, so a later reuse of the register or load-queue
 slot cannot create a false dependent-load witness.
+The `transient_dataflow_witnessed` flag additionally requires the protected
+request to precede the dependent request between the branch fetch and its first
+resolution; a request after resolution remains visible in the raw observations
+but cannot establish transient dataflow.

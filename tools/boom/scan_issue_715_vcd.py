@@ -470,7 +470,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     dependent_requests = _dependent_tlb_requests(
         tlb_requests, dependent_dispatches, gadget_exe_requests
     )
-    _, dependent_chain = _witness_flags(
+    dependent_correlated, dependent_chain = _witness_flags(
         branch_frontend_pc_cycle,
         gadget_frontend_pc_cycles,
         protected,
@@ -509,7 +509,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         "load_page_faults": faults,
         "target_mispredicts": target_mispredicts,
         "same_branch_mask_request_chain_witnessed": correlated,
-        "transient_dataflow_witnessed": bool(dependent_requests),
+        "transient_dataflow_witnessed": dependent_correlated,
         "mechanism_witnessed": dependent_chain,
         "architectural_secret_disclosure_proven": False,
     }

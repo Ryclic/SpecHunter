@@ -131,6 +131,20 @@ def test_dependent_tlb_request_requires_valid_matching_lsu_rob_identity():
     assert verify([request], [dispatch], [{**exe, "vaddr": "0x600"}]) == []
     assert verify([request], [dispatch], [{**exe, "branch_mask": "0x2"}]) == []
 
+    # A genuine dependent request after branch resolution must still not be
+    # classified as a transient dataflow observation.
+    late_request = {**request, "cycle": 51}
+    late_exe = {**exe, "cycle": 51}
+    assert verify([late_request], [dispatch], [late_exe]) == [late_request]
+    assert SCANNER._witness_flags(
+        1,
+        {0xD010028E00: 2, 0xD010028E04: 3},
+        [{"cycle": 11, "branch_mask": "0x1"}],
+        [late_request],
+        [{"cycle": 30, "branch_mask": "0x1"}],
+        [{"cycle": 40}],
+    ) == (False, False)
+
 
 def test_predicted_pc_alone_is_not_a_frontend_observation(tmp_path):
     path = tmp_path / "predictor-only.vcd"
