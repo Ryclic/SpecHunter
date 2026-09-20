@@ -119,6 +119,16 @@ def test_historical_trace_seal_records_ordered_issue_mechanism():
     assert evidence["transient_dataflow_witnessed"] is False
     assert evidence["dependent_load_requests"] == []
     assert evidence["dependent_load_dispatches"][0]["prs1"] == protected["pdst"]
+    assert evidence["dependent_load_issues"] == [
+        {
+            "cycle": 3809,
+            "pdst": "0x15",
+            "prs1": "0x12",
+            "ldq_idx": "0x1",
+            "branch_mask": "0x1",
+            "dispatch_pc_lob": "0x4",
+        }
+    ]
     assert request["dispatch_pc_lob"] == "0x8"
     assert protected["vaddr"] == "0xd010098000"
     assert protected["cycle"] < request["cycle"]
@@ -128,7 +138,7 @@ def test_historical_trace_seal_records_ordered_issue_mechanism():
     assert resolution["pc"] == evidence["branch_pc"]
 
 
-def test_v3_suppressed_fast_wakeup_without_blocking_request_chain():
+def test_v3_suppressed_wakeup_and_dependent_issue_not_independent_request():
     evidence = json.loads(
         (
             ROOT / "docs/evidence/boom-issue-715-attachment-repair-v3-witness-2026-09-18.json"
@@ -136,6 +146,7 @@ def test_v3_suppressed_fast_wakeup_without_blocking_request_chain():
     )
     assert evidence["tlb_miss_fast_wakeup_observations"] == []
     assert evidence["dependent_load_requests"] == []
+    assert evidence["dependent_load_issues"] == []
     assert all(event["dispatch_pc_lob"] == "0x8" for event in evidence["observed_address_requests"])
     assert evidence["mechanism_witnessed"] is False
 

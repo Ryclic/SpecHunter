@@ -42,5 +42,7 @@
    same branch mask, but dispatch/register and load-queue identifiers attribute the
    latter to an independent third instruction. No branch-masked dependent-load translation request
    was recorded, so the reported mechanism was not reproduced. Three candidate RTL
-   comparisons are inconclusive; a fourth has no recovered waveform. Next obtain a
+   comparisons are inconclusive; a fourth has no recovered waveform. The dependent
+   load issues in baseline and v1/v2 but never reaches a branch-masked TLB request;
+   in v3 it does not issue under the target branch mask. Next obtain a
    truly dependent baseline, then evaluate repairs and attacker retests.

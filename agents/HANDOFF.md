@@ -642,3 +642,24 @@ Validation of the correction: `.venv/bin/pytest -q` — 162 passed, 2 skipped;
 `git diff --check` passed. `docs/demo.html` was regenerated from the corrected
 case seal. The existing original-attachment PR title and body must reflect this
 non-reproduction before review; do not merge the previous claim.
+
+## Issue queue attribution follow-up
+
+Further analysis of all four saved waveforms found a meaningful distinction between
+issue and translation. In baseline and candidate v1/v2, the dependent gadget load at
++4 dispatches with physical source `0x12` and destination `0x15`, then issues from
+the memory issue queue at cycle 3809 with branch mask 1 and load-queue slot 1.
+It does not produce a matching branch-masked TLB request. The simultaneous `0x59f`
+TLB request belongs to independent load +8, destination `0x16`, slot 2, which
+issued at 3807. Candidate v3 suppresses the speculative wakeup; no matching
+branch-masked dependent-load issue is seen there. A later instruction reuses
+physical register `0x15` with another source and mask, and must not be attributed
+to the gadget. The scanner now binds issue-to-dispatch on destination, source,
+load-queue slot, and branch mask; its case seal requires the per-candidate issue
+observations. This narrows the point of divergence but does not reproduce a leak
+or establish repair efficacy. Next determine why the baseline issue does not reach
+the LSU translation interface and obtain a reproducing baseline before repair claims.
+Validation of the issue-queue follow-up: four waveform rescans exactly match their
+regenerated witnesses; 162 passed and 2 skipped in `.venv/bin/pytest -q`; Ruff
+lint/format and `git diff --check` passed. The comparison records, case seal, and
+self-contained demo were regenerated. No GCP calls or compute resources were used.

@@ -1,5 +1,5 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "experiment": "boom-upstream-issue-715-attachment-before-after",
   "repair_variant": "historical-issue-715-speculative-load-block",
   "baseline_trace_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
@@ -15,6 +15,26 @@
   "repaired_trigger_preserved": true,
   "baseline_dependent_requests": [],
   "repaired_dependent_requests": [],
+  "baseline_dependent_issues": [
+    {
+      "cycle": 3809,
+      "pdst": "0x15",
+      "prs1": "0x12",
+      "ldq_idx": "0x1",
+      "branch_mask": "0x1",
+      "dispatch_pc_lob": "0x4"
+    }
+  ],
+  "repaired_dependent_issues": [
+    {
+      "cycle": 3809,
+      "pdst": "0x15",
+      "prs1": "0x12",
+      "ldq_idx": "0x1",
+      "branch_mask": "0x1",
+      "dispatch_pc_lob": "0x4"
+    }
+  ],
   "baseline_observed_address_requests": [
     {
       "cycle": 3809,

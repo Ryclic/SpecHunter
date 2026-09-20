@@ -1,5 +1,5 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "experiment": "boom-upstream-issue-715-vcd-witness",
   "trace_sha256": "5f7250b931c825e83ad36040d8bec2ed90d885da205a7359a53e6556d21ca1af",
   "branch_pc": "0xd0100287d0",
@@ -98,6 +98,25 @@
       "branch_mask": "0x1"
     }
   ],
+  "gadget_issues": [
+    {
+      "cycle": 3805,
+      "pdst": "0x12",
+      "prs1": "0x3",
+      "ldq_idx": "0x0",
+      "branch_mask": "0x1",
+      "dispatch_pc_lob": "0x0"
+    },
+    {
+      "cycle": 3807,
+      "pdst": "0x16",
+      "prs1": "0x11",
+      "ldq_idx": "0x2",
+      "branch_mask": "0x1",
+      "dispatch_pc_lob": "0x8"
+    }
+  ],
+  "dependent_load_issues": [],
   "tlb_miss_fast_wakeup_observations": [],
   "load_page_faults": [
     {

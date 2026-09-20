@@ -89,6 +89,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     frontend_pc_ids: dict[str, set[str]] = {}
     lsu_ids: dict[str, set[str]] = {}
     dispatch_ids: dict[str, set[str]] = {}
+    issue_ids: dict[str, set[str]] = {}
     values: dict[str, int] = {}
     timestamp = 0
     header = True
@@ -101,6 +102,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     mispredicts: list[dict] = []
     fast_wakeups: list[dict] = []
     gadget_dispatches: list[dict] = []
+    gadget_issues: list[dict] = []
 
     def finish_timestamp() -> None:
         nonlocal branch_frontend_pc_cycle
@@ -138,6 +140,31 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                 }
                 if not gadget_dispatches or gadget_dispatches[-1] != event:
                     gadget_dispatches.append(event)
+        if changed & set().union(*issue_ids.values()) and _one(
+            values, issue_ids, "io_iss_valids_0"
+        ):
+            issued_pdst = hex(_one(values, issue_ids, "io_iss_uops_0_pdst"))
+            matches = [
+                dispatch
+                for dispatch in gadget_dispatches
+                if dispatch["pdst"] == issued_pdst
+                and dispatch["cycle"] <= cycle
+                and dispatch["prs1"] == hex(_one(values, issue_ids, "io_iss_uops_0_prs1"))
+                and dispatch["ldq_idx"] == hex(_one(values, issue_ids, "io_iss_uops_0_ldq_idx"))
+                and int(dispatch["branch_mask"], 16)
+                & _one(values, issue_ids, "io_iss_uops_0_br_mask")
+            ]
+            if matches:
+                event = {
+                    "cycle": cycle,
+                    "pdst": issued_pdst,
+                    "prs1": hex(_one(values, issue_ids, "io_iss_uops_0_prs1")),
+                    "ldq_idx": hex(_one(values, issue_ids, "io_iss_uops_0_ldq_idx")),
+                    "branch_mask": hex(_one(values, issue_ids, "io_iss_uops_0_br_mask")),
+                    "dispatch_pc_lob": matches[-1]["pc_lob"],
+                }
+                if not gadget_issues or gadget_issues[-1] != event:
+                    gadget_issues.append(event)
         tlb_related = set().union(
             ids.get("dtlb_io_req_0_valid", set()),
             ids.get("dtlb_io_req_0_bits_vaddr", set()),
@@ -247,6 +274,14 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         "io_dis_uops_0_bits_br_mask",
                     }:
                         dispatch_ids.setdefault(name, set()).add(identifier)
+                    if scope.endswith(".boom_tile.core.mem_issue_unit") and name in {
+                        "io_iss_valids_0",
+                        "io_iss_uops_0_pdst",
+                        "io_iss_uops_0_prs1",
+                        "io_iss_uops_0_ldq_idx",
+                        "io_iss_uops_0_br_mask",
+                    }:
+                        issue_ids.setdefault(name, set()).add(identifier)
                 elif "$enddefinitions" in line:
                     if not all(
                         frontend_pc_ids.get(name)
@@ -266,6 +301,8 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         raise RuntimeError("historical LSU wakeup signals are missing")
                     if len(dispatch_ids) != 7:
                         raise RuntimeError("historical memory dispatch signals are missing")
+                    if len(issue_ids) != 5:
+                        raise RuntimeError("historical memory issue signals are missing")
                     header = False
                 continue
             if line.startswith("#"):
@@ -329,6 +366,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
             request["pdst"] == dispatch["pdst"]
             and request["ldq_idx"] == dispatch["ldq_idx"]
             and request["cycle"] >= dispatch["cycle"]
+            and int(request["branch_mask"], 16) & int(dispatch["branch_mask"], 16)
             for dispatch in dependent_dispatches
         )
     ]
@@ -341,7 +379,7 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         target_mispredicts,
     )
     return {
-        "schema_version": 5,
+        "schema_version": 6,
         "experiment": "boom-upstream-issue-715-vcd-witness",
         "trace_sha256": _sha256(path),
         "branch_pc": hex(BRANCH_PC),
@@ -359,6 +397,10 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         "dependent_load_requests": dependent_requests,
         "dependent_load_dispatches": dependent_dispatches,
         "gadget_dispatches": gadget_dispatches,
+        "gadget_issues": gadget_issues,
+        "dependent_load_issues": [
+            event for event in gadget_issues if event["dispatch_pc_lob"] == "0x4"
+        ],
         "tlb_miss_fast_wakeup_observations": fast_wakeups,
         "load_page_faults": faults,
         "target_mispredicts": target_mispredicts,

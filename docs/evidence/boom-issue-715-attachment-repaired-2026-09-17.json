@@ -1,5 +1,5 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "experiment": "boom-upstream-issue-715-vcd-witness",
   "trace_sha256": "1df480bb1d27dd1ef50e8ef47ff6d3f26bf4d07c51a264aaccacd57b1aa24d0e",
   "branch_pc": "0xd0100287d0",
@@ -96,6 +96,42 @@
       "prs1_busy": false,
       "ldq_idx": "0x2",
       "branch_mask": "0x1"
+    }
+  ],
+  "gadget_issues": [
+    {
+      "cycle": 3805,
+      "pdst": "0x12",
+      "prs1": "0x3",
+      "ldq_idx": "0x0",
+      "branch_mask": "0x1",
+      "dispatch_pc_lob": "0x0"
+    },
+    {
+      "cycle": 3807,
+      "pdst": "0x16",
+      "prs1": "0x11",
+      "ldq_idx": "0x2",
+      "branch_mask": "0x1",
+      "dispatch_pc_lob": "0x8"
+    },
+    {
+      "cycle": 3809,
+      "pdst": "0x15",
+      "prs1": "0x12",
+      "ldq_idx": "0x1",
+      "branch_mask": "0x1",
+      "dispatch_pc_lob": "0x4"
+    }
+  ],
+  "dependent_load_issues": [
+    {
+      "cycle": 3809,
+      "pdst": "0x15",
+      "prs1": "0x12",
+      "ldq_idx": "0x1",
+      "branch_mask": "0x1",
+      "dispatch_pc_lob": "0x4"
     }
   ],
   "tlb_miss_fast_wakeup_observations": [

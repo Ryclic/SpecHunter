@@ -381,9 +381,13 @@ load. Thus this execution does **not** reproduce the protected-data-dependent
 mechanism or prove secret disclosure. A shared branch mask alone cannot establish
 data dependence.
 
-The baseline shows a TLB miss and speculative load wakeup without a D-cache request;
-v3 suppresses the wakeup while the independent third instruction still requests
-`0x59f`. The three waveformed candidate repairs cannot be evaluated as security
+The baseline and v1/v2 issue the dependent load from the memory queue at cycle
+3809, but it never reaches the branch-masked TLB request stage. The baseline also
+shows a TLB miss and speculative load wakeup without a D-cache request. V3
+suppresses that wakeup and no dependent-load issue is observed under the target
+branch mask, while the independent third instruction still requests `0x59f`.
+This is an issue-stage effect, not evidence of a security fix: the three waveformed
+candidate repairs cannot be evaluated as security
 fixes because the baseline did not reproduce the target mechanism. A fourth
 candidate built and ran, but its waveform was not recovered. The
 [case seal](evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json) binds the

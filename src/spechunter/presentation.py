@@ -336,7 +336,7 @@ def render(
 <div class="card"><b>{len(baseline_witness["dependent_load_requests"])}</b><span>Dependent-load requests</span></div>
 <div class="card"><b>{len(attachment["repairs"])}</b><span>RTL candidates assessed</span></div>
 <div class="card"><b>Unresolved</b><span>Fourth candidate verdict</span></div></div>
-<p>The baseline shows a TLB miss and speculative load wakeup one cycle after the protected-page request, with no D-cache request firing. Candidate v3 suppressed that wakeup; the independent third load still issued its requests. None of the four recorded waveforms contains a request from the dependent load.</p>
+<p>The baseline shows a TLB miss and speculative load wakeup one cycle after the protected-page request, with no D-cache request firing. The dependent load issues from the memory queue in the baseline and candidates v1/v2, but no branch-masked dependent load issue is observed for candidate v3. The independent third load still issued its requests. None of the four recorded waveforms contains a branch-masked translation request from the dependent load.</p>
 <p>Three candidate repairs have matched traces, but the baseline did not reproduce the target mechanism, so their security effectiveness is inconclusive. The fourth built and ran, but its waveform was not recovered; no security fix is claimed.</p>
 <div class="card"><span>Original waveform SHA-256</span><code>{escape(attachment["baseline"]["waveform_sha256"])}</code></div>
 <div class="card"><span>Case seal SHA-256</span><code>{escape(attachment_hash)}</code></div></section>"""
