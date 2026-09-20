@@ -107,6 +107,31 @@ def test_reused_destination_and_load_queue_slot_require_same_rob_entry():
     )
 
 
+def test_dependent_tlb_request_requires_valid_matching_lsu_rob_identity():
+    dispatch = {
+        "cycle": 10,
+        "pdst": "0x15",
+        "ldq_idx": "0x1",
+        "rob_idx": "0x1",
+        "branch_mask": "0x1",
+    }
+    request = {
+        "cycle": 12,
+        "pdst": "0x15",
+        "ldq_idx": "0x1",
+        "vaddr": "0x59f",
+        "branch_mask": "0x1",
+    }
+    exe = {**request, "rob_idx": "0x1"}
+    verify = SCANNER._dependent_tlb_requests
+    assert verify([request], [dispatch], [exe]) == [request]
+    assert verify([request], [dispatch], []) == []
+    assert verify([request], [dispatch], [{**exe, "rob_idx": "0x9"}]) == []
+    assert verify([request], [dispatch], [{**exe, "cycle": 13}]) == []
+    assert verify([request], [dispatch], [{**exe, "vaddr": "0x600"}]) == []
+    assert verify([request], [dispatch], [{**exe, "branch_mask": "0x2"}]) == []
+
+
 def test_predicted_pc_alone_is_not_a_frontend_observation(tmp_path):
     path = tmp_path / "predictor-only.vcd"
     path.write_text(

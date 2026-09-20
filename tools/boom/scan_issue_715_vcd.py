@@ -109,6 +109,32 @@ def _witness_flags(
     return correlated, False
 
 
+def _dependent_tlb_requests(
+    tlb_requests: list[dict], dispatches: list[dict], exe_requests: list[dict]
+) -> list[dict]:
+    """Require a valid, same-cycle LSU request with the dispatched ROB identity."""
+    return [
+        request
+        for request in tlb_requests
+        if any(
+            request["cycle"] == exe["cycle"]
+            and request["vaddr"] == exe["vaddr"]
+            and request["pdst"] == exe["pdst"]
+            and request["ldq_idx"] == exe["ldq_idx"]
+            and int(request["branch_mask"], 16) & int(exe["branch_mask"], 16)
+            and any(
+                exe["cycle"] >= dispatch["cycle"]
+                and exe["rob_idx"] == dispatch["rob_idx"]
+                and exe["pdst"] == dispatch["pdst"]
+                and exe["ldq_idx"] == dispatch["ldq_idx"]
+                and int(exe["branch_mask"], 16) & int(dispatch["branch_mask"], 16)
+                for dispatch in dispatches
+            )
+            for exe in exe_requests
+        )
+    ]
+
+
 def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     ids: dict[str, set[str]] = {}
     frontend_pc_ids: dict[str, set[str]] = {}
@@ -441,17 +467,9 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
             for source in protected
         )
     ]
-    dependent_requests = [
-        request
-        for request in tlb_requests
-        if any(
-            request["pdst"] == dispatch["pdst"]
-            and request["ldq_idx"] == dispatch["ldq_idx"]
-            and request["cycle"] >= dispatch["cycle"]
-            and int(request["branch_mask"], 16) & int(dispatch["branch_mask"], 16)
-            for dispatch in dependent_dispatches
-        )
-    ]
+    dependent_requests = _dependent_tlb_requests(
+        tlb_requests, dependent_dispatches, gadget_exe_requests
+    )
     _, dependent_chain = _witness_flags(
         branch_frontend_pc_cycle,
         gadget_frontend_pc_cycles,

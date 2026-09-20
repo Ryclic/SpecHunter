@@ -435,3 +435,8 @@ This is an **unexecuted diagnostic candidate**, not a repair or a reproduced
 vulnerability. A future waveform must identify a valid dependent LSU request by
 its reorder-buffer identity and demonstrate a secret-dependent observable effect
 before any security conclusion; removing an unrelated request alone proves neither.
+The trace scanner also requires a same-cycle valid LSU execute request with the
+same address, destination register, load-queue slot, and branch mask as a
+dependent translation request. It binds the execute request to the gadget's
+dispatch by reorder-buffer index, so a later reuse of the register or load-queue
+slot cannot create a false dependent-load witness.
