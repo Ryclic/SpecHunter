@@ -1,5 +1,28 @@
 # Implementation handoff
 
+## Issue #715 isolated gadget diagnostic (PR #17 follow-up)
+
+The original attachment contains a third, independent load at `0x80028e08` that
+accounts for the observed `0x59f` translation request. The dependent load at +4
+does not generate a valid LSU request in the recovered baseline waveform; no
+vulnerability reproduction or repair validation has been established. A new
+`tools/boom/prepare_issue_715_isolated_gadget.py` prepares a diagnostic ELF by
+replacing just the independent four-byte load with a NOP and emits a SHA-bound
+manifest. The historical runner can optionally verify the original, rebuilt
+candidate, and manifest before executing on the pinned simulator. Local original
+attachment SHA-256: `c7066c9e10d1d19233d5626670e404663c069afe1e168656dcab08efbaa2389b`;
+prepared diagnostic candidate SHA-256:
+`9e08e91ea094a56fc8812e400e872b9ab5bb5ff4c4ad4561d71694cd6615a9a9`.
+Local validation: Ruff lint and format pass; `PYTHONPATH=src .venv/bin/pytest -q
+-m 'not chia'` passes (166 passed, 1 skipped, 1 deselected). The unrestricted
+suite reports 166 passed, 1 skipped, and one local CHIA/Ray startup timeout
+while attempting network-based address discovery (60-second run).
+The diagnostic has **not** been executed on BOOM. Consult `docs/BOOM.md` for the
+commands and interpretation limits. Next: check free-trial balance/expiry and
+current pricing per `docs/CLOUD.md` before provisioning a worker; run this
+diagnostic, recover and inspect the raw waveform by ROB identity, and only then
+consider a repaired-target comparison if a repeatable violation exists.
+
 Base implementation lives on `feat/base-security-loop`; merge only by reviewed PR.
 The existing domain/backend/process/RTL scaffold has been completed with a CLI,
 bounded deterministic loop, minimization, fixture mitigation checks, report artifacts,

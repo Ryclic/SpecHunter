@@ -410,3 +410,22 @@ same seed in both logs. It compares the ordered branch/gadget/protected-request/
 misprediction trigger while allowing cycle timing to shift under a repair. A missing
 trigger is inconclusive, even if dependent requests disappear. A blocked matched
 witness only starts the attacker retest; it does not validate the security fix.
+
+To isolate the misleading independent third load, a reproducible diagnostic replaces
+only its four-byte instruction at `0x80028e08` with a RISC-V NOP. It leaves the
+protected load, dependent load, ELF headers, and all other bytes intact. On a
+provisioned historical BOOM worker with the pinned simulator/build manifest, run:
+
+```sh
+python tools/boom/prepare_issue_715_isolated_gadget.py /ABS/original.elf /ABS/isolated.elf /ABS/candidate.json
+python tools/boom/run_historical_issue_715_attachment.py /ABS/CHIPYARD /ABS/isolated.elf /ABS/isolated-evidence.json /ABS/original.elf /ABS/candidate.json
+```
+
+The builder checks the original attachment SHA-256 and the old instruction. The
+runner reproduces the mutation from the original and checks the candidate and
+manifest before executing. The prepared candidate SHA-256 is
+`9e08e91ea094a56fc8812e400e872b9ab5bb5ff4c4ad4561d71694cd6615a9a9`.
+This is an **unexecuted diagnostic candidate**, not a repair or a reproduced
+vulnerability. A future waveform must identify a valid dependent LSU request by
+its reorder-buffer identity and demonstrate a secret-dependent observable effect
+before any security conclusion; removing an unrelated request alone proves neither.

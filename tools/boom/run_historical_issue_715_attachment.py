@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import subprocess
 import sys
@@ -41,15 +42,29 @@ def git_status(path: Path) -> str:
     ).stdout.rstrip("\r\n")
 
 
+def validate_isolated_candidate(source: Path, candidate: Path, manifest_path: Path) -> str:
+    script = Path(__file__).with_name("prepare_issue_715_isolated_gadget.py")
+    spec = importlib.util.spec_from_file_location("issue_715_isolated_gadget", script)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load isolated gadget builder")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.verify_candidate(
+        source.read_bytes(), candidate.read_bytes(), json.loads(manifest_path.read_text())
+    )
+    return digest(manifest_path)
+
+
 def main() -> int:
-    if len(sys.argv) != 4 or any(not Path(arg).is_absolute() for arg in sys.argv[1:]):
+    if len(sys.argv) not in (4, 6) or any(not Path(arg).is_absolute() for arg in sys.argv[1:]):
         print(
             "usage: run_historical_issue_715_attachment.py "
-            "/ABSOLUTE/CHIPYARD /ABSOLUTE/program.elf /ABSOLUTE/evidence.json",
+            "/ABSOLUTE/CHIPYARD /ABSOLUTE/program.elf /ABSOLUTE/evidence.json "
+            "[/ABSOLUTE/original.elf /ABSOLUTE/candidate-manifest.json]",
             file=sys.stderr,
         )
         return 2
-    chipyard, attachment, output = map(Path, sys.argv[1:])
+    chipyard, attachment, output = map(Path, sys.argv[1:4])
     here = Path(__file__).resolve().parent
     values = load_pins(here / "historical_pins.env")
     values.update(load_pins(here / "issue_715_attachment.env"))
@@ -61,7 +76,12 @@ def main() -> int:
     lsu = boom / "src/main/scala/lsu/lsu.scala"
     if git_status(boom) or digest(lsu) != values["BOOM_LSU_SHA256"]:
         raise RuntimeError("historical BOOM source tree is not pristine")
-    if digest(attachment) != values["ISSUE_715_ATTACHMENT_ELF_SHA256"]:
+    candidate_manifest_sha256 = None
+    if len(sys.argv) == 6:
+        candidate_manifest_sha256 = validate_isolated_candidate(
+            Path(sys.argv[4]), attachment, Path(sys.argv[5])
+        )
+    elif digest(attachment) != values["ISSUE_715_ATTACHMENT_ELF_SHA256"]:
         raise RuntimeError("issue #715 attachment ELF digest mismatch")
     manifest_path = chipyard / "sims/verilator/spechunter-historical-build.json"
     manifest = json.loads(manifest_path.read_text())
@@ -126,9 +146,17 @@ def main() -> int:
     log.write_bytes(stdout + b"\n--- STDERR ---\n" + stderr)
     evidence = {
         "schema_version": 1,
-        "experiment": "boom-historical-issue-715-original-attachment",
+        "experiment": (
+            "boom-historical-issue-715-isolated-gadget"
+            if candidate_manifest_sha256
+            else "boom-historical-issue-715-original-attachment"
+        ),
         "classification": (
-            "executed-signal-verdict-pending" if not timed_out else "execution-timeout"
+            "diagnostic-executed-signal-verdict-pending"
+            if candidate_manifest_sha256 and not timed_out
+            else "executed-signal-verdict-pending"
+            if not timed_out
+            else "execution-timeout"
         ),
         "vulnerability_reproduced": False,
         "security_fix_validated": False,
@@ -137,7 +165,7 @@ def main() -> int:
         "config": values["BOOM_CONFIG"],
         "attachment_url": values["ISSUE_715_ATTACHMENT_URL"],
         "attachment_zip_sha256": values["ISSUE_715_ATTACHMENT_ZIP_SHA256"],
-        "attachment_elf_sha256": digest(attachment),
+        "attachment_elf_sha256": values["ISSUE_715_ATTACHMENT_ELF_SHA256"],
         "loadmem_sha256": digest(loadmem),
         "simulator_sha256": digest(simulators[0]),
         "returncode": returncode,
@@ -149,6 +177,9 @@ def main() -> int:
         "log_sha256": digest(log),
         "completed_at": datetime.now(timezone.utc).isoformat(),  # noqa: UP017
     }
+    if candidate_manifest_sha256:
+        evidence["executed_elf_sha256"] = digest(attachment)
+        evidence["candidate_manifest_sha256"] = candidate_manifest_sha256
     output.write_text(json.dumps(evidence, indent=2) + "\n")
     print(json.dumps(evidence, indent=2))
     return 0
