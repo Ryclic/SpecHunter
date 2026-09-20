@@ -55,6 +55,15 @@ def validate_isolated_candidate(source: Path, candidate: Path, manifest_path: Pa
     return digest(manifest_path)
 
 
+def require_waveform_support(simulator: Path) -> None:
+    """Reject a diagnostic run that cannot produce the signal-level evidence it needs."""
+    help_text = subprocess.run(
+        [str(simulator), "--help"], capture_output=True, text=True, timeout=30, check=True
+    ).stdout
+    if "--vcd" not in help_text:
+        raise RuntimeError("diagnostic requires a trace-enabled simulator supporting --vcd")
+
+
 def main() -> int:
     if len(sys.argv) not in (4, 6) or any(not Path(arg).is_absolute() for arg in sys.argv[1:]):
         print(
@@ -98,7 +107,12 @@ def main() -> int:
     simulators = list((chipyard / "sims/verilator").glob(f"simulator-*-{values['BOOM_CONFIG']}"))
     if len(simulators) != 1 or digest(simulators[0]) != manifest.get("simulator_sha256"):
         raise RuntimeError("historical simulator does not match its build manifest")
+    if candidate_manifest_sha256:
+        require_waveform_support(simulators[0])
+        if output.with_suffix(".vcd").exists():
+            raise RuntimeError("diagnostic waveform path already exists; choose a fresh output")
     dramsim = chipyard / "generators/testchipip/src/main/resources/dramsim2_ini"
+    output.parent.mkdir(parents=True, exist_ok=True)
     loadmem = output.with_suffix(".loadmem.hex")
     elf2hex = chipyard / ".conda-env/riscv-tools/bin/elf2hex"
     converted = subprocess.run(
@@ -111,6 +125,11 @@ def main() -> int:
         raise RuntimeError("issue #715 attachment produced an unexpected loadmem image")
     argv = [
         str(simulators[0]),
+        *(
+            ["--seed=1789717734", "--vcd", str(output.with_suffix(".vcd"))]
+            if candidate_manifest_sha256
+            else []
+        ),
         "+permissive",
         "+dramsim",
         f"+dramsim_ini_dir={dramsim}",
@@ -178,6 +197,12 @@ def main() -> int:
         "completed_at": datetime.now(timezone.utc).isoformat(),  # noqa: UP017
     }
     if candidate_manifest_sha256:
+        waveform = output.with_suffix(".vcd")
+        if not waveform.is_file() or waveform.stat().st_size == 0:
+            raise RuntimeError("diagnostic simulator did not produce a waveform")
+        evidence["waveform_sha256"] = digest(waveform)
+        evidence["waveform_path"] = str(waveform)
+        evidence["seed"] = 1789717734
         evidence["executed_elf_sha256"] = digest(attachment)
         evidence["candidate_manifest_sha256"] = candidate_manifest_sha256
     output.write_text(json.dumps(evidence, indent=2) + "\n")

@@ -1,14 +1,20 @@
 import importlib.util
 import struct
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 SCRIPT = Path(__file__).parents[1] / "tools/boom/prepare_issue_715_isolated_gadget.py"
+RUNNER_SCRIPT = SCRIPT.with_name("run_historical_issue_715_attachment.py")
 SPEC = importlib.util.spec_from_file_location("isolated_gadget", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader
 SPEC.loader.exec_module(MODULE)
+RUNNER_SPEC = importlib.util.spec_from_file_location("historical_attachment_runner", RUNNER_SCRIPT)
+RUNNER = importlib.util.module_from_spec(RUNNER_SPEC)
+assert RUNNER_SPEC.loader
+RUNNER_SPEC.loader.exec_module(RUNNER)
 GADGET_VADDR = MODULE.GADGET_VADDR
 ORIGINAL_INSTRUCTION = MODULE.ORIGINAL_INSTRUCTION
 REPLACEMENT_INSTRUCTION = MODULE.REPLACEMENT_INSTRUCTION
@@ -62,3 +68,20 @@ def test_runner_candidate_verifier_rejects_tampered_binary_or_manifest():
         )
     with pytest.raises(ValueError, match="source"):
         MODULE.verify_candidate(source, candidate, manifest)
+
+
+def test_diagnostic_refuses_simulator_without_waveform_support(monkeypatch):
+    def simulator_help(argv, **kwargs):
+        assert argv == ["/simulator", "--help"]
+        assert kwargs["check"] and kwargs["timeout"] == 30
+        return SimpleNamespace(stdout="Usage: simulator [--max-cycles]")
+
+    monkeypatch.setattr(RUNNER.subprocess, "run", simulator_help)
+    with pytest.raises(RuntimeError, match="trace-enabled"):
+        RUNNER.require_waveform_support(Path("/simulator"))
+    monkeypatch.setattr(
+        RUNNER.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(stdout="Usage: simulator [--vcd=FILE]"),
+    )
+    RUNNER.require_waveform_support(Path("/simulator"))
