@@ -26,7 +26,11 @@ requests to be ordered within the first speculative branch window. GCP `gcloud a
 shows the selected account, but a read-only `gcloud billing projects describe
 spechunter` failed on 2026-09-20 because its token could not be refreshed
 without interactive reauthentication. The trial balance and expiry remain
-unverified; no paid resources were created in this turn. Local original
+unverified; no paid resources were created in this turn. `docs/CLOUD.md` now
+records a $8 provisional planning cap for one six-hour `e2-standard-8` worker,
+200 GiB balanced disk, and at most 20 GiB recovered artifacts based on
+2026-09-20 official SKU prices; recheck prices and trial credit before launch.
+Local original
 attachment SHA-256: `c7066c9e10d1d19233d5626670e404663c069afe1e168656dcab08efbaa2389b`;
 prepared diagnostic candidate SHA-256:
 `9e08e91ea094a56fc8812e400e872b9ab5bb5ff4c4ad4561d71694cd6615a9a9`.
