@@ -129,7 +129,12 @@ def _run_benchmark(
                 ):
                     clean_since_repair = True
                     if challenge_eligible:
-                        novel_clean_since_repair = True
+                        baseline_result = validate(
+                            backend, decision.program, benchmark, bug=benchmark.bug
+                        )
+                        validator_event["baseline_challenge_validation"] = asdict(baseline_result)
+                        if baseline_result.violation:
+                            novel_clean_since_repair = True
                     required_retest = None
                 continue
 
@@ -256,7 +261,7 @@ def agent_experiment(
         positives = [r for r in results if r["benchmark"]["positive"]]
         negatives = [r for r in results if not r["benchmark"]["positive"]]
         report = {
-            "schema_version": 4,
+            "schema_version": 5,
             "strategy": "llm",
             "provider": provider.name,
             "limits": {
@@ -264,6 +269,7 @@ def agent_experiment(
                 "attacks_per_cycle": attack_limit,
                 "repairs_per_benchmark": repair_limit,
                 "minimum_distinct_repair_challenges": 1,
+                "minimum_baseline_reproducing_repair_challenges": 1,
             },
             "provenance": backend.provenance(),
             "metrics": {

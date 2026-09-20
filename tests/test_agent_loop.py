@@ -141,6 +141,68 @@ def test_transient_challenge_needs_speculative_observer_sequence():
     assert loop._relevant_repair_challenge(fenced, benchmark) is False
 
 
+def test_clean_challenge_that_does_not_break_baseline_cannot_verify_repair():
+    harmless = Program((Op.TRAIN, Op.ENTER_USER, Op.LOAD_SECRET, Op.ENCODE, Op.PROBE))
+
+    class HarmlessProvider(ScriptedProvider):
+        def attack(self, benchmark, hypothesis, history, repaired):
+            if repaired and not any(
+                event.get("rationale") == "baseline-clean challenge" for event in history
+            ):
+                return AttackDecision("candidate", "baseline-clean challenge", harmless)
+            return super().attack(benchmark, hypothesis, history, repaired)
+
+    result = agent_experiment(
+        HarmlessProvider(),
+        BackendConfig(),
+        recon_cycles=1,
+        attack_limit=4,
+        repair_limit=1,
+        benchmark_id="privilege-bypass",
+    )["results"][0]
+    challenge = next(
+        event
+        for event in result["transcript"]
+        if event.get("stage") == "validator" and event.get("attempt") == 3
+    )
+    assert challenge["repair_challenge_eligible"] is True
+    assert challenge["status"] == "clean"
+    assert challenge["baseline_challenge_validation"]["status"] == "clean"
+    assert result["repair"]["verified"] is False
+
+
+def test_inconclusive_baseline_challenge_cannot_verify_repair(monkeypatch):
+    import spechunter.agent_loop as loop
+
+    class ChallengeProvider(ScriptedProvider):
+        def attack(self, benchmark, hypothesis, history, repaired):
+            if repaired and not _challenged(history, 1):
+                return AttackDecision("candidate", "distinct challenge", CHALLENGE)
+            return super().attack(benchmark, hypothesis, history, repaired)
+
+    original_validate = loop.validate
+
+    def unstable_baseline(backend, program, benchmark, **kwargs):
+        if program == CHALLENGE and kwargs.get("bug") == benchmark.bug:
+            return Validation("inconclusive", "baseline simulator unavailable", ())
+        return original_validate(backend, program, benchmark, **kwargs)
+
+    monkeypatch.setattr(loop, "validate", unstable_baseline)
+    result = agent_experiment(
+        ChallengeProvider(),
+        BackendConfig(),
+        recon_cycles=1,
+        attack_limit=4,
+        repair_limit=1,
+        benchmark_id="privilege-bypass",
+    )["results"][0]
+    assert any(
+        event.get("baseline_challenge_validation", {}).get("status") == "inconclusive"
+        for event in result["transcript"]
+    )
+    assert result["repair"]["verified"] is False
+
+
 def test_boom_repair_proposal_is_not_marked_verified():
     # Model this boundary through a provider decision: real-target proposals cannot select
     # fixture variants. The backend integration itself is covered by test_boundaries.py.
@@ -201,7 +263,7 @@ def test_new_recon_cycle_cannot_reuse_prior_clean_replay(monkeypatch):
     def fake_validate(backend, program, benchmark, **kwargs):
         nonlocal calls
         calls += 1
-        return Validation("violation" if calls <= 2 else "clean", "scripted", ())
+        return Validation("violation" if calls <= 2 or calls == 5 else "clean", "scripted", ())
 
     monkeypatch.setattr(loop, "validate", fake_validate)
     monkeypatch.setattr(loop, "minimize", lambda backend, program, benchmark, **kwargs: program)
@@ -213,7 +275,7 @@ def test_new_recon_cycle_cannot_reuse_prior_clean_replay(monkeypatch):
         repair_limit=1,
         benchmark_id="privilege-bypass",
     )["results"][0]
-    assert calls == 4
+    assert calls == 5
     assert result["repair"]["verified"] is False
     assert result["repair"]["attacker_exhausted"] is False
     assert result["transcript"][-1]["reason"] == (
@@ -241,7 +303,13 @@ def test_later_outer_cycle_must_finish_its_attacker_search(monkeypatch, later_st
     def fake_validate(backend, program, benchmark, **kwargs):
         nonlocal calls
         calls += 1
-        status = "violation" if calls <= 2 else "clean" if calls in {3, 4} else later_status
+        status = (
+            "violation"
+            if calls <= 2 or calls == 5
+            else "clean"
+            if calls in {3, 4}
+            else later_status
+        )
         return Validation(status, "simulator timed out" if status == "inconclusive" else status, ())
 
     monkeypatch.setattr(loop, "validate", fake_validate)
@@ -383,6 +451,10 @@ def test_trusted_boom_repair_returns_to_attacker_and_can_be_verified(monkeypatch
     assert repair_event["repair_id"] == "gate-faulting-loads"
     assert repair_event["rtl_patch_applied"] is True
     assert any(event.get("repair_challenge_eligible") is True for event in result["transcript"])
+    assert any(
+        event.get("baseline_challenge_validation", {}).get("status") == "violation"
+        for event in result["transcript"]
+    )
     assert result["repair"] == {
         "attempted": True,
         "attacker_exhausted": True,

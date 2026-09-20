@@ -252,7 +252,8 @@ class VertexAgentProvider:
                     "repair, propose at least one candidate distinct from the mandatory "
                     "minimized-exploit replay before returning exhausted. That candidate "
                     "must exercise a protected user load and, for observable isolation, "
-                    "a later observer probe."
+                    "a later observer probe; prioritize candidates that would still "
+                    "violate the original vulnerable variant."
                 ),
                 "benchmark": asdict(benchmark),
                 "hypothesis": hypothesis,

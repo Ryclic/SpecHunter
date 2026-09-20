@@ -526,3 +526,14 @@ the requirement; a fence or squash between training and encoding disqualifies th
 transient challenge. Current agent reports use schema v4 to distinguish this criterion
 from the earlier schema-v3 distinction-only rule. Validation: 145 passed, 2 skipped;
 Ruff and diff checks passed.
+
+Current agent reports now use schema v5: a post-repair clean challenge counts only
+after the same attacker-generated program reproduces a violation on the original
+vulnerable variant. Structural relevance and textual difference alone were insufficient:
+a speculative user load could be clean in both variants yet falsely contribute to
+repair verification. The validator transcript records the baseline challenge result,
+and a real fixture regression proves a baseline-clean candidate cannot verify the fix.
+This adds one bounded set of baseline executions per eligible clean candidate, so BOOM
+experiments should account for that simulator cost. A regression also verifies that
+an inconclusive baseline challenge fails closed. Validation: 147 passed, 2 skipped;
+Ruff and diff checks passed.
