@@ -1,12 +1,17 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "experiment": "boom-upstream-issue-715-vcd-witness",
   "trace_sha256": "1df480bb1d27dd1ef50e8ef47ff6d3f26bf4d07c51a264aaccacd57b1aa24d0e",
   "branch_pc": "0xd0100287d0",
-  "branch_fetch_cycle": 3769,
-  "gadget_fetch_cycles": {
+  "branch_frontend_pc_cycle": 3769,
+  "gadget_frontend_pc_cycles": {
     "0xd010028e00": 3772,
-    "0xd010028e04": 3773
+    "0xd010028e04": 3802
+  },
+  "frontend_pc_signal_sources": {
+    "0xd0100287d0": "frontend.s0_vpc",
+    "0xd010028e00": "frontend.s0_vpc",
+    "0xd010028e04": "frontend.fb.pc_2 with io_enq_valid"
   },
   "protected_load_requests": [
     {

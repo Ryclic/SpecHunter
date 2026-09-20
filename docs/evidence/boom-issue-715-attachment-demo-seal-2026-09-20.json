@@ -3,7 +3,7 @@
   "classification": "original-attachment-event-chain-three-failed-repairs-v4-unresolved",
   "baseline": {
     "witness": "boom-issue-715-attachment-baseline-2026-09-17.json",
-    "witness_sha256": "4c1801d604217fb437b62bc9ffd2690d99bd2cace7c4347fbe0a326924cb3910",
+    "witness_sha256": "db644bd00755e8719173416a67e4897851e0f0833d966514147fd8557b430e1f",
     "waveform": "boom-issue-715-attachment-baseline-seed-1789717734-2026-09-17.vcd.gz",
     "waveform_sha256": "04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34",
     "run_log": "boom-issue-715-attachment-baseline-seed-1789717734-2026-09-17.log",
@@ -13,7 +13,7 @@
     {
       "variant": "historical-issue-715-repaired",
       "witness": "boom-issue-715-attachment-repaired-2026-09-17.json",
-      "witness_sha256": "78530c87ce0d034f107ae6de00bdf0f28d9eb24ce11b5269f5df70f431249271",
+      "witness_sha256": "f3c5c9296e96cc1b069779ecfbeedac25fcf7ee024a009174f645051290e815f",
       "waveform": "boom-issue-715-attachment-repaired-seed-1789717734-2026-09-17.vcd.gz",
       "waveform_sha256": "1df480bb1d27dd1ef50e8ef47ff6d3f26bf4d07c51a264aaccacd57b1aa24d0e",
       "build": "boom-issue-715-attachment-repair-build-2026-09-17.json",
@@ -26,7 +26,7 @@
     {
       "variant": "historical-issue-715-speculative-load-block",
       "witness": "boom-issue-715-attachment-repair-v2-2026-09-18.json",
-      "witness_sha256": "8ee998765b657c778ff3714e4a673e0a49e4b0584086aaeab44ea51b05082665",
+      "witness_sha256": "642e0ba6a51e96d734da77e8251ddf4ff36ae76145351c71348d8bca9bb08b45",
       "waveform": "boom-issue-715-attachment-repair-v2-seed-1789717734-2026-09-18.vcd.gz",
       "waveform_sha256": "8dd92d61415419a1d6faa89197cc12445ed058252f3b5dfdd9c9983533c44317",
       "build": "boom-issue-715-attachment-repair-v2-build-2026-09-18.json",
@@ -39,7 +39,7 @@
     {
       "variant": "historical-issue-715-fault-dependent-kill",
       "witness": "boom-issue-715-attachment-repair-v3-witness-2026-09-18.json",
-      "witness_sha256": "4164c7907d99cfc40ecfb45350c149cac19097d9784fedb0b9350fb395e3360f",
+      "witness_sha256": "3e912eccb288891ad2ab81fae163c5e10534667efe9b68d3db16e9e854535e18",
       "waveform": "boom-issue-715-attachment-repair-v3-seed-1789717734-2026-09-18.vcd.gz",
       "waveform_sha256": "5f7250b931c825e83ad36040d8bec2ed90d885da205a7359a53e6556d21ca1af",
       "build": "boom-issue-715-attachment-repair-v3-build-2026-09-18.json",

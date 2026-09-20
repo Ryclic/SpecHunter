@@ -113,9 +113,9 @@ def test_timing_shift_still_counts_as_matched_trigger(tmp_path, monkeypatch):
     repaired = json.loads(
         (ROOT / "docs/evidence/boom-issue-715-attachment-baseline-2026-09-17.json").read_text()
     )
-    repaired["branch_fetch_cycle"] += 5
-    repaired["gadget_fetch_cycles"] = {
-        pc: cycle + 5 for pc, cycle in repaired["gadget_fetch_cycles"].items()
+    repaired["branch_frontend_pc_cycle"] += 5
+    repaired["gadget_frontend_pc_cycles"] = {
+        pc: cycle + 5 for pc, cycle in repaired["gadget_frontend_pc_cycles"].items()
     }
     for key in ("protected_load_requests", "load_page_faults", "target_mispredicts"):
         for event in repaired[key]:

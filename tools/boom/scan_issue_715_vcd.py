@@ -42,24 +42,26 @@ def _one(values: dict[str, int], ids: dict[str, set[str]], name: str, default: i
 
 
 def _witness_flags(
-    branch_fetch_cycle: int | None,
-    gadget_fetches: dict[int, int],
+    branch_frontend_pc_cycle: int | None,
+    gadget_frontend_pc_cycles: dict[int, int],
     protected: list[dict],
     dependent: list[dict],
     faults: list[dict],
     target_mispredicts: list[dict],
 ) -> tuple[bool, bool]:
-    if branch_fetch_cycle is None:
+    if branch_frontend_pc_cycle is None:
         return False, False
     dataflow = False
     # A branch-mask bit can be reused after resolution. Later mispredictions
     # cannot extend the window opened by this first recorded branch fetch.
-    resolutions = [event for event in target_mispredicts if event["cycle"] > branch_fetch_cycle]
+    resolutions = [
+        event for event in target_mispredicts if event["cycle"] > branch_frontend_pc_cycle
+    ]
     if not resolutions:
         return False, False
     resolution = min(resolutions, key=lambda event: event["cycle"])
     for source in protected:
-        if not branch_fetch_cycle < source["cycle"] < resolution["cycle"]:
+        if not branch_frontend_pc_cycle < source["cycle"] < resolution["cycle"]:
             continue
         source_mask = int(source["branch_mask"], 16)
         for sink in dependent:
@@ -70,7 +72,7 @@ def _witness_flags(
                 continue
             dataflow = True
             gadgets_in_window = all(
-                branch_fetch_cycle < gadget_fetches.get(pc, -1) < source["cycle"]
+                branch_frontend_pc_cycle < gadget_frontend_pc_cycles.get(pc, -1) < source["cycle"]
                 for pc in GADGET_PCS
             )
             if gadgets_in_window and any(
@@ -84,28 +86,36 @@ def _witness_flags(
 
 def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
     ids: dict[str, set[str]] = {}
-    pc_ids: set[str] = set()
+    frontend_pc_ids: dict[str, set[str]] = {}
     values: dict[str, int] = {}
     timestamp = 0
     header = True
+    scopes: list[str] = []
     changed: set[str] = set()
-    branch_fetch_cycle = None
-    gadget_fetches: dict[int, int] = {}
+    branch_frontend_pc_cycle = None
+    gadget_frontend_pc_cycles: dict[int, int] = {}
     tlb_requests: list[dict] = []
     load_faults: list[dict] = []
     mispredicts: list[dict] = []
 
     def finish_timestamp() -> None:
-        nonlocal branch_fetch_cycle
+        nonlocal branch_frontend_pc_cycle
         if not changed:
             return
         cycle = timestamp // 2
-        for identifier in changed & pc_ids:
-            pc = values[identifier]
-            if pc == BRANCH_PC and branch_fetch_cycle is None:
-                branch_fetch_cycle = cycle
-            if pc in GADGET_PCS:
-                gadget_fetches.setdefault(pc, cycle)
+        s0_ids = frontend_pc_ids.get("s0_vpc", set())
+        if changed & s0_ids:
+            pc = _one(values, frontend_pc_ids, "s0_vpc")
+            if pc == BRANCH_PC and branch_frontend_pc_cycle is None:
+                branch_frontend_pc_cycle = cycle
+            if pc == 0xD010028E00:
+                gadget_frontend_pc_cycles.setdefault(pc, cycle)
+        fb_ids = frontend_pc_ids.get("fb_pc_2", set()) | frontend_pc_ids.get(
+            "fb_io_enq_valid", set()
+        )
+        if changed & fb_ids and _one(values, frontend_pc_ids, "fb_io_enq_valid"):
+            if _one(values, frontend_pc_ids, "fb_pc_2") == 0xD010028E04:
+                gadget_frontend_pc_cycles.setdefault(0xD010028E04, cycle)
         tlb_related = set().union(
             ids.get("dtlb_io_req_0_valid", set()),
             ids.get("dtlb_io_req_0_bits_vaddr", set()),
@@ -151,13 +161,28 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         for raw in trace:
             line = raw.strip()
             if header:
-                if line.startswith("$var "):
+                if line.startswith("$scope "):
+                    scopes.append(line.split()[2])
+                elif line.startswith("$upscope"):
+                    scopes.pop()
+                elif line.startswith("$var "):
                     fields = line.split()
                     width, identifier, name = int(fields[2]), fields[3], fields[4]
                     ids.setdefault(name, set()).add(identifier)
-                    if width >= 40 and "pc" in name.lower():
-                        pc_ids.add(identifier)
+                    scope = ".".join(scopes)
+                    if width == 40 and scope.endswith(".boom_tile.frontend") and name == "s0_vpc":
+                        frontend_pc_ids.setdefault("s0_vpc", set()).add(identifier)
+                    if scope.endswith(".boom_tile.frontend.fb"):
+                        if width == 40 and name == "pc_2":
+                            frontend_pc_ids.setdefault("fb_pc_2", set()).add(identifier)
+                        if width == 1 and name == "io_enq_valid":
+                            frontend_pc_ids.setdefault("fb_io_enq_valid", set()).add(identifier)
                 elif "$enddefinitions" in line:
+                    if not all(
+                        frontend_pc_ids.get(name)
+                        for name in ("s0_vpc", "fb_pc_2", "fb_io_enq_valid")
+                    ):
+                        raise RuntimeError("historical frontend PC signals are missing")
                     header = False
                 continue
             if line.startswith("#"):
@@ -187,20 +212,27 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
         if event["cause"] == "0xd" and event["badvaddr"] == hex(PROTECTED_VADDR)
     ]
     dataflow, witness = _witness_flags(
-        branch_fetch_cycle,
-        gadget_fetches,
+        branch_frontend_pc_cycle,
+        gadget_frontend_pc_cycles,
         protected,
         dependent,
         faults,
         target_mispredicts,
     )
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "experiment": "boom-upstream-issue-715-vcd-witness",
         "trace_sha256": _sha256(path),
         "branch_pc": hex(BRANCH_PC),
-        "branch_fetch_cycle": branch_fetch_cycle,
-        "gadget_fetch_cycles": {hex(pc): gadget_fetches.get(pc) for pc in sorted(GADGET_PCS)},
+        "branch_frontend_pc_cycle": branch_frontend_pc_cycle,
+        "gadget_frontend_pc_cycles": {
+            hex(pc): gadget_frontend_pc_cycles.get(pc) for pc in sorted(GADGET_PCS)
+        },
+        "frontend_pc_signal_sources": {
+            hex(BRANCH_PC): "frontend.s0_vpc",
+            "0xd010028e00": "frontend.s0_vpc",
+            "0xd010028e04": "frontend.fb.pc_2 with io_enq_valid",
+        },
         "protected_load_requests": protected,
         "dependent_load_requests": dependent,
         "load_page_faults": faults,

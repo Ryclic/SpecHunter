@@ -6,12 +6,39 @@ import sys
 import zipfile
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).parents[1]
 SCRIPT = ROOT / "tools/boom/fetch_issue_715_attachment.py"
 SPEC = importlib.util.spec_from_file_location("fetch_issue_715_attachment", SCRIPT)
 FETCH = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader
 SPEC.loader.exec_module(FETCH)
+SCAN_SCRIPT = ROOT / "tools/boom/scan_issue_715_vcd.py"
+SCAN_SPEC = importlib.util.spec_from_file_location("scan_issue_715_vcd", SCAN_SCRIPT)
+SCAN = importlib.util.module_from_spec(SCAN_SPEC)
+assert SCAN_SPEC.loader
+SCAN_SPEC.loader.exec_module(SCAN)
+
+
+@pytest.mark.parametrize(
+    ("trace_name", "witness_name"),
+    [
+        ("baseline-seed-1789717734-2026-09-17.vcd.gz", "baseline-2026-09-17.json"),
+        ("repaired-seed-1789717734-2026-09-17.vcd.gz", "repaired-2026-09-17.json"),
+        ("repair-v2-seed-1789717734-2026-09-18.vcd.gz", "repair-v2-2026-09-18.json"),
+        (
+            "repair-v3-seed-1789717734-2026-09-18.vcd.gz",
+            "repair-v3-witness-2026-09-18.json",
+        ),
+    ],
+)
+def test_checked_in_witness_recomputes_from_raw_waveform(trace_name, witness_name):
+    evidence = ROOT / "docs/evidence"
+    prefix = "boom-issue-715-attachment-"
+    assert SCAN.scan(evidence / (prefix + trace_name)) == json.loads(
+        (evidence / (prefix + witness_name)).read_text()
+    )
 
 
 def archive(payload: bytes) -> bytes:
@@ -73,7 +100,10 @@ def test_historical_trace_seal_records_ordered_issue_mechanism():
     assert hashlib.sha256(trace.read_bytes()).hexdigest() == evidence["trace_sha256"]
     assert evidence["mechanism_witnessed"] is True
     assert evidence["architectural_secret_disclosure_proven"] is False
-    assert evidence["branch_fetch_cycle"] < evidence["gadget_fetch_cycles"]["0xd010028e00"]
+    assert (
+        evidence["branch_frontend_pc_cycle"] < evidence["gadget_frontend_pc_cycles"]["0xd010028e00"]
+    )
+    assert evidence["gadget_frontend_pc_cycles"]["0xd010028e04"] == 3802
     protected = evidence["protected_load_requests"][0]
     request = evidence["dependent_load_requests"][0]
     resolution = evidence["target_mispredicts"][0]

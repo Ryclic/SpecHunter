@@ -69,3 +69,35 @@ def test_later_misprediction_cannot_extend_first_branch_window():
         [{"cycle": 40, "branch_mask": "0x1"}],
         [{"cycle": 50}, {"cycle": 20}],
     ) == (False, False)
+
+
+def test_predicted_pc_alone_is_not_a_frontend_observation(tmp_path):
+    path = tmp_path / "predictor-only.vcd"
+    path.write_text(
+        "$scope module TOP $end\n"
+        "$scope module boom_tile $end\n"
+        "$scope module frontend $end\n"
+        "$var wire 40 ! s0_vpc $end\n"
+        "$scope module fb $end\n"
+        '$var wire 40 " pc_2 $end\n'
+        "$var wire 1 # io_enq_valid $end\n"
+        "$upscope $end\n"
+        "$scope module predictor $end\n"
+        "$var wire 40 $ guessed_pc $end\n"
+        "$upscope $end\n"
+        "$upscope $end\n"
+        "$upscope $end\n"
+        "$enddefinitions $end\n"
+        "#0\n"
+        "b0 !\n"
+        'b0 "\n'
+        "0#\n"
+        "#2\n"
+        f"b{SCANNER.BRANCH_PC:b} $\n"
+        "#4\n"
+        "b0 $\n"
+        "#6\n"
+    )
+    witness = SCANNER.scan(path)
+    assert witness["branch_frontend_pc_cycle"] is None
+    assert all(cycle is None for cycle in witness["gadget_frontend_pc_cycles"].values())

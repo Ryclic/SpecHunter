@@ -368,11 +368,16 @@ artifacts. See
 ## Original issue #715 attachment case
 
 The original upstream ELF was loaded into the historical `SmallBoomConfig` simulator.
-The baseline waveform records the reported branch, both wrong-path gadget PCs, a
-branch-masked protected-page request, dependent-address requests, a load page fault,
+The baseline waveform records the reported branch PC through the frontend `s0_vpc`
+signal and the gadget PCs through `s0_vpc` and the fetch-buffer PC with enqueue valid,
+followed by a branch-masked protected-page request, dependent-address requests, a load page fault,
 and the first target-branch misprediction in one ordered window. This is direct
 evidence of a correlated transient request sequence. The waveform does not itself
 prove register-level dependence or architectural secret disclosure.
+The second gadget PC is observed at cycle 3802; its earlier branch-predictor guess at
+3773 is not counted as a frontend observation. These PC observations do not by
+themselves prove either gadget instruction retired or that the dependent request used
+a value from the protected load.
 
 Three separately built RTL candidates were retested against the same attachment and
 seed. All reproduced the dependent requests, so the comparison records reject all

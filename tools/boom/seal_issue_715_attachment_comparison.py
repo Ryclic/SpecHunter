@@ -11,8 +11,8 @@ from pathlib import Path
 
 
 def _trigger_preserved(witness: dict) -> bool:
-    branch = witness["branch_fetch_cycle"]
-    gadget_cycles = witness["gadget_fetch_cycles"]
+    branch = witness["branch_frontend_pc_cycle"]
+    gadget_cycles = witness["gadget_frontend_pc_cycles"]
     if not {"0xd010028e00", "0xd010028e04"} <= gadget_cycles.keys():
         return False
     gadgets = gadget_cycles.values()
@@ -82,7 +82,8 @@ def main() -> int:
         raise RuntimeError("baseline and repaired runs used different seeds")
     same_control_flow = bool(
         baseline["branch_pc"] == repaired["branch_pc"]
-        and baseline["gadget_fetch_cycles"].keys() == repaired["gadget_fetch_cycles"].keys()
+        and baseline["gadget_frontend_pc_cycles"].keys()
+        == repaired["gadget_frontend_pc_cycles"].keys()
         and baseline["target_mispredicts"]
         and repaired["target_mispredicts"]
         and baseline["target_mispredicts"][0]["pc"] == repaired["target_mispredicts"][0]["pc"]

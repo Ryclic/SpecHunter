@@ -361,8 +361,9 @@ the ELF directly left BOOM in the boot ROM because this attachment has no HTIF s
 
 On 2026-09-17, the exact attachment ran on historical Chipyard `004297b6…`, BOOM
 `fac2c370…`, and `SmallBoomConfig`. A seed-1789717734 VCD records the reported branch at
-cycle 3769, both wrong-path gadget PCs at cycles 3772–3773, a branch-masked protected-page
-TLB request at cycle 3807, dependent requests to the loaded value `0x59f` beginning at
+cycle 3769, frontend observations of the wrong-path gadget PCs at cycles 3772 and
+3802, a branch-masked protected-page TLB request at cycle 3807, requests to address
+`0x59f` beginning at
 cycle 3809, a branch-masked load page fault, and resolution of the exact branch as a
 misprediction at cycle 3910. The compressed raw trace and its machine-derived JSON witness
 are in `docs/evidence/`. This establishes a correlated transient protected/dependent
@@ -578,5 +579,19 @@ All three historical failed-repair comparisons were regenerated and still reject
 those candidates. The attachment-case seal and demo were regenerated to bind the
 new comparison records. Regressions cover shifted timing, missing trigger, and
 different seeds. Validation: 154 passed, 2 skipped; Ruff lint and format and
-`git diff --check` passed. Publication is next; v4 still lacks a
-waveform and security verdict.
+`git diff --check` passed. This was published as `b8b634c` to PR #17; all three
+GitHub checks passed. V4 still lacks a waveform and security verdict.
+
+Review of the VCD scanner found that it treated every wide signal containing `pc`
+as a fetch-PC witness, including branch-predictor guesses. The scanner now uses
+named historical frontend signals: `s0_vpc` for the branch and first gadget PC,
+and fetch-buffer `pc_2` with enqueue valid for the second gadget PC. It records
+frontend PC observations rather than asserting instruction execution. The second
+gadget observation moves from predictor cycle 3773 to frontend-buffer cycle 3802;
+the protected request still follows at 3807, so all four original and v1–v3 traces
+retain the ordered mechanism witness. All four witnesses, three comparisons, the
+case seal, and the demo were regenerated. A synthetic VCD regression confirms that
+a predictor-only PC cannot satisfy the new observation rule. CI now rescans every
+stored waveform and requires exact agreement with its JSON witness. Validation:
+159 passed, 2 skipped; Ruff lint and format and `git diff --check` passed.
+Publication is next; v4 remains unresolved.

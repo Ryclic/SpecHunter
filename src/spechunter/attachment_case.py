@@ -42,6 +42,11 @@ V4_BUILD = "repair-v4-build-2026-09-18.json"
 V4_RUN = "repair-v4-run-2026-09-18.log"
 SEED = 1789717734
 TIMEOUT = f"*** FAILED *** via trace_count (timeout, seed {SEED}) after 10000 cycles"
+FRONTEND_SOURCES = {
+    "0xd0100287d0": "frontend.s0_vpc",
+    "0xd010028e00": "frontend.s0_vpc",
+    "0xd010028e04": "frontend.fb.pc_2 with io_enq_valid",
+}
 CLASSIFICATION = "original-attachment-event-chain-three-failed-repairs-v4-unresolved"
 
 
@@ -74,7 +79,10 @@ def build_seal(root: Path) -> dict:
     baseline_trace_hash = _digest(root / baseline_trace_name)
     baseline_run_name, baseline_run_hash = _run_log(root, BASELINE[2])
     if (
-        baseline.get("experiment") != "boom-upstream-issue-715-vcd-witness"
+        baseline.get("schema_version") != 3
+        or baseline.get("experiment") != "boom-upstream-issue-715-vcd-witness"
+        or baseline.get("frontend_pc_signal_sources") != FRONTEND_SOURCES
+        or baseline.get("gadget_frontend_pc_cycles", {}).get("0xd010028e04") is None
         or baseline.get("mechanism_witnessed") is not True
         or baseline.get("architectural_secret_disclosure_proven") is not False
         or baseline.get("trace_sha256") != baseline_trace_hash
@@ -91,7 +99,11 @@ def build_seal(root: Path) -> dict:
         run_name, run_hash = _run_log(root, run_suffix)
         revisions.add((build.get("chipyard_revision"), build.get("boom_revision")))
         if (
-            witness.get("trace_sha256") != trace_hash
+            witness.get("schema_version") != 3
+            or witness.get("frontend_pc_signal_sources") != FRONTEND_SOURCES
+            or witness.get("experiment") != "boom-upstream-issue-715-vcd-witness"
+            or witness.get("gadget_frontend_pc_cycles", {}).get("0xd010028e04") is None
+            or witness.get("trace_sha256") != trace_hash
             or witness.get("mechanism_witnessed") is not True
             or witness.get("architectural_secret_disclosure_proven") is not False
             or comparison.get("schema_version") != 4
