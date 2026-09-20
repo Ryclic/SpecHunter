@@ -20,7 +20,9 @@ runner also scans the raw waveform and records the witness JSON hash while
 leaving the security verdict pending. Diagnostic
 waveform attribution requires a valid same-cycle LSU execute request matched
 to the dispatch ROB entry; all four checked-in raw waveforms recompute to
-their existing witnesses (16 focused tests pass).
+their existing witnesses (16 focused tests pass). The scanner also rejects
+missing VCD translation/fault/branch signals rather than treating them as an
+absent request; the four historical witnesses remain identical.
 `transient_dataflow_witnessed` now also requires the protected and dependent
 requests to be ordered within the first speculative branch window. GCP `gcloud auth list`
 shows the selected account, but a read-only `gcloud billing projects describe

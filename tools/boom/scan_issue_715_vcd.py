@@ -14,6 +14,20 @@ BRANCH_PC = 0xD0100287D0
 GADGET_PCS = {0xD010028E00, 0xD010028E04}
 PROTECTED_VADDR = 0xD010098000
 OBSERVED_VADDR = 0x59F
+REQUIRED_EVENT_SIGNALS = {
+    "dtlb_io_req_0_valid",
+    "dtlb_io_req_0_bits_vaddr",
+    "exe_tlb_uop_0_br_mask",
+    "exe_tlb_uop_0_pdst",
+    "exe_tlb_uop_0_ldq_idx",
+    "lsu_io_core_lxcpt_valid",
+    "lsu_io_core_lxcpt_bits_cause",
+    "lsu_io_core_lxcpt_bits_badvaddr",
+    "lsu_io_core_lxcpt_bits_uop_br_mask",
+    "core_io_ifu_brupdate_b2_mispredict",
+    "ftq_io_bpdupdate_bits_pc",
+    "core_io_ifu_brupdate_b2_uop_pc_lob",
+}
 
 
 def _open(path: Path) -> TextIO:
@@ -411,6 +425,10 @@ def scan(path: Path) -> dict:  # noqa: C901 - one-pass VCD state machine
                         raise RuntimeError("historical register-read gate signals are missing")
                     if len(exe_ids) != 6:
                         raise RuntimeError("historical LSU execute signals are missing")
+                    if missing := REQUIRED_EVENT_SIGNALS.difference(ids):
+                        raise RuntimeError(
+                            f"historical event signals are missing: {sorted(missing)}"
+                        )
                     header = False
                 continue
             if line.startswith("#"):

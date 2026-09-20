@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).parents[1]
 SCRIPT = ROOT / "tools/boom/scan_issue_715_vcd.py"
 SPEC = importlib.util.spec_from_file_location("issue_715_vcd", SCRIPT)
@@ -207,6 +209,18 @@ def test_predicted_pc_alone_is_not_a_frontend_observation(tmp_path):
         "b0 $\n"
         "#6\n"
     )
+    event_header = "".join(
+        f"$var wire 1 z{index} {name} $end\n"
+        for index, name in enumerate(sorted(SCANNER.REQUIRED_EVENT_SIGNALS))
+    )
+    path.write_text(
+        path.read_text().replace("$enddefinitions $end", event_header + "$enddefinitions $end")
+    )
     witness = SCANNER.scan(path)
     assert witness["branch_frontend_pc_cycle"] is None
     assert all(cycle is None for cycle in witness["gadget_frontend_pc_cycles"].values())
+
+    missing = sorted(SCANNER.REQUIRED_EVENT_SIGNALS)[0]
+    path.write_text(path.read_text().replace(f"$var wire 1 z0 {missing} $end\n", ""))
+    with pytest.raises(RuntimeError, match="historical event signals are missing"):
+        SCANNER.scan(path)
