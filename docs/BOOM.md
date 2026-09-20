@@ -381,4 +381,6 @@ not recovered; its security outcome remains unresolved. The self-contained demo 
 shows this case separately from the clean current-pin adaptation and the intentional
 positive control. The [case seal](evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json)
 binds the original baseline, each rejected repair, all four compressed waveforms,
-build records, and comparisons by SHA-256. No security fix is claimed.
+build records, comparisons, and five run logs by SHA-256. Each bound log records the
+pinned seed and 10,000-cycle timeout; the v4 log establishes execution, while the
+missing v4 waveform still precludes a security verdict. No security fix is claimed.

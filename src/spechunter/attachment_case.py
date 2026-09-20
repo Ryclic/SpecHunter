@@ -13,6 +13,7 @@ PREFIX = "boom-issue-715-attachment-"
 BASELINE = (
     "baseline-2026-09-17.json",
     "baseline-seed-1789717734-2026-09-17.vcd.gz",
+    "baseline-seed-1789717734-2026-09-17.log",
 )
 REPAIRS = (
     (
@@ -20,21 +21,27 @@ REPAIRS = (
         "repaired-seed-1789717734-2026-09-17.vcd.gz",
         "repair-build-2026-09-17.json",
         "comparison-2026-09-17.json",
+        "repaired-seed-1789717734-2026-09-17.log",
     ),
     (
         "repair-v2-2026-09-18.json",
         "repair-v2-seed-1789717734-2026-09-18.vcd.gz",
         "repair-v2-build-2026-09-18.json",
         "repair-v2-comparison-2026-09-18.json",
+        "repair-v2-seed-1789717734-2026-09-18.log",
     ),
     (
         "repair-v3-witness-2026-09-18.json",
         "repair-v3-seed-1789717734-2026-09-18.vcd.gz",
         "repair-v3-build-2026-09-18.json",
         "repair-v3-comparison-2026-09-18.json",
+        "repair-v3-run-2026-09-18.log",
     ),
 )
 V4_BUILD = "repair-v4-build-2026-09-18.json"
+V4_RUN = "repair-v4-run-2026-09-18.log"
+SEED = 1789717734
+TIMEOUT = f"*** FAILED *** via trace_count (timeout, seed {SEED}) after 10000 cycles"
 CLASSIFICATION = "original-attachment-event-chain-three-failed-repairs-v4-unresolved"
 
 
@@ -52,11 +59,20 @@ def _read(root: Path, suffix: str) -> tuple[dict, str, str]:
     return json.loads(path.read_text()), name, _digest(path)
 
 
+def _run_log(root: Path, suffix: str) -> tuple[str, str]:
+    name = PREFIX + suffix
+    path = root / name
+    if TIMEOUT not in path.read_text(errors="replace").splitlines():
+        raise AttachmentEvidenceError(f"run log lacks the pinned seed and timeout: {name}")
+    return name, _digest(path)
+
+
 def build_seal(root: Path) -> dict:
     root = root.resolve()
     baseline, baseline_name, baseline_hash = _read(root, BASELINE[0])
     baseline_trace_name = PREFIX + BASELINE[1]
     baseline_trace_hash = _digest(root / baseline_trace_name)
+    baseline_run_name, baseline_run_hash = _run_log(root, BASELINE[2])
     if (
         baseline.get("experiment") != "boom-upstream-issue-715-vcd-witness"
         or baseline.get("mechanism_witnessed") is not True
@@ -66,12 +82,13 @@ def build_seal(root: Path) -> dict:
         raise AttachmentEvidenceError("baseline witness or raw trace differs")
     repairs = []
     revisions = set()
-    for witness_suffix, trace_suffix, build_suffix, comparison_suffix in REPAIRS:
+    for witness_suffix, trace_suffix, build_suffix, comparison_suffix, run_suffix in REPAIRS:
         witness, witness_name, witness_hash = _read(root, witness_suffix)
         build, build_name, build_hash = _read(root, build_suffix)
         comparison, comparison_name, comparison_hash = _read(root, comparison_suffix)
         trace_name = PREFIX + trace_suffix
         trace_hash = _digest(root / trace_name)
+        run_name, run_hash = _run_log(root, run_suffix)
         revisions.add((build.get("chipyard_revision"), build.get("boom_revision")))
         if (
             witness.get("trace_sha256") != trace_hash
@@ -100,9 +117,12 @@ def build_seal(root: Path) -> dict:
                 "build_sha256": build_hash,
                 "comparison": comparison_name,
                 "comparison_sha256": comparison_hash,
+                "run_log": run_name,
+                "run_log_sha256": run_hash,
             }
         )
     v4, v4_name, v4_hash = _read(root, V4_BUILD)
+    v4_run_name, v4_run_hash = _run_log(root, V4_RUN)
     revisions.add((v4.get("chipyard_revision"), v4.get("boom_revision")))
     if len(revisions) != 1 or v4.get("variant") != "historical-issue-715-dcache-fired-wakeup":
         raise AttachmentEvidenceError("repair builds do not share the historical revisions")
@@ -116,6 +136,8 @@ def build_seal(root: Path) -> dict:
             "witness_sha256": baseline_hash,
             "waveform": baseline_trace_name,
             "waveform_sha256": baseline_trace_hash,
+            "run_log": baseline_run_name,
+            "run_log_sha256": baseline_run_hash,
         },
         "repairs": repairs,
         "historical_revisions": {
@@ -124,6 +146,8 @@ def build_seal(root: Path) -> dict:
         },
         "v4_build": v4_name,
         "v4_build_sha256": v4_hash,
+        "v4_run_log": v4_run_name,
+        "v4_run_log_sha256": v4_run_hash,
         "v4_security_verdict": "unresolved-no-waveform",
         "security_fix_validated": False,
     }

@@ -36,4 +36,13 @@
    revisions in a hash-pinned environment and ran the fixed issue #715 adaptation twice per
    secret. All four executions returned probe bit zero. The sealed deterministic-clean
    result does not reproduce the upstream report and therefore does not validate a repair.
-   Executing the original stripped Cascade attachment or another source-backed bug remains.
+   The original stripped Cascade attachment was later executed separately; see item 9.
+9. **Original issue #715 attachment executed 2026-09-17–18:** its historical BOOM
+   waveform shows an ordered branch, gadget, protected request, dependent-address
+   request, page fault, and misprediction chain. Three rebuilt RTL candidates failed
+   the same-seed replay and are rejected. A fourth candidate built and ran, but its
+   waveform was not recovered, so its security result is unresolved. The demo seal
+   binds baseline and failed-repair waveforms, witnesses, builds, comparisons, and
+   all five run logs. Recovering a v4 waveform and running independent attacker seeds
+   and variants remain necessary before accepting any fix. The waveform does not
+   prove register-level dependence or architectural secret disclosure.

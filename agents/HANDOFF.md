@@ -545,7 +545,7 @@ regression covers both exact replay and no-op-padded replay. Validation: 148 pas
 2 skipped; Ruff and diff checks passed.
 
 Publishing status on 2026-09-20: after the user explicitly approved the push, commits
-through `ca0da14` were pushed to `Ryclic/SpecHunter` PR #17. The PR description was
+through `d7012e1` were pushed to `Ryclic/SpecHunter` PR #17. The PR description was
 updated and its chia and Python 3.12/3.13 checks all passed. Do not merge without
 separate authorization.
 
@@ -557,5 +557,14 @@ repair candidates, and the v4 build's unresolved security verdict. It explicitly
 avoids claiming direct register dependence or secret disclosure from the waveform.
 The README command includes the new seal, `docs/BOOM.md` explains the case, and
 `docs/demo.html` was regenerated. Validation: 150 passed, 2 skipped; Ruff lint and
-format checks and `git diff --check` passed. Publishing this addition to PR #17 and
-checking its GitHub CI remain next steps.
+format checks and `git diff --check` passed. The addition was pushed as `d7012e1`
+to PR #17, its description updated, and all three GitHub checks passed. All open PRs
+(#4–#17) currently show successful checks.
+
+The attachment-case seal now also binds the baseline, three rejected-repair, and v4
+run logs. It requires every log to contain the pinned seed and 10,000-cycle timeout,
+making the execution claim auditable and preventing the v4 build alone from standing
+in for a run. The new seal and self-contained demo were regenerated; a presentation
+regression rejects a mismatched v4 log seed. The v4 waveform and security verdict
+remain unavailable. Validation: 151 passed, 2 skipped; Ruff lint and format and
+`git diff --check` passed. Publication of this log binding is next.
