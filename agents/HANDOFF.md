@@ -537,3 +537,9 @@ This adds one bounded set of baseline executions per eligible clean candidate, s
 experiments should account for that simulator cost. A regression also verifies that
 an inconclusive baseline challenge fails closed. Validation: 147 passed, 2 skipped;
 Ruff and diff checks passed.
+
+The current attack-diversity check ignores `nop` padding when comparing a new program
+with the minimized repaired witness. Otherwise appending a no-op would satisfy the
+distinct-program test and trigger needless baseline simulations. A parameterized
+regression covers both exact replay and no-op-padded replay. Validation: 148 passed,
+2 skipped; Ruff and diff checks passed.

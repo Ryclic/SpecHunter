@@ -71,7 +71,8 @@ def test_repair_returns_to_attacker_before_next_recon():
     )
 
 
-def test_replaying_same_program_does_not_count_as_a_new_challenge():
+@pytest.mark.parametrize("pad_with_nop", [False, True])
+def test_replaying_same_program_does_not_count_as_a_new_challenge(pad_with_nop):
     class DuplicateProvider(ScriptedProvider):
         def attack(self, benchmark, hypothesis, history, repaired):
             if repaired and not any(
@@ -82,9 +83,10 @@ def test_replaying_same_program_does_not_count_as_a_new_challenge():
                     for event in history
                     if event.get("rationale") == "mandatory minimized-exploit repair retest"
                 )
-                return AttackDecision(
-                    "candidate", "duplicate repair candidate", Program.parse(replay["program"])
-                )
+                program = Program.parse(replay["program"])
+                if pad_with_nop:
+                    program = Program((*program.ops, Op.NOP))
+                return AttackDecision("candidate", "duplicate repair candidate", program)
             return super().attack(benchmark, hypothesis, history, repaired)
 
     result = agent_experiment(

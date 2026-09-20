@@ -36,6 +36,14 @@ def _relevant_repair_challenge(program: Program, benchmark: Benchmark) -> bool:
     )
 
 
+def _distinct_attack(program: Program, original: Program | None) -> bool:
+    if original is None:
+        return False
+    return tuple(op for op in program.ops if op != Op.NOP) != tuple(
+        op for op in original.ops if op != Op.NOP
+    )
+
+
 def _run_benchmark(
     backend: Backend,
     provider: AgentProvider,
@@ -52,7 +60,7 @@ def _run_benchmark(
     clean_since_repair = False
     novel_clean_since_repair = False
     required_retest = None
-    repaired_witness_digest = None
+    repaired_witness = None
 
     for cycle in range(1, recon_cycles + 1):
         # A fresh recon hypothesis opens a new attack search. The previous cycle's
@@ -107,7 +115,7 @@ def _run_benchmark(
             challenge_eligible = bool(
                 repaired
                 and required_retest is None
-                and decision.program.digest != repaired_witness_digest
+                and _distinct_attack(decision.program, repaired_witness)
                 and _relevant_repair_challenge(decision.program, benchmark)
             )
             validator_event = {
@@ -196,7 +204,7 @@ def _run_benchmark(
             clean_since_repair = False
             novel_clean_since_repair = False
             required_retest = reduced
-            repaired_witness_digest = reduced.digest
+            repaired_witness = reduced
             transcript.append(
                 {
                     "stage": "repair",
