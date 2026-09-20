@@ -427,8 +427,9 @@ manifest before executing. The diagnostic runner requires a simulator whose
 `--help` advertises `--vcd`; a build without trace support fails before the
 run and must be rebuilt with tracing enabled. It sets the pinned seed
 `1789717734`, requires a nonempty VCD waveform, and records its hash in the
-evidence JSON. Inspect that VCD with `scan_issue_715_vcd.py` and retain the raw
-trace alongside the evidence; the runner alone cannot establish the verdict.
+evidence JSON. It scans the VCD with `scan_issue_715_vcd.py` and binds the
+resulting witness JSON by SHA-256 in the same evidence record. Retain both
+artifacts alongside the run log; the runner alone cannot establish the verdict.
 The prepared candidate SHA-256 is
 `9e08e91ea094a56fc8812e400e872b9ab5bb5ff4c4ad4561d71694cd6615a9a9`.
 This is an **unexecuted diagnostic candidate**, not a repair or a reproduced

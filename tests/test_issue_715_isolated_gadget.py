@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import struct
 from pathlib import Path
 from types import SimpleNamespace
@@ -85,3 +86,14 @@ def test_diagnostic_refuses_simulator_without_waveform_support(monkeypatch):
         lambda *args, **kwargs: SimpleNamespace(stdout="Usage: simulator [--vcd=FILE]"),
     )
     RUNNER.require_waveform_support(Path("/simulator"))
+
+
+def test_diagnostic_witness_is_scanned_and_bound_to_raw_waveform(tmp_path):
+    evidence = Path(__file__).parents[1] / "docs/evidence"
+    waveform = evidence / "boom-issue-715-attachment-baseline-seed-1789717734-2026-09-17.vcd.gz"
+    destination = tmp_path / "baseline.witness.json"
+    witness_sha = RUNNER.write_diagnostic_witness(waveform, destination)
+    checked = evidence / "boom-issue-715-attachment-baseline-2026-09-17.json"
+    assert json.loads(destination.read_text()) == json.loads(checked.read_text())
+    assert RUNNER.digest(destination) == witness_sha
+    assert json.loads(destination.read_text())["trace_sha256"] == RUNNER.digest(waveform)

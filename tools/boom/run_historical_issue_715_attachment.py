@@ -64,6 +64,20 @@ def require_waveform_support(simulator: Path) -> None:
         raise RuntimeError("diagnostic requires a trace-enabled simulator supporting --vcd")
 
 
+def write_diagnostic_witness(waveform: Path, destination: Path) -> str:
+    script = Path(__file__).with_name("scan_issue_715_vcd.py")
+    spec = importlib.util.spec_from_file_location("issue_715_vcd", script)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load issue #715 waveform scanner")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    witness = module.scan(waveform)
+    if witness["trace_sha256"] != digest(waveform):
+        raise RuntimeError("diagnostic witness waveform digest mismatch")
+    destination.write_text(json.dumps(witness, indent=2) + "\n")
+    return digest(destination)
+
+
 def main() -> int:
     if len(sys.argv) not in (4, 6) or any(not Path(arg).is_absolute() for arg in sys.argv[1:]):
         print(
@@ -109,8 +123,8 @@ def main() -> int:
         raise RuntimeError("historical simulator does not match its build manifest")
     if candidate_manifest_sha256:
         require_waveform_support(simulators[0])
-        if output.with_suffix(".vcd").exists():
-            raise RuntimeError("diagnostic waveform path already exists; choose a fresh output")
+        if output.with_suffix(".vcd").exists() or output.with_suffix(".witness.json").exists():
+            raise RuntimeError("diagnostic artifact path already exists; choose a fresh output")
     dramsim = chipyard / "generators/testchipip/src/main/resources/dramsim2_ini"
     output.parent.mkdir(parents=True, exist_ok=True)
     loadmem = output.with_suffix(".loadmem.hex")
@@ -202,6 +216,9 @@ def main() -> int:
             raise RuntimeError("diagnostic simulator did not produce a waveform")
         evidence["waveform_sha256"] = digest(waveform)
         evidence["waveform_path"] = str(waveform)
+        witness_path = output.with_suffix(".witness.json")
+        evidence["witness_sha256"] = write_diagnostic_witness(waveform, witness_path)
+        evidence["witness_path"] = str(witness_path)
         evidence["seed"] = 1789717734
         evidence["executed_elf_sha256"] = digest(attachment)
         evidence["candidate_manifest_sha256"] = candidate_manifest_sha256

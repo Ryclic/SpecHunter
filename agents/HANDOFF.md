@@ -11,7 +11,9 @@ replacing just the independent four-byte load with a NOP and emits a SHA-bound
 manifest. The historical runner can optionally verify the original, rebuilt
 candidate, and manifest before executing on the pinned simulator. For the
 diagnostic it now refuses a simulator without VCD support, fixes the seed to
-`1789717734`, and requires and hashes a captured waveform. Diagnostic
+`1789717734`, and requires and hashes a captured waveform. The diagnostic
+runner also scans the raw waveform and records the witness JSON hash while
+leaving the security verdict pending. Diagnostic
 waveform attribution requires a valid same-cycle LSU execute request matched
 to the dispatch ROB entry; all four checked-in raw waveforms recompute to
 their existing witnesses (16 focused tests pass).
@@ -25,7 +27,7 @@ attachment SHA-256: `c7066c9e10d1d19233d5626670e404663c069afe1e168656dcab08efbaa
 prepared diagnostic candidate SHA-256:
 `9e08e91ea094a56fc8812e400e872b9ab5bb5ff4c4ad4561d71694cd6615a9a9`.
 Local validation: Ruff lint and format pass; `PYTHONPATH=src .venv/bin/pytest -q
--m 'not chia'` passes (168 passed, 1 skipped, 1 deselected). The prior unrestricted
+-m 'not chia'` passes (169 passed, 1 skipped, 1 deselected). The prior unrestricted
 suite reported 166 passed, 1 skipped, and one local CHIA/Ray startup timeout
 while attempting network-based address discovery (60-second run).
 The diagnostic has **not** been executed on BOOM. Consult `docs/BOOM.md` for the
