@@ -199,11 +199,13 @@ def main() -> int:
             else "boom-historical-issue-715-original-attachment"
         ),
         "classification": (
-            "diagnostic-executed-signal-verdict-pending"
-            if candidate_manifest_sha256 and not timed_out
+            "execution-timeout"
+            if timed_out
+            else "simulation-error"
+            if returncode != 0
+            else "diagnostic-executed-signal-verdict-pending"
+            if candidate_manifest_sha256
             else "executed-signal-verdict-pending"
-            if not timed_out
-            else "execution-timeout"
         ),
         "vulnerability_reproduced": False,
         "security_fix_validated": False,
@@ -226,13 +228,15 @@ def main() -> int:
     }
     if candidate_manifest_sha256:
         waveform = output.with_suffix(".vcd")
-        if not waveform.is_file() or waveform.stat().st_size == 0:
+        if returncode == 0 and (not waveform.is_file() or waveform.stat().st_size == 0):
             raise RuntimeError("diagnostic simulator did not produce a waveform")
-        evidence["waveform_sha256"] = digest(waveform)
-        evidence["waveform_path"] = str(waveform)
-        witness_path = output.with_suffix(".witness.json")
-        evidence["witness_sha256"] = write_diagnostic_witness(waveform, witness_path)
-        evidence["witness_path"] = str(witness_path)
+        if waveform.is_file() and waveform.stat().st_size:
+            evidence["waveform_sha256"] = digest(waveform)
+            evidence["waveform_path"] = str(waveform)
+            if returncode == 0:
+                witness_path = output.with_suffix(".witness.json")
+                evidence["witness_sha256"] = write_diagnostic_witness(waveform, witness_path)
+                evidence["witness_path"] = str(witness_path)
         evidence["seed"] = 1789717734
         evidence["max_cycles"] = 10000
         evidence["executed_elf_sha256"] = digest(attachment)

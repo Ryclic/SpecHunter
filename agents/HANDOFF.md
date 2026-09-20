@@ -2,6 +2,13 @@
 
 ## Issue #715 isolated gadget diagnostic (PR #17 follow-up)
 
+The diagnostic runner now classifies nonzero simulator exits as
+`simulation-error` and records their log and any partial waveform without
+requiring a witness from an incomplete execution. Successful diagnostic runs
+still require a nonempty waveform and its scanned witness. Focused local
+validation passed (14 tests, Ruff lint/format, and `git diff --check`); the
+cloud run remains pending authentication and free-trial verification.
+
 The original attachment contains a third, independent load at `0x80028e08` that
 accounts for the observed `0x59f` translation request. The dependent load at +4
 does not generate a valid LSU request in the recovered baseline waveform; no
