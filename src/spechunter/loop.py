@@ -113,15 +113,21 @@ def experiment(
     strategy: str = "guided",
     iterations: int = 16,
     seed: int = 0,
+    benchmark_id: str | None = None,
 ) -> dict:
     if not 1 <= iterations <= 1000:
         raise ValueError("iterations must be 1..1000")
     if strategy not in {"guided", "random"}:
         raise ValueError("unknown strategy")
+    benchmarks = BENCHMARKS
+    if benchmark_id is not None:
+        benchmarks = tuple(benchmark for benchmark in BENCHMARKS if benchmark.id == benchmark_id)
+        if not benchmarks:
+            raise ValueError("unknown benchmark")
     rng = random.Random(seed)
     results = []
     with Backend(config or BackendConfig()) as backend:
-        for benchmark in BENCHMARKS:
+        for benchmark in benchmarks:
             attempts = []
             finding = None
             for iteration in range(iterations):

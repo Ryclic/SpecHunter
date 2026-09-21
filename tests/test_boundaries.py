@@ -72,3 +72,33 @@ def test_cli_llm_requires_explicit_model(monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", ["spechunter", "run", "--strategy", "llm"])
     assert main() == 2
     assert "--llm-model is required" in capsys.readouterr().err
+
+
+def test_cli_boom_defaults_to_secure_control_and_long_timeout(tmp_path, monkeypatch):
+    captured = {}
+
+    def fake_experiment(config, strategy, iterations, seed, benchmark_id):
+        captured.update(timeout=config.timeout_seconds, benchmark=benchmark_id)
+        return {"strategy": strategy, "metrics": {"inconclusive_cases": 0}}
+
+    runner = tmp_path / "runner"
+    runner.write_text("")
+    monkeypatch.setattr("spechunter.cli.experiment", fake_experiment)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "spechunter",
+            "run",
+            "--backend",
+            "boom",
+            "--runner",
+            str(runner),
+            "--target-revision",
+            "revision",
+            "--output",
+            str(tmp_path / "report.json"),
+        ],
+    )
+    assert main() == 0
+    assert captured == {"timeout": 900, "benchmark": "secure-control"}

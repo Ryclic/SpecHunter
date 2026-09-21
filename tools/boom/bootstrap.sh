@@ -80,6 +80,11 @@ set +u
 source env.sh
 set -u
 printf 'chipyard_revision=%s\n' "$(git rev-parse HEAD)"
-printf 'boom_revision=%s\n' "$(git -C generators/boom rev-parse HEAD)"
+actual_boom_revision=$(git -C generators/boom rev-parse HEAD)
+[[ "$actual_boom_revision" == "$BOOM_REVISION" ]] || {
+  echo "BOOM revision mismatch: $actual_boom_revision" >&2
+  exit 2
+}
+printf 'boom_revision=%s\n' "$actual_boom_revision"
 printf 'verilator_version=%s\n' "$(verilator --version)"
 printf 'riscv_gcc=%s\n' "$(riscv64-unknown-elf-gcc --version | head -1)"

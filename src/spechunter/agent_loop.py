@@ -93,7 +93,10 @@ def _run_benchmark(
                 break
             repair_round += 1
             repair = provider.repair(benchmark, reduced, result, transcript)
-            if backend.config.kind == "boom":
+            if backend.config.kind == "boom" and repair.repair_id:
+                active_variant = repair.repair_id
+                status = "trusted-candidate-repair"
+            elif backend.config.kind == "boom":
                 active_variant = benchmark.bug
                 status = "proposal-only"
             else:
@@ -110,8 +113,9 @@ def _run_benchmark(
                     "status": status,
                     "diagnosis": repair.diagnosis,
                     "proposal": repair.proposal,
+                    "repair_id": repair.repair_id,
                     "active_variant": active_variant,
-                    "rtl_patch_applied": False,
+                    "rtl_patch_applied": active_variant == "gate-faulting-loads",
                 }
             )
             # Deliberately continue this same loop at attacker after every repair.
@@ -127,9 +131,10 @@ def _run_benchmark(
         "repair": {
             "attempted": repair_round > 0,
             "attacker_exhausted": repair_verified,
-            "verified": repair_verified and backend.config.kind != "boom",
+            "verified": repair_verified
+            and (backend.config.kind != "boom" or active_variant == "gate-faulting-loads"),
             "final_variant": active_variant,
-            "rtl_patch_applied": False,
+            "rtl_patch_applied": active_variant == "gate-faulting-loads",
         },
     }
 
@@ -140,6 +145,7 @@ def agent_experiment(
     recon_cycles: int = 2,
     attack_limit: int = 8,
     repair_limit: int = 4,
+    benchmark_id: str | None = None,
 ) -> dict:
     for value, name, maximum in (
         (recon_cycles, "recon cycles", 100),
@@ -148,10 +154,15 @@ def agent_experiment(
     ):
         if not 1 <= value <= maximum:
             raise ValueError(f"{name} must be 1..{maximum}")
+    benchmarks = BENCHMARKS
+    if benchmark_id is not None:
+        benchmarks = tuple(benchmark for benchmark in BENCHMARKS if benchmark.id == benchmark_id)
+        if not benchmarks:
+            raise ValueError("unknown benchmark")
     with Backend(config or BackendConfig()) as backend:
         results = [
             _run_benchmark(backend, provider, benchmark, recon_cycles, attack_limit, repair_limit)
-            for benchmark in BENCHMARKS
+            for benchmark in benchmarks
         ]
         positives = [r for r in results if r["benchmark"]["positive"]]
         negatives = [r for r in results if not r["benchmark"]["positive"]]

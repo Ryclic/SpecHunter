@@ -2,8 +2,8 @@ from dataclasses import asdict
 
 from spechunter.agent_loop import agent_experiment
 from spechunter.agents import AttackDecision, RepairDecision
-from spechunter.backends import BackendConfig
-from spechunter.domain import Op, Program
+from spechunter.backends import Backend, BackendConfig
+from spechunter.domain import Observation, Op, Program
 
 LEAK = Program((Op.ENTER_USER, Op.LOAD_SECRET, Op.PROBE))
 
@@ -75,3 +75,52 @@ def test_repair_contract_rejects_vulnerable_fixture_variant():
 
     with pytest.raises(ValueError):
         RepairDecision("diagnosis", "bad repair", "privilege")
+    with pytest.raises(ValueError):
+        RepairDecision("diagnosis", "bad repair", None, "free-form-patch")
+
+
+def test_trusted_boom_repair_returns_to_attacker_and_can_be_verified(monkeypatch):
+    class BoomProvider(ScriptedProvider):
+        def attack(self, benchmark, hypothesis, history, repaired):
+            self.calls += 1
+            if repaired:
+                self.repaired_attacks += 1
+                return AttackDecision("exhausted", "no supported bypass remains")
+            return AttackDecision("candidate", "exercise faulting load", LEAK)
+
+        def repair(self, benchmark, program, validation, history):
+            self.calls += 1
+            return RepairDecision(
+                "faulting request reaches D-cache",
+                "gate faulting load requests",
+                None,
+                "gate-faulting-loads",
+            )
+
+    def fake_boom(self, program, secret, bug):
+        probe = 0 if bug == "gate-faulting-loads" else secret
+        return Observation((), (probe,), ("load-access-fault",))
+
+    monkeypatch.setattr(Backend, "_boom", fake_boom)
+    provider = BoomProvider()
+    config = BackendConfig("boom", ("/trusted/runner",), target_revision="revision")
+    report = agent_experiment(
+        provider,
+        config,
+        recon_cycles=1,
+        attack_limit=4,
+        repair_limit=1,
+        benchmark_id="secure-control",
+    )
+    result = report["results"][0]
+    repair_event = next(event for event in result["transcript"] if event["stage"] == "repair")
+    assert repair_event["status"] == "trusted-candidate-repair"
+    assert repair_event["repair_id"] == "gate-faulting-loads"
+    assert repair_event["rtl_patch_applied"] is True
+    assert result["repair"] == {
+        "attempted": True,
+        "attacker_exhausted": True,
+        "verified": True,
+        "final_variant": "gate-faulting-loads",
+        "rtl_patch_applied": True,
+    }

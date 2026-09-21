@@ -1,8 +1,10 @@
 # Research work beyond the base implementation
 
-1. Complete the trusted BOOM runner's privilege/trap runtime on top of the pinned,
-   hash-evidenced Chipyard/SmallBoomV3 Verilator build and bare-metal smoke path.
-2. Instrument matched secret worlds, including fixed cache observability and Spike comparison.
+1. Add an explicitly pinned inverse mutation benchmark as a positive control for the live
+   runner. The 2026-09-11 repeated-secret baseline was clean, so the source-reviewed load
+   gate was correctly left unapplied and unverified.
+2. Calibrate and repeat the binary relative-cache probe across more attack programs and
+   seeds, then evaluate the candidate repair only if a repeatable baseline violation exists.
 3. Reconcile the first Vertex smoke ledger with delayed Cloud Billing data, then improve
    hypothesis quality and evaluate stronger model/configuration choices. Persistent cost
    reservations, dated price verification, output limits, and bounded transport retries

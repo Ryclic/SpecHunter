@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-secure-control-matched-secret-matrix",
+  "variant": "none",
+  "chipyard_revision": "0acc1e1de2d3284bcd4d876956932a013ffe1949",
+  "boom_revision": "5223e44cfeb26f41380057a2eb4d651197475f69",
+  "config": "SmallBoomV3Config",
+  "repeats": 2,
+  "parallel_workers": 4,
+  "runner_sha256": "f81abd762c02673a665d62c4aaa791ab082c14e71abadb0f3605f261fe2d633f",
+  "simulator_sha256": "230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8",
+  "scenarios": [
+    {
+      "name": "architectural-denial",
+      "program": [
+        "enter_user",
+        "load_secret",
+        "probe"
+      ],
+      "program_sha256": "13227cb44a11fcfdabf177ae739b689589599f091ca6b6ef1fccbd4ed23da544",
+      "observations": [
+        {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [
+            "load-access-fault"
+          ],
+          "completed": true
+        },
+        {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [
+            "load-access-fault"
+          ],
+          "completed": true
+        },
+        {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [
+            "load-access-fault"
+          ],
+          "completed": true
+        },
+        {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [
+            "load-access-fault"
+          ],
+          "completed": true
+        }
+      ],
+      "deterministic": true,
+      "status": "clean"
+    },
+    {
+      "name": "transient-window",
+      "program": [
+        "train",
+        "enter_user",
+        "load_secret",
+        "encode",
+        "squash",
+        "probe"
+      ],
+      "program_sha256": "5ecd5af8513427fb26ee5f96984868d4c5052d028b4a85b079b528b24b346dde",
+      "observations": [
+        {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [
+            "load-access-fault"
+          ],
+          "completed": true
+        },
+        {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [
+            "load-access-fault"
+          ],
+          "completed": true
+        },
+        {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [
+            "load-access-fault"
+          ],
+          "completed": true
+        },
+        {
+          "architectural": [],
+          "probes": [
+            0
+          ],
+          "events": [
+            "load-access-fault"
+          ],
+          "completed": true
+        }
+      ],
+      "deterministic": true,
+      "status": "clean"
+    }
+  ],
+  "completed_at": "2026-09-11T05:47:33.670163+00:00"
+}

@@ -91,6 +91,103 @@ records a successful Spike and SmallBoomV3 run of this gate. It demonstrates the
 architectural PMP denial and trap-return substrate needed by later experiments. It does
 not test transient leakage or establish that BOOM is free of speculative attacks.
 
+## Trusted experiment runner
+
+`tools/boom/trusted_runner.py` implements the external backend contract for the pinned
+checkout at `/opt/spechunter/chipyard`. It parses the request as data and translates
+only the eight supported operations into reviewed instruction snippets; it never
+assembles `candidate.S` supplied by an agent. It accepts only the unmodified
+`secure-control` target (`variant: "none"`), verifies the top-level Chipyard and BOOM
+submodule pins, compiles one ELF, and executes it with both Spike and SmallBoomV3.
+
+The generated assembly uses the pinned `riscv_test.h` reset and HTIF termination
+substrate, reserves an aligned 4 KiB protected page, configures PMP, enables user access
+to the cycle counter, installs a machine trap handler, and enters user mode.
+A denied load and its younger encode/squash window are skipped architecturally after the
+fault. The fixed probe always times the same two public cache lines in the same order and
+returns whether line zero was faster; neither the probe addresses nor its control flow
+depend on the secret. Spike and BOOM must agree on architectural output and trap events
+before the BOOM observation is returned. The bounded HTIF exit word carries the binary
+probe result; all other nonzero codes are errors. Executor failures, unexpected traps, timeouts,
+unsupported variants, and provenance mismatches are inconclusive.
+
+After the pinned simulator is built, invoke the real backend with a per-execution timeout
+large enough for Spike plus RTL simulation:
+
+```bash
+uv run spechunter run --backend boom \
+  --runner "$PWD/tools/boom/trusted_runner.py" \
+  --target-revision 0acc1e1de2d3284bcd4d876956932a013ffe1949 \
+  --benchmark secure-control --timeout 900 \
+  --output artifacts/boom-secure-control.json
+```
+
+BOOM defaults to `secure-control` and a 900-second timeout when those flags are omitted.
+The seeded `privilege` and `transient` fixture variants are intentionally rejected because
+they are not real BOOM configurations or applied RTL mutations.
+
+For the review gate, run the fixed two-scenario matrix. It executes architectural denial
+and a load/encode/squash transient window twice in each secret world, rejects
+nondeterministic repetitions, verifies every runner response echo, runs four isolated
+simulators concurrently in stable input order, and hashes the runner and simulator into one
+evidence file:
+
+```bash
+tools/boom/run_secure_matrix.py /tmp/boom-secure-matrix.json
+```
+
+The command returns zero only when both secure-control scenarios are repeatable and have
+identical architectural and binary probe observations across the two secret worlds.
+The 2026-09-11 live run passed both scenarios on the pinned SmallBoomV3 simulator; all
+eight executions reported the expected load-access fault, no architectural value, and
+probe bit zero. The evidence is in
+[`docs/evidence/boom-secure-matrix-2026-09-11.json`](evidence/boom-secure-matrix-2026-09-11.json).
+This exhausts these two attacker programs but does not prove the absence of other attacks.
+
+## Candidate LSU repair
+
+Source review at the pinned BOOM commit identified that incoming and retried loads can
+assert `dmem_req.valid` when translation is complete even when the same DTLB response
+reports a load access fault, page fault, or misalignment. Architectural exception handling
+still prevents retirement, so this observation alone is not proof of leakage. It does
+identify the D-cache request boundary exercised by the transient-window matrix.
+
+[`tools/boom/patches/gate_faulting_loads.patch`](../tools/boom/patches/gate_faulting_loads.patch)
+is a minimal candidate repair that adds those three fault predicates to both load request
+paths. The patch applies cleanly to the exact pinned BOOM commit. `pins.env` records the
+SHA-256 of both the pristine and repaired LSU source. The trusted secure-control runner
+requires a pristine BOOM tree and exact pristine source digest so a patched or stale build
+cannot be mislabeled as baseline evidence.
+The hash-bound source audit is checked in as
+[`docs/evidence/boom-lsu-repair-audit-2026-09-11.json`](evidence/boom-lsu-repair-audit-2026-09-11.json).
+
+This patch is source-reviewed but unverified. It must not be described as a BOOM fix until
+a baseline violation is repeatable, a simulator is rebuilt from the patched source, the
+original witness becomes clean, attacker-generated variants are exhausted, and functional
+regressions pass.
+The clean baseline matrix did not trigger that repair gate, so no patched simulator was
+built and the candidate remains unapplied and unverified.
+
+Build the repair in a separate checkout so baseline evidence remains immutable:
+
+```bash
+tools/boom/build_repair_variant.sh \
+  /opt/spechunter/chipyard \
+  /opt/spechunter/chipyard-gate-faulting-loads \
+  /tmp/boom-load-gate-build.json
+tools/boom/run_secure_matrix.py \
+  /tmp/boom-load-gate-matrix.json gate-faulting-loads
+```
+
+The builder refuses an existing destination, copies the pinned baseline, applies only the
+reviewed patch, cleans and rebuilds the simulator, and emits a manifest binding the source,
+patch, and new simulator hashes. The trusted runner accepts the repair ID only from that
+separate path and verifies both the exact dirty-source diff and build manifest before use.
+An LLM repair response can select this closed repair ID; it cannot provide executable patch
+text. After selection, the orchestrator retests the minimized witness on the repaired target
+and returns control to the attacker until it reports exhaustion. BOOM repair verification is
+true only after those real repaired-target executions succeed.
+
 `tools/boom/gcp_worker.sh create` provisions the corresponding official Rocky Linux 9
 image with no service account or API scopes. It has a six-hour maximum runtime and is
 deleted automatically at the limit. Install the listed host packages and copy the two

@@ -90,3 +90,61 @@ Next: reuse this trusted transition substrate in the external BOOM runner, map a
 operations to fixed instruction templates, and add matched-secret public observations.
 This gate establishes architectural PMP behavior only; it is not a transient-leakage
 test or a BOOM vulnerability claim.
+
+## Trusted BOOM experiment runner
+
+`feat/boom-trusted-runner` implements the missing external runner as a strict request
+compiler. It verifies exact Chipyard and BOOM revisions, accepts only bounded whitelisted
+operations and the real unmodified `secure-control` variant, generates a fixed PMP/trap
+assembly payload on the proven `riscv_test.h`/HTIF substrate, executes one ELF on Spike and
+SmallBoomV3, requires architectural agreement, and emits the provenance-bound observation schema. The fixed user-mode
+probe times the same two cache lines in the same order and reports their relative latency;
+faulting load and younger encode/squash instructions are skipped architecturally while
+remaining eligible to expose unsafe transient cache effects.
+
+The CLI now supports selecting one benchmark and defaults real BOOM runs to
+`secure-control` with a 900-second execution timeout. Seeded fixture variants remain
+rejected rather than being mislabeled as real BOOM mutations. Local validation passes
+Ruff, formatting, shell syntax, and 52 tests with one skipped RTL test and one deselected
+CHIA test.
+
+`tools/boom/run_secure_matrix.py` provides the empirical gate: two repetitions
+per secret for both architectural-denial and transient-window programs, strict response
+provenance checks, repeatability/leakage classification, four isolated parallel workers,
+atomic evidence output, and SHA-256 binding of the runner and simulator.
+
+On 2026-09-11, the final eight-case matrix passed on the pinned SmallBoomV3 simulator.
+Every execution reported the expected load-access fault, no architectural value, and probe
+bit zero; both scenarios were deterministic and clean across secret worlds. The evidence is
+`docs/evidence/boom-secure-matrix-2026-09-11.json`. During live validation, the original
+newlib-based runtime failed to terminate under BOOM; replacing it with the already-proven
+RISC-V test/HTIF substrate fixed Spike and BOOM execution. Ruff and 52 tests pass, with one
+RTL-dependent skip and one deselected CHIA test.
+
+Review of pinned BOOM v3 `lsu.scala` found that incoming/retried D-cache requests are not
+gated by same-cycle `ae_ld`, `pf_ld`, or `ma_ld` signals. The minimal candidate patch in
+`tools/boom/patches/gate_faulting_loads.patch` adds all three gates to both paths and was
+verified with `git apply --check` against pristine commit `5223e44c`. Pins now include
+SHA-256 values for pristine and repaired LSU sources; the trusted baseline runner rejects
+dirty BOOM trees or a mismatched pristine source. This is a source-level hypothesis, not
+a validated vulnerability or repair, until before/after RTL evidence exists.
+`docs/evidence/boom-lsu-repair-audit-2026-09-11.json` binds the exact commit, pristine
+and repaired source digests, patch digest, gated signals/paths, and the false RTL-validation
+flag; a regression test prevents those audit fields from drifting.
+
+The repair is now wired as the closed ID `gate-faulting-loads`. Vertex may select this ID
+but cannot emit executable patch content. `tools/boom/build_repair_variant.sh` copies the
+pinned baseline into a separate checkout, applies the exact patch, cleans/rebuilds BOOM,
+and writes a source/patch/simulator-bound manifest. The trusted runner maps the repair ID
+to that isolated checkout and rejects an altered diff, source digest, manifest, or binary.
+The secure matrix accepts the same repair ID for before/after evidence. In the agent loop,
+a real repaired-target clean retest returns to attacker iteration; attacker exhaustion then
+marks the BOOM repair verified and `rtl_patch_applied`. Unit coverage exercises this whole
+state transition with a controlled backend. The clean baseline did not activate the repair
+gate, so the candidate patch remains unapplied and live repaired RTL remains unvalidated.
+
+The e2-standard-8 worker ran from 04:33 to 05:51 UTC with a 200 GB balanced disk, no
+service account or scopes, and a six-hour deletion cap. Evidence hashes were verified
+before the worker and disk were explicitly deleted. Next: add a clearly labeled inverse
+mutation as a positive control, expand attacker programs, and only build a repaired target
+after a repeatable baseline violation exists.

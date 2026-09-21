@@ -40,10 +40,13 @@ class RepairDecision:
     diagnosis: str
     proposal: str
     fixture_variant: str | None = None
+    repair_id: str | None = None
 
     def __post_init__(self):
         if self.fixture_variant not in {None, "none"}:
             raise ValueError("invalid fixture repair variant")
+        if self.repair_id not in {None, "gate-faulting-loads"}:
+            raise ValueError("invalid trusted repair id")
 
 
 class AgentProvider(Protocol):
@@ -275,6 +278,12 @@ class VertexAgentProvider:
                     "For the test fixture, fixture_variant must be none to select the secure "
                     "candidate mitigation. For a real BOOM target it must be null."
                 ),
+                "trusted_repairs": {
+                    "gate-faulting-loads": (
+                        "Block incoming and retried D-cache requests when ae_ld, pf_ld, or "
+                        "ma_ld is asserted. Select only when the trace supports this LSU boundary."
+                    )
+                },
             },
             {
                 "type": "object",
@@ -285,9 +294,15 @@ class VertexAgentProvider:
                         "type": ["string", "null"],
                         "enum": ["none", None],
                     },
+                    "repair_id": {
+                        "type": ["string", "null"],
+                        "enum": ["gate-faulting-loads", None],
+                    },
                 },
-                "required": ["diagnosis", "proposal", "fixture_variant"],
+                "required": ["diagnosis", "proposal", "fixture_variant", "repair_id"],
                 "additionalProperties": False,
             },
         )
-        return RepairDecision(data["diagnosis"], data["proposal"], data["fixture_variant"])
+        return RepairDecision(
+            data["diagnosis"], data["proposal"], data["fixture_variant"], data["repair_id"]
+        )
