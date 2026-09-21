@@ -32,6 +32,8 @@ def validate(
                 observations.append(backend.execute(program, secret, bug or benchmark.bug))
     except (ExecutionError, ValueError) as exc:
         return Validation("inconclusive", str(exc), tuple(observations))
+    if len(observations) != len(secrets):
+        return Validation("inconclusive", "execution batch size differs", tuple(observations))
     if any(not o.completed for o in observations):
         return Validation("inconclusive", "incomplete execution", tuple(observations))
     for world in (0, 1):
@@ -147,11 +149,16 @@ def experiment(
                 )
                 if result.violation:
                     reduced = minimize(backend, program, benchmark)
+                    reduced_result = validate(backend, reduced, benchmark)
+                    attempts[-1]["minimized_validation"] = asdict(reduced_result)
+                    if not reduced_result.violation:
+                        # An unstable or broken reduction is not a counterexample.
+                        break
                     finding = {
                         "program": list(reduced.ops),
                         "sha256": reduced.digest,
                         "assembly": reduced.assembly(),
-                        "validation": asdict(validate(backend, reduced, benchmark)),
+                        "validation": asdict(reduced_result),
                         "repair": repair(backend, reduced, benchmark),
                     }
                     break
@@ -178,7 +185,14 @@ def experiment(
                 "positive_cases": len(positives),
                 "false_positives": sum(r["finding"] is not None for r in negatives),
                 "inconclusive_cases": sum(
-                    any(a["validation"]["status"] == "inconclusive" for a in r["attempts"])
+                    any(
+                        a["validation"]["status"] == "inconclusive"
+                        or (
+                            "minimized_validation" in a
+                            and a["minimized_validation"]["status"] != "violation"
+                        )
+                        for a in r["attempts"]
+                    )
                     for r in results
                 ),
                 "executions": backend.executions,

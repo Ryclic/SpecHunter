@@ -10,6 +10,8 @@ from hashlib import sha256
 from html import escape
 from pathlib import Path
 
+from spechunter.attachment_case import AttachmentEvidenceError, verify_seal
+
 
 class PresentationError(ValueError):
     pass
@@ -193,6 +195,7 @@ def render(
     chia_seal_path: Path | None = None,
     rtl_repair_seal_path: Path | None = None,
     issue_715_seal_path: Path | None = None,
+    issue_715_attachment_seal_path: Path | None = None,
 ) -> dict:
     report_path = report_path.resolve()
     seal_path = seal_path.resolve()
@@ -316,6 +319,27 @@ def render(
 <div class="card"><b>{issue_715["executions"]}</b><span>BOOM executions</span></div>
 <div class="card"><b>Clean</b><span>Current pin result</span></div>
 <div class="card"><b>No</b><span>Fix claimed</span></div></div></section>"""
+    attachment_section = ""
+    attachment_hash = None
+    if issue_715_attachment_seal_path is not None:
+        try:
+            attachment = verify_seal(issue_715_attachment_seal_path.resolve())
+        except (AttachmentEvidenceError, OSError, ValueError) as exc:
+            raise PresentationError(f"original attachment evidence differs: {exc}") from exc
+        attachment_hash = _digest(issue_715_attachment_seal_path)
+        baseline_witness = _read(
+            issue_715_attachment_seal_path.parent / attachment["baseline"]["witness"]
+        )
+        attachment_section = f"""<section><h2>Original issue #715 attachment on historical BOOM</h2>
+<p>The original upstream ELF ran on the reported Chipyard/BOOM revisions. Its disassembly shows a load into <code>sp</code> followed by a load through <code>sp</code>. However, the waveform attributes the later <code>0x59f</code> requests to a third, independent load at gadget offset <code>+8</code>; the dependent load at <code>+4</code> did not issue a recorded branch-masked translation request. The reported protected-data-dependent mechanism is not reproduced.</p>
+<div class="grid"><div class="card"><b>{baseline_witness["branch_frontend_pc_cycle"]}</b><span>Branch frontend PC cycle</span></div>
+<div class="card"><b>{len(baseline_witness["dependent_load_requests"])}</b><span>Dependent-load requests</span></div>
+<div class="card"><b>{len(attachment["repairs"])}</b><span>RTL candidates assessed</span></div>
+<div class="card"><b>Unresolved</b><span>Fourth candidate verdict</span></div></div>
+<p>The baseline shows a TLB miss and speculative load wakeup one cycle after the protected-page request, with no D-cache request firing. The dependent load issues with a poisoned source operand in baseline and candidates v1/v2; the LSU load-miss signal is high and register-read validity is low at the same cycle. The pinned BOOM source gates register read for that combination. No branch-masked dependent issue is observed for v3. No waveform shows a matching valid LSU execute request or branch-masked TLB request from the dependent load. The independent third load still issued its requests. LSU address fields with a low valid bit do not prove an executed memory request.</p>
+<p>Three candidate repairs have matched traces, but the baseline did not reproduce the target mechanism, so their security effectiveness is inconclusive. The fourth built and ran, but its waveform was not recovered; no security fix is claimed.</p>
+<div class="card"><span>Original waveform SHA-256</span><code>{escape(attachment["baseline"]["waveform_sha256"])}</code></div>
+<div class="card"><span>Case seal SHA-256</span><code>{escape(attachment_hash)}</code></div></section>"""
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpecHunter · Verified Agent Loop</title>
@@ -352,6 +376,7 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
 {chia_section}
 {rtl_repair_section}
 {issue_715_section}
+{attachment_section}
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>{report_hash}</code></div><div class="card"><span>Simulator SHA-256</span><code>{simulator_hash}</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{raw_report}</pre></details></section>
 <footer>Generated locally from the sealed SpecHunter report. No network requests or external assets are required.</footer>
@@ -370,4 +395,5 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
         "chia_evidence_sha256": chia_hash,
         "rtl_repair_seal_sha256": rtl_repair_hash,
         "issue_715_seal_sha256": issue_715_hash,
+        "issue_715_attachment_seal_sha256": attachment_hash,
     }

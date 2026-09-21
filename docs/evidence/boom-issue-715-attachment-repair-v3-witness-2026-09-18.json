@@ -1,0 +1,172 @@
+{
+  "schema_version": 10,
+  "experiment": "boom-upstream-issue-715-vcd-witness",
+  "trace_sha256": "5f7250b931c825e83ad36040d8bec2ed90d885da205a7359a53e6556d21ca1af",
+  "branch_pc": "0xd0100287d0",
+  "branch_frontend_pc_cycle": 3769,
+  "gadget_frontend_pc_cycles": {
+    "0xd010028e00": 3772,
+    "0xd010028e04": 3802
+  },
+  "frontend_pc_signal_sources": {
+    "0xd0100287d0": "frontend.s0_vpc",
+    "0xd010028e00": "frontend.s0_vpc",
+    "0xd010028e04": "frontend.fb.pc_2 with io_enq_valid"
+  },
+  "protected_load_requests": [
+    {
+      "cycle": 3807,
+      "vaddr": "0xd010098000",
+      "branch_mask": "0x1",
+      "pdst": "0x12",
+      "ldq_idx": "0x0",
+      "dispatch_pc_lob": "0x0"
+    },
+    {
+      "cycle": 3852,
+      "vaddr": "0xd010098000",
+      "branch_mask": "0x1",
+      "pdst": "0x12",
+      "ldq_idx": "0x0",
+      "dispatch_pc_lob": "0x0"
+    },
+    {
+      "cycle": 3888,
+      "vaddr": "0xd010098000",
+      "branch_mask": "0x1",
+      "pdst": "0x12",
+      "ldq_idx": "0x0",
+      "dispatch_pc_lob": "0x0"
+    }
+  ],
+  "observed_address_requests": [
+    {
+      "cycle": 3809,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1",
+      "pdst": "0x16",
+      "ldq_idx": "0x2",
+      "dispatch_pc_lob": "0x8"
+    },
+    {
+      "cycle": 3853,
+      "vaddr": "0x59f",
+      "branch_mask": "0x1",
+      "pdst": "0x16",
+      "ldq_idx": "0x2",
+      "dispatch_pc_lob": "0x8"
+    }
+  ],
+  "dependent_load_requests": [],
+  "dependent_load_dispatches": [
+    {
+      "cycle": 3805,
+      "pc_lob": "0x4",
+      "pdst": "0x15",
+      "prs1": "0x12",
+      "prs1_busy": true,
+      "ldq_idx": "0x1",
+      "rob_idx": "0x1",
+      "branch_mask": "0x1"
+    }
+  ],
+  "gadget_dispatches": [
+    {
+      "cycle": 3804,
+      "pc_lob": "0x0",
+      "pdst": "0x12",
+      "prs1": "0x3",
+      "prs1_busy": false,
+      "ldq_idx": "0x0",
+      "rob_idx": "0x0",
+      "branch_mask": "0x1"
+    },
+    {
+      "cycle": 3805,
+      "pc_lob": "0x4",
+      "pdst": "0x15",
+      "prs1": "0x12",
+      "prs1_busy": true,
+      "ldq_idx": "0x1",
+      "rob_idx": "0x1",
+      "branch_mask": "0x1"
+    },
+    {
+      "cycle": 3806,
+      "pc_lob": "0x8",
+      "pdst": "0x16",
+      "prs1": "0x11",
+      "prs1_busy": false,
+      "ldq_idx": "0x2",
+      "rob_idx": "0x2",
+      "branch_mask": "0x1"
+    }
+  ],
+  "gadget_issues": [
+    {
+      "cycle": 3805,
+      "pdst": "0x12",
+      "prs1": "0x3",
+      "prs1_poisoned": false,
+      "load_miss": false,
+      "register_read_valid": true,
+      "ldq_idx": "0x0",
+      "rob_idx": "0x0",
+      "branch_mask": "0x1",
+      "dispatch_pc_lob": "0x0"
+    },
+    {
+      "cycle": 3807,
+      "pdst": "0x16",
+      "prs1": "0x11",
+      "prs1_poisoned": false,
+      "load_miss": false,
+      "register_read_valid": true,
+      "ldq_idx": "0x2",
+      "rob_idx": "0x2",
+      "branch_mask": "0x1",
+      "dispatch_pc_lob": "0x8"
+    }
+  ],
+  "dependent_load_issues": [],
+  "gadget_exe_requests": [
+    {
+      "cycle": 3807,
+      "pdst": "0x12",
+      "ldq_idx": "0x0",
+      "rob_idx": "0x0",
+      "branch_mask": "0x1",
+      "vaddr": "0xd010098000",
+      "dispatch_pc_lob": "0x0"
+    },
+    {
+      "cycle": 3809,
+      "pdst": "0x16",
+      "ldq_idx": "0x2",
+      "rob_idx": "0x2",
+      "branch_mask": "0x1",
+      "vaddr": "0x59f",
+      "dispatch_pc_lob": "0x8"
+    }
+  ],
+  "dependent_load_exe_requests": [],
+  "tlb_miss_fast_wakeup_observations": [],
+  "load_page_faults": [
+    {
+      "cycle": 3890,
+      "cause": "0xd",
+      "badvaddr": "0xd010098000",
+      "branch_mask": "0x1"
+    }
+  ],
+  "target_mispredicts": [
+    {
+      "cycle": 3910,
+      "pc": "0xd0100287d0"
+    }
+  ],
+  "same_branch_mask_request_chain_witnessed": true,
+  "transient_dataflow_witnessed": false,
+  "mechanism_witnessed": false,
+  "architectural_secret_disclosure_proven": false
+}

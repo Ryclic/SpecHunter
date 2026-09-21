@@ -15,6 +15,14 @@ SmallBoomV3 executions: every intentional mutation was detected, every repaired 
 clean, and none was inconclusive. The corpus is bound to the same simulator as the live
 Vertex run.
 
+Those September 11 and 16 agent transcripts used the earlier exhaustion criterion:
+the agent stopped after the mandatory exploit replay. Current runs require an additional
+distinct, clean attacker-generated candidate that exercises the protected user load
+and relevant observer *and* reproduces a violation on the original vulnerable variant
+before reporting a repair as verified.
+The separate eight-program held-out gate remains evidence for the historical positive
+control, not a substitute for that current agent-loop requirement.
+
 On the separate deterministic fixture benchmark, guided search discovered 100% of seeded
 positive cases in 1.5 attempts on average. Across 1,000 seeds, random search discovered
 57.25% within the same 16-attempt limit (95% Wilson interval 55.07%–59.40%) and required
@@ -42,6 +50,14 @@ dependent cache encode, and matched secret worlds. All observations were determi
 clean, so the sealed assessment records that the older reported issue was not reproduced
 on this revision and makes no vulnerability or fix claim.
 
+The separately executed original issue #715 ELF on historical BOOM also has no
+validated vulnerability or fix claim: waveform attribution identifies its later
+`0x59f` requests as coming from an independent third instruction. The
+protected-data-dependent load issues from the memory queue in baseline and v1/v2
+but has no matching valid LSU execute request or branch-masked translation request;
+v3 lacks its matched issue.
+Three candidate repair comparisons are consequently inconclusive.
+
 Generate the presentation locally from its sealed evidence:
 
 ```bash
@@ -50,14 +66,15 @@ uv run spechunter present \
   --seal docs/evidence/vertex-boom-demo-seal-2026-09-11.json \
   --corpus docs/evidence/boom-attack-corpus-2026-09-16.json \
   --corpus-seal docs/evidence/boom-attack-corpus-seal-2026-09-16.json \
-  --evaluation docs/evidence/fixture-guided-vs-random-2026-09-16.json \
-  --evaluation-seal docs/evidence/fixture-guided-vs-random-seal-2026-09-16.json \
+  --evaluation docs/evidence/fixture-guided-vs-random-2026-09-19.json \
+  --evaluation-seal docs/evidence/fixture-guided-vs-random-seal-2026-09-19.json \
   --repeatability docs/evidence/vertex-fixture-repeatability-2026-09-16.json \
   --repeatability-seal docs/evidence/vertex-fixture-repeatability-seal-2026-09-16.json \
   --chia-evidence docs/evidence/chia-vertex-loop-2026-09-16.json \
   --chia-seal docs/evidence/chia-vertex-loop-seal-2026-09-16.json \
   --rtl-repair-seal docs/evidence/boom-load-gate-regression-seal-2026-09-16.json \
   --issue-715-seal docs/evidence/boom-issue-715-assessment-seal-2026-09-16.json \
+  --issue-715-attachment-seal docs/evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json \
   --output artifacts/demo.html
 ```
 
@@ -118,8 +135,9 @@ result and CLI exit code 2; a finding is a valid experiment result (exit code 0)
 - Optional pinned CHIA node (`uv sync --extra chia`; `uv run spechunter run --chia`).
 - Optional Vertex agents with schema-constrained recon, attack, and repair responses.
 - Nested repair red-teaming: every repair returns to attacker → validator; a fixture
-  repair is verified only after a clean retest followed by attacker exhaustion. The
-  outer loop then returns to recon for a fresh hypothesis.
+  repair is verified only after a clean retest, a distinct relevant challenge that
+  fails on the original variant but passes on the repair, and attacker exhaustion.
+  The outer loop then returns to recon for a fresh hypothesis.
 - Pull request CI and artifact delivery after reviewed changes reach main.
 
 The guided baseline knows the benchmark templates; its results do not establish LLM

@@ -311,8 +311,9 @@ as soon as its artifacts or failure evidence have been collected.
 Upstream BOOM issue #715 reports that a delayed mispredicted branch on BOOM revision
 `fac2c370…` allowed a faulting privileged load and dependent access to execute transiently.
 The report includes a stripped Cascade ELF. SpecHunter records that attachment's SHA-256
-but does not execute it because its runtime and simulator assumptions differ from the pinned
-HTIF/Verilator environment.
+but the current-pin HTIF/Verilator adaptation below is a different program. The original
+attachment was later executed on the exact historical revisions; see the separate case
+study below.
 
 The trusted runner instead provides the fixed `issue-715-baseline` adaptation. It trains a
 delayed conditional branch twelve times with a safe pointer, evicts the training cache
@@ -363,3 +364,94 @@ provenance, and records both `vulnerability_reproduced` and `security_fix_valida
 false. The worker and its disk were deleted after recovered hashes matched the remote
 artifacts. See
 [`boom-issue-715-historical-seal-2026-09-17.json`](evidence/boom-issue-715-historical-seal-2026-09-17.json).
+
+## Original issue #715 attachment case
+
+The original upstream ELF was loaded into the historical `SmallBoomConfig` simulator.
+Its checked-in disassembly shows adjacent instructions `lb sp,-2048(t1)` and
+`ld s1,0(sp)`: the second address uses the first instruction's destination register.
+The case seal binds this disassembly by SHA-256. This proves a static instruction
+dependency, not that the protected load supplied the value observed at runtime.
+The baseline waveform records the branch and gadget frontend PCs, a protected-page
+translation request, a later `0x59f` translation request, a load page fault, and
+branch resolution. Dispatch, reorder-buffer, and load-queue identifiers establish
+that the `0x59f` request comes from the independent third instruction at gadget
+offset `+8`, not the
+dependent load at `+4`. No recorded branch-masked translation request came from that dependent
+load. Thus this execution does **not** reproduce the protected-data-dependent
+mechanism or prove secret disclosure. A shared branch mask alone cannot establish
+data dependence.
+
+The baseline and v1/v2 issue the dependent load from the memory queue at cycle
+3809, but there is no matching valid LSU execute request or branch-masked TLB
+request. Its first source operand is marked poisoned when it issues. The pinned
+[BOOM core source](https://github.com/riscv-boom/riscv-boom/blob/fac2c370c9deae97ca52aca6b34857e9ac0f6e9d/src/main/scala/exu/core.scala#L973-L978)
+gates register-read validity when an issued instruction has a poisoned operand
+and the LSU reports a load miss. At cycle 3809, both inputs are high and
+register-read validity is low in baseline and v1/v2, explaining the absent valid
+LSU request in this run. At cycle 3811 the LSU carries fields
+for that load, including an address,
+but its execute-request valid signal is low; those fields cannot prove execution
+or a data leak. The baseline also shows a TLB miss and speculative load wakeup
+without a D-cache request. V3
+suppresses that wakeup and no dependent-load issue is observed under the target
+branch mask, while the independent third instruction still requests `0x59f`.
+This is an issue-stage effect, not evidence of a security fix: the three waveformed
+candidate repairs cannot be evaluated as security
+fixes because the baseline did not reproduce the target mechanism. A fourth
+candidate built and ran, but its waveform was not recovered. The
+[case seal](evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json) binds the
+four raw waveforms, their corrected witnesses, three inconclusive comparisons,
+builds, original disassembly, and pinned-seed simulator logs. A reproducing baseline
+and attacker retest are required before any repair can be called effective.
+
+The comparison now binds the baseline and repaired run-log hashes and requires the
+same seed in both logs. It compares the ordered branch/gadget/protected-request/fault/
+misprediction trigger while allowing cycle timing to shift under a repair. A missing
+trigger is inconclusive, even if dependent requests disappear. A blocked matched
+witness only starts the attacker retest; it does not validate the security fix.
+
+To isolate the misleading independent third load, a reproducible diagnostic replaces
+only its four-byte instruction at `0x80028e08` with a RISC-V NOP. It leaves the
+protected load, dependent load, ELF headers, and all other bytes intact. On a
+provisioned historical BOOM worker with the pinned simulator/build manifest, run:
+
+```sh
+bash tools/boom/bootstrap_historical_issue_715.sh /ABS/INSTALL_ROOT
+python tools/boom/fetch_issue_715_attachment.py /ABS/original.elf
+bash tools/boom/build_historical_issue_715.sh /ABS/CHIPYARD /ABS/trace-build.json trace
+python tools/boom/prepare_issue_715_isolated_gadget.py /ABS/original.elf /ABS/isolated.elf /ABS/candidate.json
+python tools/boom/run_historical_issue_715_attachment.py /ABS/CHIPYARD /ABS/isolated.elf /ABS/isolated-evidence.json /ABS/original.elf /ABS/candidate.json
+```
+
+The builder checks the original attachment SHA-256 and the old instruction. The
+runner reproduces the mutation from the original and checks the candidate and
+manifest before executing. The `trace` build target uses the pinned Chipyard
+Makefile's separate `debug` simulator and records its distinct SHA-256 in a
+trace-build manifest; the runner rejects an ordinary simulator or mismatched
+manifest. Set `/ABS/CHIPYARD` to `/ABS/INSTALL_ROOT/chipyard-issue-715`.
+The bootstrap command requires a fresh install root; do not rerun it over an
+existing checkout. The simulator help must advertise the `-v` VCD option. The
+diagnostic sets the pinned seed `1789717734` and a 10,000-cycle bound matching
+the preserved baseline run. It requires a nonempty VCD waveform and records
+its hash in the evidence JSON. It scans the VCD with `scan_issue_715_vcd.py` and binds the
+resulting witness JSON by SHA-256 in the same evidence record. Retain both
+artifacts alongside the run log; the runner alone cannot establish the verdict.
+The prepared candidate SHA-256 is
+`9e08e91ea094a56fc8812e400e872b9ab5bb5ff4c4ad4561d71694cd6615a9a9`.
+This is an **unexecuted diagnostic candidate**, not a repair or a reproduced
+vulnerability. A future waveform must identify a valid dependent LSU request by
+its reorder-buffer identity and demonstrate a secret-dependent observable effect
+before any security conclusion; removing an unrelated request alone proves neither.
+The trace scanner also requires a same-cycle valid LSU execute request with the
+same address, destination register, load-queue slot, and branch mask as a
+dependent translation request. It binds the execute request to the gadget's
+dispatch by reorder-buffer index, so a later reuse of the register or load-queue
+slot cannot create a false dependent-load witness.
+The scanner rejects a VCD missing any required translation, fault, or branch
+signal at header parsing time. A missing signal cannot be interpreted as an
+absent dependent request or a clean baseline.
+The `transient_dataflow_witnessed` flag additionally requires the protected
+request to precede the dependent request between the branch fetch and its first
+resolution; a request after resolution remains visible in the raw observations
+but cannot establish transient dataflow.

@@ -4,7 +4,7 @@ import shutil
 import pytest
 
 from spechunter.backends import Backend, BackendConfig
-from spechunter.domain import BENCHMARKS, Observation, Op, Program
+from spechunter.domain import BENCHMARKS, Observation, Op, Program, Validation
 from spechunter.loop import attack, experiment, minimize, validate
 
 
@@ -49,6 +49,27 @@ def test_no_observation_is_not_a_finding():
         assert validate(backend, Program((Op.NOP,)), BENCHMARKS[0]).status == "clean"
 
 
+@pytest.mark.parametrize("replay_status", ["clean", "inconclusive"])
+def test_minimized_benchmark_witness_must_reproduce(monkeypatch, replay_status):
+    import spechunter.loop as loop
+
+    calls = 0
+
+    def fake_validate(backend, program, benchmark, **kwargs):
+        nonlocal calls
+        calls += 1
+        return Validation("violation" if calls == 1 else replay_status, "replayed", ())
+
+    monkeypatch.setattr(loop, "validate", fake_validate)
+    monkeypatch.setattr(loop, "minimize", lambda backend, program, benchmark: program)
+    result = loop.experiment(iterations=2, benchmark_id="privilege-bypass")
+    assert calls == 2
+    assert result["results"][0]["finding"] is None
+    assert result["results"][0]["attempts"][0]["minimized_validation"]["status"] == replay_status
+    assert result["metrics"]["discovered"] == 0
+    assert result["metrics"]["inconclusive_cases"] == 1
+
+
 def test_experiment_can_select_one_real_target_benchmark():
     report = experiment(iterations=1, benchmark_id="secure-control")
     assert [result["benchmark"]["id"] for result in report["results"]] == ["secure-control"]
@@ -65,6 +86,17 @@ def test_nondeterminism_is_inconclusive():
             return Observation((self.calls,), (), ())
 
     assert validate(Unstable(), Program((Op.NOP,)), BENCHMARKS[0]).status == "inconclusive"
+
+
+@pytest.mark.parametrize("batch_count", [0, 1, 2, 3, 5])
+def test_incomplete_or_extra_simulation_batch_is_inconclusive(batch_count):
+    class ShortOrLongBatch:
+        def execute_many(self, program, secrets, bug):
+            return [Observation((), (), ()) for _ in range(batch_count)]
+
+    result = validate(ShortOrLongBatch(), Program((Op.NOP,)), BENCHMARKS[0])
+    assert result.status == "inconclusive"
+    assert result.reason == "execution batch size differs"
 
 
 @pytest.mark.parametrize("values", [[], ["bad"], ["nop"] * 129])

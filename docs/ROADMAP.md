@@ -36,4 +36,18 @@
    revisions in a hash-pinned environment and ran the fixed issue #715 adaptation twice per
    secret. All four executions returned probe bit zero. The sealed deterministic-clean
    result does not reproduce the upstream report and therefore does not validate a repair.
-   Executing the original stripped Cascade attachment or another source-backed bug remains.
+   The original stripped Cascade attachment was later executed separately; see item 9.
+9. **Original issue #715 attachment executed 2026-09-17–18:** the historical BOOM
+   waveform shows a protected-page request and subsequent `0x59f` request under the
+   same branch mask, but dispatch/register and load-queue identifiers attribute the
+   latter to an independent third instruction. No branch-masked dependent-load translation request
+   was recorded, so the reported mechanism was not reproduced. Three candidate RTL
+   comparisons are inconclusive; a fourth has no recovered waveform. The dependent
+   load issues with a poisoned source operand in baseline and v1/v2, but has no
+   matching valid LSU execute request or branch-masked TLB request. The pinned
+   core's load-miss-plus-poison register-read gate is asserted at that issue cycle;
+   in v3 it does not issue under the target branch mask. A hash-checked diagnostic
+   ELF that replaces the unrelated third load with a NOP is prepared but not
+   executed (see `docs/BOOM.md`). Next run it on the pinned simulator, inspect
+   valid dependent requests and observable outcomes, and obtain a truly dependent
+   baseline before evaluating repairs and attacker retests.

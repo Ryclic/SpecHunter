@@ -4,8 +4,44 @@ from dataclasses import asdict
 
 from spechunter.agents import AgentProvider, AttackDecision
 from spechunter.backends import Backend, BackendConfig
-from spechunter.domain import BENCHMARKS, Benchmark
+from spechunter.domain import BENCHMARKS, Benchmark, Op, Program
 from spechunter.loop import minimize, validate
+
+
+def _relevant_repair_challenge(program: Program, benchmark: Benchmark) -> bool:
+    """Require a protected user load and the observer needed by this invariant."""
+    ops = program.ops
+    try:
+        user = ops.index(Op.ENTER_USER)
+        load = ops.index(Op.LOAD_SECRET, user + 1)
+    except ValueError:
+        return False
+    if benchmark.invariant == "architectural-isolation":
+        return True
+    if benchmark.invariant != "observable-isolation":
+        return False
+    try:
+        probe = ops.index(Op.PROBE, load + 1)
+    except ValueError:
+        return False
+    if benchmark.bug != "transient":
+        return True
+    try:
+        train = ops.index(Op.TRAIN, 0, load)
+        encode = ops.index(Op.ENCODE, load + 1, probe)
+    except ValueError:
+        return False
+    return train < load < encode < probe and not any(
+        op in (Op.FENCE, Op.SQUASH) for op in ops[train + 1 : encode]
+    )
+
+
+def _distinct_attack(program: Program, original: Program | None) -> bool:
+    if original is None:
+        return False
+    return tuple(op for op in program.ops if op != Op.NOP) != tuple(
+        op for op in original.ops if op != Op.NOP
+    )
 
 
 def _run_benchmark(
@@ -22,9 +58,16 @@ def _run_benchmark(
     repair_round = 0
     repair_verified = False
     clean_since_repair = False
+    novel_clean_since_repair = False
     required_retest = None
+    repaired_witness = None
 
     for cycle in range(1, recon_cycles + 1):
+        # A fresh recon hypothesis opens a new attack search. The previous cycle's
+        # exhaustion or clean replay cannot stand in for this cycle's result.
+        repair_verified = False
+        clean_since_repair = False
+        novel_clean_since_repair = False
         hypothesis = provider.recon(benchmark, cycle, transcript)
         transcript.append({"stage": "recon", "cycle": cycle, "output": hypothesis})
         repaired = active_variant != benchmark.bug
@@ -48,23 +91,42 @@ def _run_benchmark(
             transcript.append(attack_event)
             if decision.outcome == "exhausted":
                 exhausted = True
-                if repaired and clean_since_repair and required_retest is None:
+                if (
+                    repaired
+                    and clean_since_repair
+                    and novel_clean_since_repair
+                    and required_retest is None
+                ):
                     repair_verified = True
                 elif repaired:
                     transcript.append(
                         {
                             "stage": "validator",
                             "status": "inconclusive",
-                            "reason": "attacker exhausted without testing the repair",
+                            "reason": (
+                                "attacker exhausted without a distinct clean repair challenge"
+                            ),
                             "observations": [],
                         }
                     )
                 break
 
             result = validate(backend, decision.program, benchmark, bug=active_variant)
-            transcript.append(
-                {"stage": "validator", "cycle": cycle, "attempt": attempt, **asdict(result)}
+            challenge_eligible = bool(
+                repaired
+                and required_retest is None
+                and _distinct_attack(decision.program, repaired_witness)
+                and _relevant_repair_challenge(decision.program, benchmark)
             )
+            validator_event = {
+                "stage": "validator",
+                "cycle": cycle,
+                "attempt": attempt,
+                **asdict(result),
+            }
+            if repaired:
+                validator_event["repair_challenge_eligible"] = challenge_eligible
+            transcript.append(validator_event)
             if result.status == "inconclusive":
                 if result.reason == "secret load outside user threat model":
                     continue
@@ -74,17 +136,42 @@ def _run_benchmark(
                     required_retest is None or decision.program.digest == required_retest.digest
                 ):
                     clean_since_repair = True
+                    if challenge_eligible:
+                        baseline_result = validate(
+                            backend, decision.program, benchmark, bug=benchmark.bug
+                        )
+                        validator_event["baseline_challenge_validation"] = asdict(baseline_result)
+                        if baseline_result.violation:
+                            novel_clean_since_repair = True
                     required_retest = None
                 continue
 
+            # A later recon cycle can break a repair that an earlier cycle exhausted.
+            # Revoke that verdict even when the repair limit prevents another patch.
+            repair_verified = False
+            clean_since_repair = False
+            novel_clean_since_repair = False
             reduced = minimize(backend, decision.program, benchmark, bug=active_variant)
+            reduced_result = validate(backend, reduced, benchmark, bug=active_variant)
+            if not reduced_result.violation:
+                transcript.append(
+                    {
+                        "stage": "validator",
+                        "cycle": cycle,
+                        "attempt": attempt,
+                        "status": "inconclusive",
+                        "reason": "minimized witness did not reproduce",
+                        "minimized_validation": asdict(reduced_result),
+                    }
+                )
+                break
             findings.append(
                 {
                     "cycle": cycle,
                     "program": list(reduced.ops),
                     "sha256": reduced.digest,
                     "assembly": reduced.assembly(),
-                    "validation": asdict(validate(backend, reduced, benchmark, bug=active_variant)),
+                    "validation": asdict(reduced_result),
                     "variant": active_variant,
                 }
             )
@@ -92,7 +179,7 @@ def _run_benchmark(
                 transcript.append({"stage": "limit", "reason": "repair limit reached"})
                 break
             repair_round += 1
-            repair = provider.repair(benchmark, reduced, result, transcript)
+            repair = provider.repair(benchmark, reduced, reduced_result, transcript)
             trusted_repair = repair.repair_id and (
                 (
                     benchmark.id == "boom-positive-control"
@@ -115,7 +202,9 @@ def _run_benchmark(
             repaired = True
             repair_verified = False
             clean_since_repair = False
+            novel_clean_since_repair = False
             required_retest = reduced
+            repaired_witness = reduced
             transcript.append(
                 {
                     "stage": "repair",
@@ -180,13 +269,15 @@ def agent_experiment(
         positives = [r for r in results if r["benchmark"]["positive"]]
         negatives = [r for r in results if not r["benchmark"]["positive"]]
         report = {
-            "schema_version": 2,
+            "schema_version": 5,
             "strategy": "llm",
             "provider": provider.name,
             "limits": {
                 "recon_cycles": recon_cycles,
                 "attacks_per_cycle": attack_limit,
                 "repairs_per_benchmark": repair_limit,
+                "minimum_distinct_repair_challenges": 1,
+                "minimum_baseline_reproducing_repair_challenges": 1,
             },
             "provenance": backend.provenance(),
             "metrics": {

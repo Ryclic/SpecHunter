@@ -60,6 +60,42 @@ print(json.dumps(r))
         assert validate(backend, Program((Op.NOP,)), BENCHMARKS[0]).status == "inconclusive"
 
 
+def test_boom_provenance_pins_each_repair_variant_independently(monkeypatch):
+    def fake_run(command, work, timeout):
+        request = json.loads(Path(command[-1]).read_text())
+        variant = request["variant"]
+        return json.dumps(
+            {
+                **request,
+                "target": "boom",
+                "observation": {"architectural": [], "probes": [], "events": [], "completed": True},
+                "simulator_sha256": ("0" if variant == "none" else "1") * 64,
+            }
+        )
+
+    monkeypatch.setattr("spechunter.backends.run", fake_run)
+    config = BackendConfig("boom", ("trusted-runner",), target_revision="test-revision")
+    with Backend(config) as backend:
+        program = Program((Op.NOP,))
+        backend.execute(program, 0, "none")
+        backend.execute(program, 0, "gate-faulting-loads")
+        provenance = backend.provenance()
+        assert provenance["simulator_sha256"] == "0" * 64
+        assert provenance["simulator_sha256_by_variant"] == {
+            "none": "0" * 64,
+            "gate-faulting-loads": "1" * 64,
+        }
+
+        def drifted_run(command, work, timeout):
+            data = json.loads(fake_run(command, work, timeout))
+            data["simulator_sha256"] = "2" * 64
+            return json.dumps(data)
+
+        monkeypatch.setattr("spechunter.backends.run", drifted_run)
+        with pytest.raises(ExecutionError, match="within variant"):
+            backend.execute(program, 0, "gate-faulting-loads")
+
+
 def test_cli_report(tmp_path, monkeypatch):
     output = tmp_path / "report.json"
     monkeypatch.setattr(

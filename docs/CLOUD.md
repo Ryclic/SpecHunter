@@ -92,6 +92,23 @@ usage before expanding. The official Vertex pricing page listed standard Gemini 
 Flash-Lite text prices on 2026-09-10 as $0.10 per million input tokens and $0.40 per
 million output tokens. Recheck after 30 days. Do not treat ordinary budget alerts as
 hard spending limits.
+
+The prepared issue #715 diagnostic has a provisional **$8 maximum planning
+estimate for one worker**, pending verification of the actual billing account
+and current SKU prices immediately before launch. As reviewed 2026-09-20, a
+single `e2-standard-8` in `us-central1-a` costs [$0.26804568/hour](https://cloud.google.com/products/compute/pricing/general-purpose)
+on demand. A 200 GiB balanced persistent disk costs
+[$0.000136986/GiB-hour](https://cloud.google.com/compute/disks-image-pricing).
+Six hours of both would cost about $1.77; the worker has a six-hour automatic
+deletion limit. Allow up to 20 GiB of recovered waveform/artifacts at the
+[North America Premium Tier rate](https://cloud.google.com/vpc/network-pricing)
+of at most $0.12/GiB ($2.40), with the remaining ~$3.83 margin for IP, other
+network usage, pricing variation, and cleanup delay. Recover less or compress
+large traces; if the artifacts would exceed 20 GiB, stop and reassess. This
+estimate does not authorize launch until the billing console confirms an
+active free trial, remaining credit greater than $8, and enough time before
+expiry; do not upgrade billing. The current `gcloud` token could not refresh
+noninteractively on 2026-09-20, so that verification is still outstanding.
 Do not run `chia up` until its complete resource plan and cleanup behavior have
 been reviewed. Keep all paid integrations disabled until those checks are complete.
 

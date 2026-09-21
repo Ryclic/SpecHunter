@@ -70,8 +70,8 @@ def test_renderer_adds_sealed_fixture_comparison(tmp_path):
         EVIDENCE / "vertex-boom-demo-2026-09-11.json",
         EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
         output,
-        evaluation_path=EVIDENCE / "fixture-guided-vs-random-2026-09-16.json",
-        evaluation_seal_path=EVIDENCE / "fixture-guided-vs-random-seal-2026-09-16.json",
+        evaluation_path=EVIDENCE / "fixture-guided-vs-random-2026-09-19.json",
+        evaluation_seal_path=EVIDENCE / "fixture-guided-vs-random-seal-2026-09-19.json",
     )
     page = output.read_text()
     assert "Guided versus random evaluation" in page
@@ -138,6 +138,107 @@ def test_renderer_adds_sealed_issue_715_assessment(tmp_path):
     assert "Known BOOM issue assessed" in page
     assert "no vulnerability or repair claim" in page
     assert result["issue_715_seal_sha256"]
+
+
+def test_renderer_adds_original_attachment_case(tmp_path):
+    output = tmp_path / "demo.html"
+    result = render(
+        EVIDENCE / "vertex-boom-demo-2026-09-11.json",
+        EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+        output,
+        issue_715_attachment_seal_path=(
+            EVIDENCE / "boom-issue-715-attachment-demo-seal-2026-09-20.json"
+        ),
+    )
+    page = output.read_text()
+    assert "Original issue #715 attachment on historical BOOM" in page
+    assert "RTL candidates assessed" in page
+    assert "The reported protected-data-dependent mechanism is not reproduced" in page
+    assert "Fourth candidate verdict" in page
+    assert "no security fix is claimed" in page
+    assert "load through" in page
+    assert result["issue_715_attachment_seal_sha256"] in page
+
+
+def test_original_attachment_seal_rejects_tampered_witness(tmp_path):
+    seal_path = EVIDENCE / "boom-issue-715-attachment-demo-seal-2026-09-20.json"
+    seal = json.loads(seal_path.read_text())
+    (tmp_path / seal_path.name).write_text(seal_path.read_text())
+    names = {
+        seal["baseline"]["witness"],
+        seal["baseline"]["waveform"],
+        seal["baseline"]["run_log"],
+        seal["v4_build"],
+        seal["v4_run_log"],
+        seal["disassembly"],
+    }
+    for repair in seal["repairs"]:
+        names.update(
+            repair[key] for key in ("witness", "waveform", "build", "comparison", "run_log")
+        )
+    for name in names - {seal["baseline"]["witness"]}:
+        (tmp_path / name).symlink_to(EVIDENCE / name)
+    baseline = json.loads((EVIDENCE / seal["baseline"]["witness"]).read_text())
+    baseline["mechanism_witnessed"] = False
+    (tmp_path / seal["baseline"]["witness"]).write_text(json.dumps(baseline))
+    with pytest.raises(PresentationError, match="original attachment evidence differs"):
+        render(
+            EVIDENCE / "vertex-boom-demo-2026-09-11.json",
+            EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+            tmp_path / "demo.html",
+            issue_715_attachment_seal_path=tmp_path / seal_path.name,
+        )
+
+
+def test_original_attachment_seal_rejects_wrong_run_seed(tmp_path):
+    seal_path = EVIDENCE / "boom-issue-715-attachment-demo-seal-2026-09-20.json"
+    seal = json.loads(seal_path.read_text())
+    (tmp_path / seal_path.name).write_text(seal_path.read_text())
+    names = {seal["baseline"][key] for key in ("witness", "waveform", "run_log")} | {
+        seal["v4_build"],
+        seal["v4_run_log"],
+        seal["disassembly"],
+    }
+    for repair in seal["repairs"]:
+        names.update(
+            repair[key] for key in ("witness", "waveform", "build", "comparison", "run_log")
+        )
+    for name in names - {seal["v4_run_log"]}:
+        (tmp_path / name).symlink_to(EVIDENCE / name)
+    v4_run = (EVIDENCE / seal["v4_run_log"]).read_text()
+    (tmp_path / seal["v4_run_log"]).write_text(v4_run.replace("seed 1789717734", "seed 1"))
+    with pytest.raises(PresentationError, match="original attachment evidence differs"):
+        render(
+            EVIDENCE / "vertex-boom-demo-2026-09-11.json",
+            EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+            tmp_path / "demo.html",
+            issue_715_attachment_seal_path=tmp_path / seal_path.name,
+        )
+
+
+def test_original_attachment_seal_rejects_altered_disassembly(tmp_path):
+    seal_path = EVIDENCE / "boom-issue-715-attachment-demo-seal-2026-09-20.json"
+    seal = json.loads(seal_path.read_text())
+    (tmp_path / seal_path.name).write_text(seal_path.read_text())
+    names = {seal["baseline"][key] for key in ("witness", "waveform", "run_log")} | {
+        seal["v4_build"],
+        seal["v4_run_log"],
+    }
+    for repair in seal["repairs"]:
+        names.update(
+            repair[key] for key in ("witness", "waveform", "build", "comparison", "run_log")
+        )
+    for name in names:
+        (tmp_path / name).symlink_to(EVIDENCE / name)
+    source = (EVIDENCE / seal["disassembly"]).read_text()
+    (tmp_path / seal["disassembly"]).write_text(source + "\nchanged\n")
+    with pytest.raises(PresentationError, match="original attachment evidence differs"):
+        render(
+            EVIDENCE / "vertex-boom-demo-2026-09-11.json",
+            EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+            tmp_path / "demo.html",
+            issue_715_attachment_seal_path=tmp_path / seal_path.name,
+        )
 
 
 def test_renderer_rejects_tampered_report(tmp_path):

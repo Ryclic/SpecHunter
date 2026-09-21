@@ -248,7 +248,12 @@ class VertexAgentProvider:
             {
                 "task": (
                     "Propose a new attack candidate, or return exhausted only after the history "
-                    "provides no materially different supported candidate."
+                    "provides no materially different supported candidate. When testing a "
+                    "repair, propose at least one candidate distinct from the mandatory "
+                    "minimized-exploit replay before returning exhausted. That candidate "
+                    "must exercise a protected user load and, for observable isolation, "
+                    "a later observer probe; prioritize candidates that would still "
+                    "violate the original vulnerable variant."
                 ),
                 "benchmark": asdict(benchmark),
                 "hypothesis": hypothesis,
