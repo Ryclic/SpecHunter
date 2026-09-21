@@ -10,12 +10,19 @@ to discover and repair an intentional cache-leak positive control. Open the
 cost ledger in [`docs/evidence/`](docs/evidence/). The positive control proves the full
 workflow; it is explicitly not an upstream BOOM vulnerability claim.
 
+The repair also passes a held-out gate of eight distinct programs and 64 additional
+SmallBoomV3 executions: every intentional mutation was detected, every repaired case was
+clean, and none was inconclusive. The corpus is bound to the same simulator as the live
+Vertex run.
+
 Generate the presentation locally from its sealed evidence:
 
 ```bash
 uv run spechunter present \
   --input docs/evidence/vertex-boom-demo-2026-09-11.json \
   --seal docs/evidence/vertex-boom-demo-seal-2026-09-11.json \
+  --corpus docs/evidence/boom-attack-corpus-2026-09-16.json \
+  --corpus-seal docs/evidence/boom-attack-corpus-seal-2026-09-16.json \
   --output artifacts/demo.html
 ```
 

@@ -50,6 +50,12 @@ gate made 17 Vertex calls accounting for $0.0023706 in total, including prefligh
 failed-closed transport attempt. The worker and its 200 GB disk were explicitly deleted
 after the evidence was sealed, and no Compute Engine instance remained.
 
+The held-out attack-corpus gate used one identically constrained worker on 2026-09-16.
+The pinned build and smoke gate took 575 seconds, then eight programs ran under both the
+intentional mutation and repaired harness for 64 SmallBoomV3 executions. The recovered
+evidence matched the previously validated simulator hash. The worker and 200 GB disk were
+deleted immediately after artifact verification; the subsequent instance listing was empty.
+
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;
 record region, machine/model, maximum duration/tokens, disk/storage costs and a

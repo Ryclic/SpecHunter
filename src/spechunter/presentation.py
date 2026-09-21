@@ -48,7 +48,38 @@ def _event_copy(event: dict) -> tuple[str, str]:
     return str(stage).title(), str(event.get("reason", "Recorded by orchestrator"))
 
 
-def render(report_path: Path, seal_path: Path, output: Path) -> dict:
+def _load_corpus(corpus_path: Path, seal_path: Path, simulator_hash: str) -> dict:
+    corpus_path = corpus_path.resolve()
+    seal = _read(seal_path.resolve())
+    corpus = _read(corpus_path)
+    if seal.get("attack_corpus") != corpus_path.name or seal.get("attack_corpus_sha256") != _digest(
+        corpus_path
+    ):
+        raise PresentationError("attack corpus does not match its evidence seal")
+    expected = {
+        "attack_programs": 8,
+        "mutation_detection_rate": 1.0,
+        "repair_clean_rate": 1.0,
+        "inconclusive_programs": 0,
+        "simulator_executions": 64,
+    }
+    if corpus.get("scorecard") != expected or seal.get("scorecard") != expected:
+        raise PresentationError("attack corpus scorecard is incomplete")
+    if corpus.get("simulator_sha256") != simulator_hash:
+        raise PresentationError("attack corpus used a different simulator")
+    if seal.get("simulator_sha256") != simulator_hash:
+        raise PresentationError("attack corpus seal used a different simulator")
+    return corpus
+
+
+def render(
+    report_path: Path,
+    seal_path: Path,
+    output: Path,
+    *,
+    corpus_path: Path | None = None,
+    corpus_seal_path: Path | None = None,
+) -> dict:
     report_path = report_path.resolve()
     seal_path = seal_path.resolve()
     report = _read(report_path)
@@ -82,6 +113,25 @@ def render(report_path: Path, seal_path: Path, output: Path) -> dict:
     raw_report = escape(json.dumps(report, indent=2))
     report_hash = escape(str(seal["report_sha256"]))
     simulator_hash = escape(str(report.get("provenance", {}).get("simulator_sha256", "")))
+    corpus_section = ""
+    corpus_hash = None
+    if corpus_path is not None or corpus_seal_path is not None:
+        if corpus_path is None or corpus_seal_path is None:
+            raise PresentationError("attack corpus and seal must be supplied together")
+        corpus = _load_corpus(
+            corpus_path,
+            corpus_seal_path,
+            str(report.get("provenance", {}).get("simulator_sha256", "")),
+        )
+        scorecard = corpus["scorecard"]
+        corpus_hash = _digest(corpus_path)
+        corpus_section = f"""<section><h2>Held-out repair gate</h2>
+<p>The same repair was challenged with eight distinct supported programs on the identical simulator.</p>
+<div class="grid"><div class="card"><b>{scorecard["attack_programs"]}</b><span>Attack programs</span></div>
+<div class="card"><b>{scorecard["simulator_executions"]}</b><span>BOOM executions</span></div>
+<div class="card"><b>{scorecard["mutation_detection_rate"]:.0%}</b><span>Mutation detection</span></div>
+<div class="card"><b>{scorecard["repair_clean_rate"]:.0%}</b><span>Repair clean</span></div></div>
+<div class="card"><span>Corpus SHA-256</span><code>{escape(corpus_hash)}</code></div></section>"""
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpecHunter · Verified Agent Loop</title>
@@ -112,6 +162,7 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
 </section>
 <section><h2>Minimal validated witness</h2><div class="card"><p class="witness">{escape(witness)}</p><p>The protected user load remains in the minimized experiment. The finding is explicitly classified as an intentional harness mutation used to prove the end-to-end workflow, not an upstream BOOM vulnerability.</p></div></section>
 <section><h2>Agent and validator timeline</h2><ol class="timeline">{"".join(events)}</ol></section>
+{corpus_section}
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>{report_hash}</code></div><div class="card"><span>Simulator SHA-256</span><code>{simulator_hash}</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{raw_report}</pre></details></section>
 <footer>Generated locally from the sealed SpecHunter report. No network requests or external assets are required.</footer>
@@ -124,4 +175,5 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
         "output": str(output),
         "report_sha256": seal["report_sha256"],
         "simulator_sha256": report.get("provenance", {}).get("simulator_sha256"),
+        "attack_corpus_sha256": corpus_hash,
     }

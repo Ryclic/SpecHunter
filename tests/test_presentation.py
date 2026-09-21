@@ -1,5 +1,6 @@
 import json
 from copy import deepcopy
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -26,6 +27,43 @@ def test_live_evidence_renders_self_contained_demo(tmp_path):
     assert "<script" not in page
 
 
+def test_renderer_adds_hash_bound_attack_corpus(tmp_path):
+    report_path = EVIDENCE / "vertex-boom-demo-2026-09-11.json"
+    simulator = json.loads(report_path.read_text())["provenance"]["simulator_sha256"]
+    scorecard = {
+        "attack_programs": 8,
+        "mutation_detection_rate": 1.0,
+        "repair_clean_rate": 1.0,
+        "inconclusive_programs": 0,
+        "simulator_executions": 64,
+    }
+    corpus = tmp_path / "corpus.json"
+    corpus.write_text(json.dumps({"simulator_sha256": simulator, "scorecard": scorecard}))
+    corpus_seal = tmp_path / "corpus-seal.json"
+    corpus_seal.write_text(
+        json.dumps(
+            {
+                "attack_corpus": corpus.name,
+                "attack_corpus_sha256": sha256(corpus.read_bytes()).hexdigest(),
+                "simulator_sha256": simulator,
+                "scorecard": scorecard,
+            }
+        )
+    )
+    output = tmp_path / "demo.html"
+    result = render(
+        report_path,
+        EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+        output,
+        corpus_path=corpus,
+        corpus_seal_path=corpus_seal,
+    )
+    page = output.read_text()
+    assert "Held-out repair gate" in page
+    assert "100%" in page
+    assert result["attack_corpus_sha256"] == sha256(corpus.read_bytes()).hexdigest()
+
+
 def test_renderer_rejects_tampered_report(tmp_path):
     report = json.loads((EVIDENCE / "vertex-boom-demo-2026-09-11.json").read_text())
     report["metrics"]["executions"] = 0
@@ -43,8 +81,6 @@ def test_renderer_escapes_untrusted_transcript_text(tmp_path):
     candidate = tmp_path / "report.json"
     candidate.write_text(json.dumps(changed))
     seal = json.loads((EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json").read_text())
-    from hashlib import sha256
-
     seal["report"] = candidate.name
     seal["report_sha256"] = sha256(candidate.read_bytes()).hexdigest()
     seal_path = tmp_path / "seal.json"

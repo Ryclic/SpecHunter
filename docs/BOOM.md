@@ -248,6 +248,26 @@ and
 This demonstrates the complete agent workflow on an intentional harness mutation; it is
 not an upstream BOOM vulnerability claim.
 
+## Held-out attack corpus
+
+`tools/boom/run_attack_corpus.py` challenges the closed positive-control repair with eight
+distinct protected-load programs that vary training, encode and squash placement, fences,
+and irrelevant operations. For each program it executes both secret worlds twice under
+the intentional mutation and the repaired harness. The gate succeeds only if all mutated
+programs are repeatable violations and all repaired programs are repeatably clean.
+
+```bash
+tools/boom/run_attack_corpus.py /tmp/boom-attack-corpus.json
+```
+
+The 2026-09-16 run passed all eight programs: 100% mutation detection, 100% repair-clean
+classification, zero inconclusive programs, and 64 total SmallBoomV3 executions. The
+corpus used the same simulator SHA-256 as the privilege gate, positive control, and live
+Vertex loop. `tools/boom/seal_attack_corpus.py` binds the corpus to those earlier artifacts,
+and `spechunter present --corpus ... --corpus-seal ...` verifies the binding before showing
+the scorecard. This is broader evidence for the intentional harness repair; it remains
+neither an upstream BOOM vulnerability nor a proof over unsupported attack programs.
+
 Build the repair in a separate checkout so baseline evidence remains immutable:
 
 ```bash

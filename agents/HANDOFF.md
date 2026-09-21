@@ -219,6 +219,27 @@ six-hour deletion cap, then was explicitly deleted. No Compute Engine instance r
 Local validation passes Ruff, formatting, and 67 tests with one skipped RTL test and one
 deselected CHIA test.
 
+## BOOM held-out attack corpus
+
+`feat/boom-attack-corpus` adds a fail-closed eight-program repair gate. Programs vary
+training, encoding, squash and fence placement, plus irrelevant operations; every one
+retains the protected user load. Each program executes two repetitions in both secret
+worlds under the intentional mutation and the repaired harness. The driver requires every
+mutation to be a deterministic violation and every repair result to be deterministically
+clean, and records runner, program, simulator, and revision provenance.
+
+On 2026-09-16, the live gate passed all eight programs across 64 SmallBoomV3 executions:
+100% mutation detection, 100% repair-clean classification, and zero inconclusive programs.
+The simulator SHA-256 matched all prior live BOOM evidence. A separate seal binds the
+corpus to the positive-control and Vertex-loop artifacts, and the self-contained demo now
+verifies and presents its scorecard. The GCP e2-standard-8 worker had no service account or
+scopes, retained its six-hour deletion cap, and was explicitly deleted with its 200 GB disk
+after evidence recovery; the instance listing was empty.
+
+Local validation passes Ruff, formatting, shell syntax, and 79 tests with one skipped RTL
+test and one deselected CHIA test. Next: broaden timing calibration across seeds and only
+evaluate the source-audited RTL repair after a repeatable pristine-baseline violation.
+
 ## Sealed evidence presentation
 
 `feat/evidence-demo` adds `spechunter present`, which verifies the live report against its
