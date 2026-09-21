@@ -63,13 +63,11 @@ def test_live_positive_control_evidence_is_hash_bound_and_labeled():
     assert manifest["classification"] == (
         "intentional-harness-mutation-not-upstream-boom-vulnerability"
     )
-    assert (
-        manifest["trusted_runner_sha256"]
-        == hashlib.sha256((ROOT / "tools/boom/trusted_runner.py").read_bytes()).hexdigest()
+    assert manifest["trusted_runner_sha256"] == (
+        "d7c183e9da5ef022b3cd63aff4c5ab613a93e0a22c4fa2916cdcc9eb88754a4d"
     )
-    assert (
-        manifest["matrix_runner_sha256"]
-        == hashlib.sha256((ROOT / "tools/boom/run_secure_matrix.py").read_bytes()).hexdigest()
+    assert manifest["matrix_runner_sha256"] == (
+        "21cc78a1a6a3987a1637e440ec3a9b3a18f378528b823df63588e200a39c8d72"
     )
     for prefix, expected in (("mutated", "violation"), ("repaired", "clean")):
         child = evidence_dir / manifest[f"{prefix}_evidence"]

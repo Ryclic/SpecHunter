@@ -3,6 +3,8 @@
 import json
 import shutil
 import tempfile
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from hashlib import sha256
 from importlib.resources import files
@@ -70,6 +72,8 @@ class Backend:
         self._temp = tempfile.TemporaryDirectory(prefix="spechunter-backend-")
         self.directory = Path(self._temp.name)
         self.binary: Path | None = None
+        self._boom_simulator_sha256: str | None = None
+        self._boom_provenance_lock = threading.Lock()
 
     def __enter__(self):
         return self
@@ -93,6 +97,13 @@ class Backend:
         if self.config.kind == "rtl":
             return self._rtl(program, secret, bug)
         return self._boom(program, secret, bug)
+
+    def execute_many(self, program: Program, secrets: list[int], bug: str) -> list[Observation]:
+        """Preserve request order while using independent BOOM simulators concurrently."""
+        if self.config.kind != "boom":
+            return [self.execute(program, secret, bug) for secret in secrets]
+        with ThreadPoolExecutor(max_workers=min(4, len(secrets))) as executor:
+            return list(executor.map(lambda secret: self.execute(program, secret, bug), secrets))
 
     def _rtl(self, program: Program, secret: int, bug: str) -> Observation:
         if self.binary is None:
@@ -174,8 +185,14 @@ class Backend:
                     or data["program_sha256"] != program.digest
                     or data["secret"] != secret
                     or data["variant"] != bug
+                    or not isinstance(data["simulator_sha256"], str)
+                    or len(data["simulator_sha256"]) != 64
                 ):
                     raise ValueError("trace provenance mismatch")
+                with self._boom_provenance_lock:
+                    if self._boom_simulator_sha256 not in {None, data["simulator_sha256"]}:
+                        raise ValueError("simulator provenance changed during experiment")
+                    self._boom_simulator_sha256 = data["simulator_sha256"]
                 return Observation.from_dict(data["observation"])
             except (ValueError, KeyError, TypeError) as exc:
                 raise ExecutionError(f"invalid BOOM trace: {exc}") from exc
@@ -191,4 +208,5 @@ class Backend:
             else None,
             "command": list(self.config.command),
             "is_boom_evidence": self.config.kind == "boom",
+            "simulator_sha256": self._boom_simulator_sha256,
         }

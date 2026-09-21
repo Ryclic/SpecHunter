@@ -182,3 +182,40 @@ account/scopes, and 200 GB disk. It was explicitly deleted after evidence recove
 validation now passes Ruff, formatting, and 58 tests with one skipped RTL test and one
 deselected CHIA test. Next: execute a bounded live Vertex-driven agent loop against this
 positive control and preserve its transcript and cost evidence.
+
+## Vertex-to-BOOM live demo
+
+`feat/vertex-boom-demo` adds a trusted local-to-GCP runner transport. It validates the
+exact request envelope, restricts GCP identifiers, uploads only JSON under a UUID path,
+executes the fixed remote runner, bounds output/time, and cleans the remote request. The
+CLI supports repeated runner arguments so project, zone, instance, an explicit local
+gcloud configuration, and an existing SSH key can be supplied without placing credentials
+on the worker.
+
+BOOM validation now executes four secret worlds concurrently in stable order. Each trusted
+runner response binds the simulator SHA-256; `Backend` rejects a hash change within an
+experiment and records the hash in report provenance. `tools/boom/seal_vertex_demo.py`
+requires a real Vertex/BOOM report with a finding, the closed positive-control repair,
+mandatory retest, attacker exhaustion, matching live-control simulator hash, and a fully
+settled cost ledger before producing final demo evidence. Local boundary tests are in
+place.
+
+On 2026-09-11, the bounded live loop succeeded against the rebuilt pinned SmallBoomV3
+simulator. Gemini proposed a six-operation candidate, BOOM confirmed the intentional
+seeded leak, and the minimizer retained the causal protected-user-load witness
+`enter_user, load_secret, probe`. The repair agent selected only the closed
+`remove-seeded-cache-leak` repair; the orchestrator retested the identical witness clean,
+returned to the attacker, and recorded exhaustion. The final report has 28 BOOM executions,
+four Vertex calls, zero inconclusive cases, and $0.0006038 accounted cost. Its report,
+settled ledger, and hash seal are checked into `docs/evidence/`.
+
+The live run exposed two integration defects before final evidence: minimization could
+remove the protected load from a positive-control witness, and the sanitized subprocess
+home caused concurrent gcloud sessions to race while creating SSH keys. The minimizer and
+trusted runner now require the protected load, and the transport requires an explicit
+existing SSH identity. Both failures were closed and covered by regression tests. The
+worker ran from approximately 17:53 to 18:34 UTC with no service account/scopes and a
+six-hour deletion cap, then was explicitly deleted. No Compute Engine instance remains.
+Local validation passes Ruff, formatting, and 67 tests with one skipped RTL test and one
+deselected CHIA test. Next: package the live transcript into a concise hackathon demo view
+and expand the bounded attacker corpus beyond the positive control.

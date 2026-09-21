@@ -24,8 +24,11 @@ def validate(
             return Validation("inconclusive", "secret load outside user threat model", ())
     observations = []
     try:
-        for _ in range(repeats):
-            for secret in (0, 1):
+        secrets = [secret for _ in range(repeats) for secret in (0, 1)]
+        if hasattr(backend, "execute_many"):
+            observations.extend(backend.execute_many(program, secrets, bug or benchmark.bug))
+        else:
+            for secret in secrets:
                 observations.append(backend.execute(program, secret, bug or benchmark.bug))
     except (ExecutionError, ValueError) as exc:
         return Validation("inconclusive", str(exc), tuple(observations))
@@ -80,6 +83,8 @@ def minimize(
         changed = False
         for i in range(len(program.ops)):
             candidate = Program(program.ops[:i] + program.ops[i + 1 :])
+            if benchmark.id == "boom-positive-control" and Op.LOAD_SECRET not in candidate.ops:
+                continue
             if validate(backend, candidate, benchmark, bug=bug).violation:
                 program, changed = candidate, True
                 break
