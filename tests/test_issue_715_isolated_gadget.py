@@ -91,7 +91,6 @@ def test_diagnostic_refuses_simulator_without_waveform_support(monkeypatch):
 @pytest.mark.parametrize(
     ("suffix", "trace"),
     [
-        (".json", False),
         (".log", False),
         (".loadmem.hex", False),
         (".vcd", True),
@@ -107,6 +106,16 @@ def test_runner_refuses_to_overwrite_any_existing_artifact(tmp_path, suffix, tra
         RUNNER.require_fresh_artifact_paths(output, trace=trace)
 
     assert existing.read_text() == "preserve me"
+
+
+def test_runner_checks_exact_evidence_path_with_non_json_suffix(tmp_path):
+    output = tmp_path / "diagnostic.record"
+    output.write_text("preserve me")
+
+    with pytest.raises(RuntimeError, match="artifact path already exists"):
+        RUNNER.require_fresh_artifact_paths(output, trace=False)
+
+    assert output.read_text() == "preserve me"
 
 
 def test_diagnostic_witness_is_scanned_and_bound_to_raw_waveform(tmp_path):

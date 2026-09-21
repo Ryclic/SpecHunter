@@ -66,14 +66,10 @@ def require_waveform_support(simulator: Path) -> None:
 
 def require_fresh_artifact_paths(output: Path, *, trace: bool) -> None:
     """Prevent a run from mixing with or overwriting evidence from an earlier run."""
-    suffixes = [".json", ".log", ".loadmem.hex"]
+    paths = [output, output.with_suffix(".log"), output.with_suffix(".loadmem.hex")]
     if trace:
-        suffixes.extend([".vcd", ".witness.json"])
-    existing = [
-        str(output.with_suffix(suffix))
-        for suffix in suffixes
-        if output.with_suffix(suffix).exists()
-    ]
+        paths.extend([output.with_suffix(".vcd"), output.with_suffix(".witness.json")])
+    existing = [str(path) for path in paths if path.exists()]
     if existing:
         raise RuntimeError(
             "diagnostic artifact path already exists; choose a fresh output: " + ", ".join(existing)
