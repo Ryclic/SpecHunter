@@ -32,3 +32,8 @@
    simulator. The result was deterministic and clean, so no repair was activated and the
    seal explicitly records that neither a vulnerability nor fix was validated. Reproducing
    the exact historical revision or assessing another known bug remains future work.
+8. **Completed historical assessment 2026-09-17:** built the exact reported Chipyard/BOOM
+   revisions in a hash-pinned environment and ran the fixed issue #715 adaptation twice per
+   secret. All four executions returned probe bit zero. The sealed deterministic-clean
+   result does not reproduce the upstream report and therefore does not validate a repair.
+   Executing the original stripped Cascade attachment or another source-backed bug remains.

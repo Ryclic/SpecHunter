@@ -329,3 +329,37 @@ binds the upstream provenance, reviewed runner, reproduced baseline simulator, a
 It records `vulnerability_reproduced: false` and `security_fix_validated: false`. This
 narrows the evidence gap but does not prove the current revision immune to other issue #715
 programs or transient attacks.
+
+## Exact historical issue #715 experiment
+
+The next gate targets the revisions named in the upstream report rather than treating the
+current-pin negative result as conclusive. `historical_pins.env` binds Chipyard
+`004297b6…`, BOOM `fac2c370…`, `SmallBoomConfig`, the pristine and repaired LSU sources,
+the reviewed two-line repair diff, and the historical Miniforge installer by SHA-256.
+`bootstrap_historical_issue_715.sh` creates this environment from the checked-in Chipyard
+lockfile. It refuses an existing destination and verifies both Git revisions and the
+pristine source before returning.
+
+The historical runner accepts only the fixed issue #715 program, binary secret values, and
+the baseline or reviewed-repair IDs. Before executing it verifies the exact source-tree
+state and a build manifest binding the variant, revisions, source, configuration, and
+simulator binary. Run the repeatability gate with:
+
+```bash
+tools/boom/run_historical_issue_715.py \
+  historical-issue-715-baseline \
+  /absolute/path/historical-baseline.json
+```
+
+Build and test the repair only if that baseline produces a repeatable secret-dependent
+observation. A clean or unstable baseline cannot validate the patch.
+
+On 2026-09-17 the exact historical simulator built successfully in 685 seconds. Four live
+executions produced probe sequences `[0, 0]` for both secret worlds, so the result is
+deterministic and clean for this adaptation. The repair was not built because that would
+not establish a security delta. The checked seal independently derives this classification
+from the raw observations, cross-checks the source, runner, simulator, and revision
+provenance, and records both `vulnerability_reproduced` and `security_fix_validated` as
+false. The worker and its disk were deleted after recovered hashes matched the remote
+artifacts. See
+[`boom-issue-715-historical-seal-2026-09-17.json`](evidence/boom-issue-715-historical-seal-2026-09-17.json).
