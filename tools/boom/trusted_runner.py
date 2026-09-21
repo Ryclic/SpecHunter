@@ -65,7 +65,24 @@ def validate_install(chipyard: Path, pins: dict[str, str], variant: str) -> str:
         raise RunnerError("installed Chipyard/BOOM revisions do not match pins.env")
     lsu = boom / "src/main/scala/v3/lsu/lsu.scala"
     source_digest = hashlib.sha256(lsu.read_bytes()).hexdigest()
-    status = git_output(boom, "status", "--porcelain", "--untracked-files=all")
+    # Porcelain status uses its leading column to distinguish index changes from
+    # working-tree changes. Preserve that column while removing only line endings.
+    status = subprocess.run(
+        [
+            "git",
+            "-c",
+            f"safe.directory={boom}",
+            "-C",
+            str(boom),
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=True,
+    ).stdout.rstrip("\r\n")
     if variant in {"none", POSITIVE_CONTROL_VARIANT, POSITIVE_CONTROL_REPAIR}:
         if status or source_digest != pins["BOOM_LSU_SHA256"]:
             raise RunnerError("baseline BOOM tree is not pristine reviewed source")

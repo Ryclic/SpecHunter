@@ -67,6 +67,16 @@ calls under a $0.01 ledger and accounted for $0.0005130. CHIA 1.0.1 executed the
 agent node on an owned local Ray 2.54.0 runtime; no CHIA or Compute Engine cluster was
 created. The report, ledger, adapter-source binding, and seal are under `docs/evidence/`.
 
+The candidate RTL repair gate used one identically constrained e2-standard-8 worker on
+2026-09-16. The pristine smoke build completed in 700 seconds and reproduced simulator
+SHA-256 `230de62a…cfcaa8`. The isolated patched build completed in 329 seconds and produced
+distinct simulator SHA-256 `fd4a264c…179c3`. Eight repaired-target executions then passed
+the architectural-denial and transient-window matrices deterministically. A fail-closed
+runner check exposed and prompted a tested fix for preservation of Git porcelain's leading
+status column before the successful matrix. All raw artifacts were recovered and sealed;
+the worker and 200 GB disk were explicitly deleted, and the subsequent instance listing
+was empty.
+
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;
 record region, machine/model, maximum duration/tokens, disk/storage costs and a

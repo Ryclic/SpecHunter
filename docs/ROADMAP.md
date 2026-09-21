@@ -14,7 +14,13 @@
    Gemini 2.5 Flash-Lite fixture-loop repeatability gate now passes 10/10 with sealed
    transcripts and costs. Persistent reservations, dated prices, output limits, and
    bounded retries are implemented; delayed Cloud Billing reconciliation remains.
-4. Replace fixture mitigation selection with actual RTL patch generation and target regressions.
+4. **Completed for the source-reviewed candidate 2026-09-16:** build the exact LSU patch
+   in an isolated checkout and run eight target-regression executions on the distinct
+   repaired simulator. Both scenarios were deterministic and clean. The sealed result is
+   deliberately classified as build/regression evidence rather than a validated security
+   fix because the pristine baseline had no repeatable violation to eliminate. Actual
+   synthesis of a new patch from model output and a baseline-to-repaired security delta
+   remain future work.
 5. **Completed locally 2026-09-16:** execute the real Vertex agent loop through the pinned
    CHIA node on an owned Ray runtime and seal dependency, transcript, repair, and cost
    provenance. Multi-worker CHIA deployment remains future work; no cluster is provisioned.

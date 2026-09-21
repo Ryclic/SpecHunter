@@ -149,6 +149,32 @@ before the worker and disk were explicitly deleted. Next: add a clearly labeled 
 mutation as a positive control, expand attacker programs, and only build a repaired target
 after a repeatable baseline violation exists.
 
+## Candidate BOOM RTL build and target regression
+
+`feat/boom-rtl-repair-build` closes the build/regression portion of the candidate LSU
+repair roadmap. A live e2-standard-8 worker rebuilt the pristine pinned simulator, then
+`build_repair_variant.sh` applied only the reviewed load-fault gate in an isolated checkout
+and produced a distinct SmallBoomV3 binary. The repaired binary completed both secure
+matrix scenarios twice per secret: eight deterministic clean executions with the expected
+load-access fault, no architectural secret value, and probe bit zero.
+
+The live run exposed a fail-closed parser defect: `.strip()` removed Git porcelain's
+leading working-tree status column, causing the exact repaired source to be rejected.
+The runner now removes only line endings, and a temporary-repository regression test
+exercises the real status format. The checked seal recomputes hashes across the baseline
+smoke, prior baseline matrix, repair build manifest, and repaired matrix. It explicitly
+sets `security_fix_validated: false`; these results validate the candidate's buildability
+and target behavior but cannot prove a security fix because pristine BOOM had no repeatable
+violation.
+
+Evidence is in `docs/evidence/boom-repair-baseline-smoke-2026-09-16.json`,
+`boom-load-gate-build-2026-09-16.json`, `boom-load-gate-matrix-2026-09-16.json`, and
+`boom-load-gate-regression-seal-2026-09-16.json`. The worker and disk were deleted and the
+post-deletion instance list was empty. Full validation passes Ruff, formatting, shell
+syntax, and 97 tests with one skipped RTL-dependent test and one deselected CHIA test.
+Next: pursue a repeatable baseline witness or a known vulnerable BOOM revision before
+claiming repair efficacy.
+
 ## BOOM seeded positive control
 
 `feat/boom-positive-control` adds an intentionally vulnerable harness variant,

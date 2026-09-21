@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "variant": "gate-faulting-loads",
+  "chipyard_revision": "0acc1e1de2d3284bcd4d876956932a013ffe1949",
+  "boom_revision": "5223e44cfeb26f41380057a2eb4d651197475f69",
+  "config": "SmallBoomV3Config",
+  "lsu_source_sha256": "c6099e3a2e0a222dc4b77a747a23ecc3a8635fba3736d703a62569f43d9cdee7",
+  "patch_sha256": "aacee831e6ed999e406805e7a0de8e29b3ba478b847cadaf61f4e4e90c64df28",
+  "simulator_sha256": "fd4a264c1499cb2c3614cf05de4533e3b31ce2d921650452bca59072e55179c3",
+  "elapsed_seconds": 329,
+  "completed_at": "2026-09-16T19:03:40.333947+00:00"
+}
