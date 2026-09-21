@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "target": "boom",
+  "chipyard_revision": "0acc1e1de2d3284bcd4d876956932a013ffe1949",
+  "boom_revision": "5223e44cfeb26f41380057a2eb4d651197475f69",
+  "config": "SmallBoomV3Config",
+  "verilator_version": "Verilator 5.022 2024-02-24 rev conda-forge build 1",
+  "riscv_gcc_version": "riscv64-unknown-elf-gcc (gc891d8dc23e) 13.2.0",
+  "simulator_sha256": "ba62c99825e7e4d2fc0688960b580e3a861cbd2361c783bd1d71978e2d5e3fa0",
+  "payload_sha256": "94ef8cb374a061653cccdb62b96c3a0b85b9951ea3803155497757649c394402",
+  "smoke_log_sha256": "3f4201c35d3d03f0fddbeaf547e4e74997c2541e62f3b350f332891033075d45",
+  "elapsed_seconds": 84,
+  "completed_at": "2026-09-10T08:14:16.382642+00:00"
+}
