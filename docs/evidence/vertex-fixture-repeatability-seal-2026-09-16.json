@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "experiment": "vertex-agent-loop-repeatability",
+  "classification": "model-fixture-repeatability-not-real-boom-evidence",
+  "evidence": "vertex-fixture-repeatability-2026-09-16.json",
+  "evidence_sha256": "58cf287c48a7a419018a01fac97641051f3c086cd8398798636a6ace31879d38",
+  "cost_ledger": "vertex-fixture-repeatability-cost-2026-09-16.json",
+  "cost_ledger_sha256": "5528c5dfae5e2a78dac4f4f11179a52332491ef4f2e9c930b8e43133e9bda4d7",
+  "model": "gemini-2.5-flash-lite",
+  "trials": 10,
+  "llm_calls": 40,
+  "accounted_usd": "0.0053752"
+}

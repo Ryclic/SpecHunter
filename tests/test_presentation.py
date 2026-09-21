@@ -79,6 +79,22 @@ def test_renderer_adds_sealed_fixture_comparison(tmp_path):
     assert result["evaluation_sha256"]
 
 
+def test_renderer_adds_sealed_vertex_repeatability(tmp_path):
+    output = tmp_path / "demo.html"
+    result = render(
+        EVIDENCE / "vertex-boom-demo-2026-09-11.json",
+        EVIDENCE / "vertex-boom-demo-seal-2026-09-11.json",
+        output,
+        repeatability_path=EVIDENCE / "vertex-fixture-repeatability-2026-09-16.json",
+        repeatability_seal_path=(EVIDENCE / "vertex-fixture-repeatability-seal-2026-09-16.json"),
+    )
+    page = output.read_text()
+    assert "LLM loop repeatability" in page
+    assert "10/10" in page
+    assert "$0.0053752" in page
+    assert result["repeatability_sha256"]
+
+
 def test_renderer_rejects_tampered_report(tmp_path):
     report = json.loads((EVIDENCE / "vertex-boom-demo-2026-09-11.json").read_text())
     report["metrics"]["executions"] = 0
