@@ -110,6 +110,22 @@ def _load_repeatability(evidence_path: Path, seal_path: Path) -> dict:
     return evidence
 
 
+def _load_chia(evidence_path: Path, seal_path: Path) -> dict:
+    evidence_path = evidence_path.resolve()
+    evidence = _read(evidence_path)
+    seal = _read(seal_path.resolve())
+    if seal.get("report") != evidence_path.name or seal.get("report_sha256") != _digest(
+        evidence_path
+    ):
+        raise PresentationError("CHIA evidence does not match its seal")
+    expected = evidence.get("orchestration", {})
+    if seal.get("orchestration") != expected or expected.get("engine") != "chia":
+        raise PresentationError("CHIA orchestration provenance differs")
+    if evidence.get("metrics", {}).get("repairs_attacker_exhausted") != 1:
+        raise PresentationError("CHIA agent loop is incomplete")
+    return evidence
+
+
 def render(
     report_path: Path,
     seal_path: Path,
@@ -121,6 +137,8 @@ def render(
     evaluation_seal_path: Path | None = None,
     repeatability_path: Path | None = None,
     repeatability_seal_path: Path | None = None,
+    chia_path: Path | None = None,
+    chia_seal_path: Path | None = None,
 ) -> dict:
     report_path = report_path.resolve()
     seal_path = seal_path.resolve()
@@ -207,6 +225,20 @@ def render(
 <div class="card"><b>{repeated["llm_calls"]}</b><span>Gemini calls</span></div>
 <div class="card"><b>{repeated["fixture_executions"]}</b><span>Fixture executions</span></div>
 <div class="card"><b>${repeatability["cost"]["accounted_usd"]}</b><span>Accounted cost</span></div></div></section>"""
+    chia_section = ""
+    chia_hash = None
+    if chia_path is not None or chia_seal_path is not None:
+        if chia_path is None or chia_seal_path is None:
+            raise PresentationError("CHIA evidence and seal must be supplied together")
+        chia = _load_chia(chia_path, chia_seal_path)
+        chia_hash = _digest(chia_path)
+        orchestration = chia["orchestration"]
+        chia_section = f"""<section><h2>Executed through CHIA</h2>
+<p>The same nested Vertex workflow ran through the decorated CHIA node on an owned local Ray runtime.</p>
+<div class="grid"><div class="card"><b>{escape(orchestration["chialoops_version"])}</b><span>CHIA version</span></div>
+<div class="card"><b>{escape(orchestration["ray_version"])}</b><span>Ray version</span></div>
+<div class="card"><b>{chia["metrics"]["llm_calls"]}</b><span>Gemini calls</span></div>
+<div class="card"><b>Yes</b><span>Attacker exhausted</span></div></div></section>"""
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpecHunter · Verified Agent Loop</title>
@@ -240,6 +272,7 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
 {corpus_section}
 {evaluation_section}
 {repeatability_section}
+{chia_section}
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>{report_hash}</code></div><div class="card"><span>Simulator SHA-256</span><code>{simulator_hash}</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{raw_report}</pre></details></section>
 <footer>Generated locally from the sealed SpecHunter report. No network requests or external assets are required.</footer>
@@ -255,4 +288,5 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
         "attack_corpus_sha256": corpus_hash,
         "evaluation_sha256": evaluation_hash,
         "repeatability_sha256": repeatability_hash,
+        "chia_evidence_sha256": chia_hash,
     }

@@ -15,7 +15,9 @@
    transcripts and costs. Persistent reservations, dated prices, output limits, and
    bounded retries are implemented; delayed Cloud Billing reconciliation remains.
 4. Replace fixture mitigation selection with actual RTL patch generation and target regressions.
-5. Validate distributed CHIA execution on local workers before considering GCP workers.
+5. **Completed locally 2026-09-16:** execute the real Vertex agent loop through the pinned
+   CHIA node on an owned Ray runtime and seal dependency, transcript, repair, and cost
+   provenance. Multi-worker CHIA deployment remains future work; no cluster is provisioned.
 6. **Completed for deterministic fixtures 2026-09-16:** compare guided search with 1,000
    random seeds, record per-seed trials, false positives, attempts and executions, and
    report Wilson intervals. Multi-seed LLM evaluation and additional known BOOM bugs remain.

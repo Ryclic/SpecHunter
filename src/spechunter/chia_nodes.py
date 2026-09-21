@@ -1,6 +1,7 @@
 """Optional CHIA node; local invocation does not create a cluster."""
 
 from decimal import Decimal
+from importlib.metadata import version
 from pathlib import Path
 
 from chia.base.ChiaFunction import ChiaFunction
@@ -9,6 +10,18 @@ from spechunter.agent_loop import agent_experiment
 from spechunter.agents import VertexAgentProvider
 from spechunter.backends import BackendConfig
 from spechunter.loop import experiment
+
+
+def _orchestration(node: str) -> dict:
+    import ray
+
+    return {
+        "engine": "chia",
+        "execution": "local-ray",
+        "node": node,
+        "chialoops_version": version("chialoops"),
+        "ray_version": ray.__version__,
+    }
 
 
 @ChiaFunction(num_cpus=1, max_retries=0)
@@ -41,7 +54,9 @@ def run_local(
                 include_dashboard=False,
                 object_store_memory=80 * 1024 * 1024,
             )
-        return run_experiment(config, strategy, iterations, seed, benchmark_id)
+        report = run_experiment(config, strategy, iterations, seed, benchmark_id)
+        report["orchestration"] = _orchestration("run_experiment")
+        return report
     finally:
         if owned:
             ray.shutdown()
@@ -105,7 +120,7 @@ def run_agent_local(
                 include_dashboard=False,
                 object_store_memory=80 * 1024 * 1024,
             )
-        return run_agent_experiment(
+        report = run_agent_experiment(
             config,
             project,
             location,
@@ -120,6 +135,8 @@ def run_agent_local(
             retries,
             benchmark_id,
         )
+        report["orchestration"] = _orchestration("run_agent_experiment")
+        return report
     finally:
         if owned:
             ray.shutdown()

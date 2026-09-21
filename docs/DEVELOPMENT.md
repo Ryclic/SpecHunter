@@ -25,6 +25,11 @@ installed. No cluster is provisioned by this project. See the official
 [ChiaFunction guide](https://docs.chialoops.ai/en/latest/user_guides/chia_function.html).
 Remote execution is an integration surface, not a validated cloud deployment.
 
+The live local integration artifact in `docs/evidence/chia-vertex-loop-2026-09-16.json`
+records CHIA 1.0.1, Ray 2.54.0, the decorated `run_agent_experiment` node, the complete
+Vertex discovery/repair transcript, and its settled cost. This validates local CHIA
+orchestration only; it does not claim a distributed cluster run.
+
 ## LLM agent loop
 
 Install the `vertex` extra, configure Google Application Default Credentials, and pass

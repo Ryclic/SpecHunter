@@ -62,6 +62,11 @@ $0.0053752; all ten trials completed discovery, repair, mandatory retest, and at
 exhaustion. This evaluation used no Compute Engine resource. Its transcript, ledger, and
 seal are under `docs/evidence/`; delayed Cloud Billing remains authoritative for charges.
 
+The local CHIA integration run on 2026-09-16 made four additional Gemini 2.5 Flash-Lite
+calls under a $0.01 ledger and accounted for $0.0005130. CHIA 1.0.1 executed the decorated
+agent node on an owned local Ray 2.54.0 runtime; no CHIA or Compute Engine cluster was
+created. The report, ledger, adapter-source binding, and seal are under `docs/evidence/`.
+
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;
 record region, machine/model, maximum duration/tokens, disk/storage costs and a
