@@ -1,10 +1,26 @@
 # SpecHunter
 
-A local-first foundation for reproducible microarchitectural security experiments.
-The default recon → attack → validate → minimize → repair loop uses deterministic
-hypotheses and small seeded security fixtures. An optional Vertex AI integration runs
-the proposal's agent stages with bounded, structured LLM calls. Neither mode by itself
-is a BOOM vulnerability discovery result or a complete Chipyard integration.
+An LLM-driven microarchitectural security system that attacks a real RISC-V BOOM RTL
+simulation, validates observations, minimizes a witness, selects a bounded repair, and
+returns to the attacker until the supported search is exhausted.
+
+The sealed live demonstration used Gemini 2.5 Flash-Lite and 28 SmallBoomV3 executions
+to discover and repair an intentional cache-leak positive control. Open the
+[self-contained evidence demo](docs/demo.html), or inspect the hash-bound report and
+cost ledger in [`docs/evidence/`](docs/evidence/). The positive control proves the full
+workflow; it is explicitly not an upstream BOOM vulnerability claim.
+
+Generate the presentation locally from its sealed evidence:
+
+```bash
+uv run spechunter present \
+  --input docs/evidence/vertex-boom-demo-2026-09-11.json \
+  --seal docs/evidence/vertex-boom-demo-seal-2026-09-11.json \
+  --output artifacts/demo.html
+```
+
+The default local mode uses deterministic hypotheses and small security fixtures. Vertex
+AI and real BOOM execution are optional, bounded integrations.
 
 ## Run
 

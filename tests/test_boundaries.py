@@ -1,5 +1,6 @@
 import json
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -73,6 +74,27 @@ def test_cli_llm_requires_explicit_model(monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", ["spechunter", "run", "--strategy", "llm"])
     assert main() == 2
     assert "--llm-model is required" in capsys.readouterr().err
+
+
+def test_cli_presents_sealed_live_evidence(tmp_path, monkeypatch):
+    root = Path(__file__).parents[1]
+    output = tmp_path / "demo.html"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "spechunter",
+            "present",
+            "--input",
+            str(root / "docs/evidence/vertex-boom-demo-2026-09-11.json"),
+            "--seal",
+            str(root / "docs/evidence/vertex-boom-demo-seal-2026-09-11.json"),
+            "--output",
+            str(output),
+        ],
+    )
+    assert main() == 0
+    assert "Cryptographically sealed evidence" in output.read_text()
 
 
 def test_cli_boom_defaults_to_secure_control_and_long_timeout(tmp_path, monkeypatch):
