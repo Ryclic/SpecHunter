@@ -38,6 +38,12 @@ def test_request_validation_accepts_only_pinned_secure_control(tmp_path):
     assert validate(tmp_path, request(variant="gate-faulting-loads"))["variant"] == (
         "gate-faulting-loads"
     )
+    assert validate(tmp_path, request(variant="seeded-cache-leak"))["variant"] == (
+        "seeded-cache-leak"
+    )
+    assert validate(tmp_path, request(variant="remove-seeded-cache-leak"))["variant"] == (
+        "remove-seeded-cache-leak"
+    )
     for change in (
         {"variant": "transient"},
         {"target_revision": "other"},
@@ -85,6 +91,16 @@ def test_candidate_is_fixed_instruction_translation():
     assert "sltu t2, t2, t4" in assembly
 
 
+def test_positive_control_seeds_cache_only_in_explicit_mutated_variant():
+    program = ["enter_user", "load_secret", "probe"]
+    mutated = RUNNER.render_candidate(program, 1, "seeded-cache-leak")
+    repaired = RUNNER.render_candidate(program, 1, "remove-seeded-cache-leak")
+    marker = "Explicit positive-control mutation"
+    assert marker in mutated
+    assert marker not in repaired
+    assert mutated.count("lbu zero, 0(t0)") == repaired.count("lbu zero, 0(t0)") + 1
+
+
 def test_runner_requires_complete_pin_set(tmp_path):
     pins = tmp_path / "pins.env"
     pins.write_text("CHIPYARD_REVISION=abc\nBOOM_CONFIG=SmallBoomV3Config\n")
@@ -108,6 +124,28 @@ def test_htif_exit_code_is_a_bounded_probe_observation(tmp_path, monkeypatch):
     }
     with pytest.raises(RUNNER.RunnerError, match="exited 2"):
         RUNNER.run_htif_observation(["executor"], tmp_path, {}, 1, has_load=True, has_probe=False)
+
+
+def test_boom_htif_probe_one_requires_exact_failure_markers(tmp_path, monkeypatch):
+    output = b"*** FAILED *** (exit code =          2)\n*** FAILED *** (tohost = 2)\n"
+    monkeypatch.setattr(
+        RUNNER.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=255, stdout=output, stderr=b""),
+    )
+    observation = RUNNER.run_htif_observation(
+        ["executor"], tmp_path, {}, 1, has_load=True, has_probe=True
+    )
+    assert observation["probes"] == [1]
+    monkeypatch.setattr(
+        RUNNER.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=255, stdout=b"*** FAILED *** (exit code = 10)\n", stderr=b""
+        ),
+    )
+    with pytest.raises(RUNNER.RunnerError, match="exited 255"):
+        RUNNER.run_htif_observation(["executor"], tmp_path, {}, 1, has_load=True, has_probe=True)
 
 
 def test_repaired_build_manifest_binds_simulator(tmp_path):

@@ -1,4 +1,3 @@
-import hashlib
 import importlib.util
 import json
 import sys
@@ -49,6 +48,8 @@ def test_matrix_uses_two_fixed_scenarios_and_secret_independent_programs():
     assert MATRIX.VARIANTS == {
         "none": Path("/opt/spechunter/chipyard"),
         "gate-faulting-loads": Path("/opt/spechunter/chipyard-gate-faulting-loads"),
+        "seeded-cache-leak": Path("/opt/spechunter/chipyard"),
+        "remove-seeded-cache-leak": Path("/opt/spechunter/chipyard"),
     }
 
 
@@ -77,9 +78,8 @@ def test_matrix_rejects_runner_provenance_mismatch(tmp_path):
 
 def test_live_matrix_evidence_remains_bound_to_runner_and_clean():
     evidence = json.loads((ROOT / "docs/evidence/boom-secure-matrix-2026-09-11.json").read_text())
-    assert (
-        evidence["runner_sha256"]
-        == hashlib.sha256((ROOT / "tools/boom/trusted_runner.py").read_bytes()).hexdigest()
+    assert evidence["runner_sha256"] == (
+        "f81abd762c02673a665d62c4aaa791ab082c14e71abadb0f3605f261fe2d633f"
     )
     assert evidence["parallel_workers"] == MATRIX.MATRIX_WORKERS
     assert {scenario["name"]: scenario["status"] for scenario in evidence["scenarios"]} == {

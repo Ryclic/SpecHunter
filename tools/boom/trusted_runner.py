@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -17,6 +18,8 @@ MAX_OUTPUT = 1_048_576
 CHIPYARD = Path("/opt/spechunter/chipyard")
 REPAIRED_CHIPYARD = Path("/opt/spechunter/chipyard-gate-faulting-loads")
 REPAIR_VARIANT = "gate-faulting-loads"
+POSITIVE_CONTROL_VARIANT = "seeded-cache-leak"
+POSITIVE_CONTROL_REPAIR = "remove-seeded-cache-leak"
 
 
 class RunnerError(RuntimeError):
@@ -63,7 +66,7 @@ def validate_install(chipyard: Path, pins: dict[str, str], variant: str) -> str:
     lsu = boom / "src/main/scala/v3/lsu/lsu.scala"
     source_digest = hashlib.sha256(lsu.read_bytes()).hexdigest()
     status = git_output(boom, "status", "--porcelain", "--untracked-files=all")
-    if variant == "none":
+    if variant in {"none", POSITIVE_CONTROL_VARIANT, POSITIVE_CONTROL_REPAIR}:
         if status or source_digest != pins["BOOM_LSU_SHA256"]:
             raise RunnerError("baseline BOOM tree is not pristine reviewed source")
     elif variant == REPAIR_VARIANT:
@@ -120,7 +123,12 @@ def validate_request(path: Path, target_revision: str) -> dict:
         raise RunnerError("program digest mismatch")
     if type(request["secret"]) is not int or request["secret"] not in (0, 1):
         raise RunnerError("secret must be 0 or 1")
-    if request["variant"] not in {"none", REPAIR_VARIANT}:
+    if request["variant"] not in {
+        "none",
+        REPAIR_VARIANT,
+        POSITIVE_CONTROL_VARIANT,
+        POSITIVE_CONTROL_REPAIR,
+    }:
         raise RunnerError("unsupported BOOM source variant")
     if request["target_revision"] != target_revision:
         raise RunnerError("target revision mismatch")
@@ -136,7 +144,7 @@ def validate_request(path: Path, target_revision: str) -> dict:
     return request
 
 
-def render_candidate(program: list[str], secret: int) -> str:
+def render_candidate(program: list[str], secret: int, variant: str = "none") -> str:
     snippets = {
         "nop": ["  nop"],
         "train": [
@@ -195,6 +203,15 @@ def render_candidate(program: list[str], secret: int) -> str:
         "  csrw mcounteren, t0",
         "  csrw scounteren, t0",
     ]
+    if variant == POSITIVE_CONTROL_VARIANT:
+        lines += [
+            "  # Explicit positive-control mutation: seed secret-selected public cache state.",
+            "  la t0, probe_lines",
+            f"  li t1, {secret}",
+            "  slli t1, t1, 6",
+            "  add t0, t0, t1",
+            "  lbu zero, 0(t0)",
+        ]
     load_index = program.index("load_secret") if "load_secret" in program else None
     fault_resume_after = load_index
     if load_index is not None:
@@ -294,12 +311,17 @@ def run_htif_observation(
     output = result.stdout + result.stderr
     if len(output) > MAX_OUTPUT:
         raise RunnerError("executor output limit exceeded")
-    if result.returncode not in ({0, 2} if has_probe else {0}):
+    boom_probe_one = result.returncode == 255 and bool(
+        re.search(rb"\*\*\* FAILED \*\*\* \(exit code =\s*2\)", output)
+        and re.search(rb"\*\*\* FAILED \*\*\* \(tohost = 2\)", output)
+    )
+    probe_one = result.returncode == 2 or boom_probe_one
+    if result.returncode != 0 and not (has_probe and probe_one):
         text = output.decode(errors="replace")
         raise RunnerError(f"executor exited {result.returncode}: {text[-2000:]}")
     return {
         "architectural": [],
-        "probes": [int(result.returncode == 2)] if has_probe else [],
+        "probes": [int(probe_one)] if has_probe else [],
         "events": ["load-access-fault"] if has_load else [],
         "completed": True,
     }
@@ -353,7 +375,9 @@ def execute(
         env["HOME"] = str(work)
         candidate = work / "candidate.S"
         payload = work / "candidate.riscv"
-        candidate.write_text(render_candidate(request["program"], request["secret"]))
+        candidate.write_text(
+            render_candidate(request["program"], request["secret"], request["variant"])
+        )
         compiler = riscv / "bin/riscv64-unknown-elf-gcc"
         test_environment = chipyard / "toolchains/riscv-tools/riscv-tests/env"
         run_bounded(

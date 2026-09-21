@@ -30,6 +30,8 @@ MAX_RUNNER_OUTPUT = 1_048_576
 VARIANTS = {
     "none": Path("/opt/spechunter/chipyard"),
     "gate-faulting-loads": Path("/opt/spechunter/chipyard-gate-faulting-loads"),
+    "seeded-cache-leak": Path("/opt/spechunter/chipyard"),
+    "remove-seeded-cache-leak": Path("/opt/spechunter/chipyard"),
 }
 
 
@@ -120,7 +122,8 @@ def main() -> int:
             or (len(sys.argv) == 3 and sys.argv[2] not in VARIANTS)
         ):
             raise MatrixError(
-                "usage: run_secure_matrix.py /ABSOLUTE/evidence.json [none|gate-faulting-loads]"
+                "usage: run_secure_matrix.py /ABSOLUTE/evidence.json "
+                "[none|gate-faulting-loads|seeded-cache-leak|remove-seeded-cache-leak]"
             )
         evidence_path = Path(sys.argv[1])
         variant = sys.argv[2] if len(sys.argv) == 3 else "none"

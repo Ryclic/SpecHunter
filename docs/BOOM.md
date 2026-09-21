@@ -168,6 +168,38 @@ regressions pass.
 The clean baseline matrix did not trigger that repair gate, so no patched simulator was
 built and the candidate remains unapplied and unverified.
 
+## Seeded positive control
+
+`boom-positive-control` is an intentional harness mutation for demonstrating the complete
+discovery and repair loop on real BOOM. The closed `seeded-cache-leak` variant accesses a
+secret-selected public probe line in machine mode before entering the attacker context.
+The protected user load must still fault, so the only expected difference is the later
+cache observation. This is not an upstream BOOM vulnerability and does not alter BOOM RTL.
+
+The closed repair ID `remove-seeded-cache-leak` removes only that seeded access while
+retaining the identical pinned simulator, program, protected-load fault, and observer.
+The LLM repair agent may select it only for `boom-positive-control`. The orchestrator then
+retests the minimized witness and returns to the attacker until exhaustion, using the same
+nested repair loop as real candidate patches.
+
+Run the evidence gate after building the pinned simulator:
+
+```bash
+tools/boom/run_positive_control.py /tmp/boom-positive-control.json
+```
+
+The driver requires both fixed scenarios to be deterministic violations under the mutated
+variant and deterministic clean results under the repaired variant. It cross-checks the
+Chipyard revision, BOOM revision, configuration, simulator hash, repeat count, and program
+hashes, then binds both child matrices into one manifest.
+
+The live 2026-09-11 gate passed all requirements. In both scenarios, the mutated secret
+worlds repeated `[1], [0], [1], [0]`; after repair they repeated `[0], [0], [0], [0]`.
+Every execution retained the expected protected-load fault and no architectural secret
+value. Both halves used simulator SHA-256 `230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8`,
+which is also the independently validated privilege-gate binary. The manifest is
+[`docs/evidence/boom-positive-control.json`](evidence/boom-positive-control.json).
+
 Build the repair in a separate checkout so baseline evidence remains immutable:
 
 ```bash

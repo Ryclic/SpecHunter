@@ -34,6 +34,13 @@ hash-verified before the worker and disk were explicitly deleted. No repaired si
 was built because the baseline produced no repeatable violation. No Compute Engine
 instance remained after deletion.
 
+The seeded positive-control gate used another identically constrained e2-standard-8 worker
+from 06:01 to 06:31 UTC on 2026-09-11. It rebuilt the same pinned simulator, ran 16 total
+SmallBoomV3 executions across the mutated and repaired matrices with four parallel workers,
+and produced deterministic violation-to-clean evidence. The recovered simulator hash
+matched the prior privilege and secure-control evidence. The worker and 200 GB disk were
+explicitly deleted after hash verification; no Compute Engine instance remained.
+
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;
 record region, machine/model, maximum duration/tokens, disk/storage costs and a
