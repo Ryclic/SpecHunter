@@ -15,6 +15,12 @@ SmallBoomV3 executions: every intentional mutation was detected, every repaired 
 clean, and none was inconclusive. The corpus is bound to the same simulator as the live
 Vertex run.
 
+On the separate deterministic fixture benchmark, guided search discovered 100% of seeded
+positive cases in 1.5 attempts on average. Across 1,000 seeds, random search discovered
+57.25% within the same 16-attempt limit (95% Wilson interval 55.07%–59.40%) and required
+8.48 attempts on average. Both approaches produced zero false positives and inconclusive
+cases. These search-quality results are explicitly separated from real BOOM evidence.
+
 Generate the presentation locally from its sealed evidence:
 
 ```bash
@@ -23,6 +29,8 @@ uv run spechunter present \
   --seal docs/evidence/vertex-boom-demo-seal-2026-09-11.json \
   --corpus docs/evidence/boom-attack-corpus-2026-09-16.json \
   --corpus-seal docs/evidence/boom-attack-corpus-seal-2026-09-16.json \
+  --evaluation docs/evidence/fixture-guided-vs-random-2026-09-16.json \
+  --evaluation-seal docs/evidence/fixture-guided-vs-random-seal-2026-09-16.json \
   --output artifacts/demo.html
 ```
 
@@ -37,6 +45,8 @@ Requires Python 3.12 or 3.13 and [uv](https://docs.astral.sh/uv/).
 uv sync --locked --group dev
 uv run spechunter run
 uv run spechunter compare --iterations 32 --seed 42 --output artifacts/comparison.json
+uv run spechunter evaluate --trials 1000 --iterations 16 \
+  --output artifacts/fixture-evaluation.json
 uv run pytest
 ```
 

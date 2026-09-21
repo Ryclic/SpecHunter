@@ -72,6 +72,25 @@ def _load_corpus(corpus_path: Path, seal_path: Path, simulator_hash: str) -> dic
     return corpus
 
 
+def _load_evaluation(evaluation_path: Path, seal_path: Path) -> dict:
+    evaluation_path = evaluation_path.resolve()
+    seal = _read(seal_path.resolve())
+    evaluation = _read(evaluation_path)
+    if seal.get("evaluation") != evaluation_path.name or seal.get("evaluation_sha256") != _digest(
+        evaluation_path
+    ):
+        raise PresentationError("fixture evaluation does not match its evidence seal")
+    classification = "deterministic-fixture-evaluation-not-real-boom-evidence"
+    if (
+        evaluation.get("classification") != classification
+        or seal.get("classification") != classification
+    ):
+        raise PresentationError("fixture evaluation classification differs")
+    if seal.get("random_trials", 0) < 1000:
+        raise PresentationError("fixture evaluation sample is too small")
+    return evaluation
+
+
 def render(
     report_path: Path,
     seal_path: Path,
@@ -79,6 +98,8 @@ def render(
     *,
     corpus_path: Path | None = None,
     corpus_seal_path: Path | None = None,
+    evaluation_path: Path | None = None,
+    evaluation_seal_path: Path | None = None,
 ) -> dict:
     report_path = report_path.resolve()
     seal_path = seal_path.resolve()
@@ -132,6 +153,23 @@ def render(
 <div class="card"><b>{scorecard["mutation_detection_rate"]:.0%}</b><span>Mutation detection</span></div>
 <div class="card"><b>{scorecard["repair_clean_rate"]:.0%}</b><span>Repair clean</span></div></div>
 <div class="card"><span>Corpus SHA-256</span><code>{escape(corpus_hash)}</code></div></section>"""
+    evaluation_section = ""
+    evaluation_hash = None
+    if evaluation_path is not None or evaluation_seal_path is not None:
+        if evaluation_path is None or evaluation_seal_path is None:
+            raise PresentationError("fixture evaluation and seal must be supplied together")
+        evaluation = _load_evaluation(evaluation_path, evaluation_seal_path)
+        guided = evaluation["guided"]
+        random = evaluation["random"]
+        evaluation_hash = _digest(evaluation_path)
+        interval = random["discovery_rate_wilson_95"]
+        evaluation_section = f"""<section><h2>Guided versus random evaluation</h2>
+<p>This separate deterministic fixture benchmark measures search quality; it is not BOOM vulnerability evidence.</p>
+<div class="grid"><div class="card"><b>{guided["discovery_rate"]:.0%}</b><span>Guided discovery</span></div>
+<div class="card"><b>{random["discovery_rate"]:.2%}</b><span>Random discovery</span></div>
+<div class="card"><b>{guided["positive_attempts_mean"]:.1f}</b><span>Guided mean attempts</span></div>
+<div class="card"><b>{random["positive_attempts_mean"]:.2f}</b><span>Random mean attempts</span></div></div>
+<div class="card"><p>Random: {random["trials"]} seeds; 95% Wilson interval {interval[0]:.2%}–{interval[1]:.2%}; zero false positives and zero inconclusive cases.</p></div></section>"""
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpecHunter · Verified Agent Loop</title>
@@ -163,6 +201,7 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
 <section><h2>Minimal validated witness</h2><div class="card"><p class="witness">{escape(witness)}</p><p>The protected user load remains in the minimized experiment. The finding is explicitly classified as an intentional harness mutation used to prove the end-to-end workflow, not an upstream BOOM vulnerability.</p></div></section>
 <section><h2>Agent and validator timeline</h2><ol class="timeline">{"".join(events)}</ol></section>
 {corpus_section}
+{evaluation_section}
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>{report_hash}</code></div><div class="card"><span>Simulator SHA-256</span><code>{simulator_hash}</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{raw_report}</pre></details></section>
 <footer>Generated locally from the sealed SpecHunter report. No network requests or external assets are required.</footer>
@@ -176,4 +215,5 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
         "report_sha256": seal["report_sha256"],
         "simulator_sha256": report.get("provenance", {}).get("simulator_sha256"),
         "attack_corpus_sha256": corpus_hash,
+        "evaluation_sha256": evaluation_hash,
     }

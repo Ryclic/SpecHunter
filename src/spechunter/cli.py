@@ -8,22 +8,26 @@ from pathlib import Path
 
 from spechunter.backends import BackendConfig
 from spechunter.domain import BENCHMARKS
+from spechunter.evaluation import evaluate
 from spechunter.loop import experiment
 from spechunter.presentation import render
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["run", "compare", "present"])
+    parser.add_argument("command", choices=["run", "compare", "present", "evaluate"])
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
     parser.add_argument("--strategy", choices=["guided", "random", "llm"], default="guided")
     parser.add_argument("--iterations", type=int, default=16)
+    parser.add_argument("--trials", type=int, default=100)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output", type=Path, default=Path("artifacts/run.json"))
     parser.add_argument("--input", type=Path, help="Sealed experiment report for present")
     parser.add_argument("--seal", type=Path, help="Evidence seal for present")
     parser.add_argument("--corpus", type=Path, help="Optional sealed BOOM attack corpus")
     parser.add_argument("--corpus-seal", type=Path, help="Seal for --corpus")
+    parser.add_argument("--evaluation", type=Path, help="Optional sealed fixture evaluation")
+    parser.add_argument("--evaluation-seal", type=Path, help="Seal for --evaluation")
     parser.add_argument(
         "--runner", type=Path, help="Trusted BOOM runner executable (absolute path)"
     )
@@ -58,6 +62,8 @@ def main() -> int:
                 raise ValueError("present requires --input and --seal")
             if (args.corpus is None) != (args.corpus_seal is None):
                 raise ValueError("present requires --corpus and --corpus-seal together")
+            if (args.evaluation is None) != (args.evaluation_seal is None):
+                raise ValueError("present requires --evaluation and --evaluation-seal together")
             print(
                 json.dumps(
                     render(
@@ -66,10 +72,22 @@ def main() -> int:
                         args.output,
                         corpus_path=args.corpus,
                         corpus_seal_path=args.corpus_seal,
+                        evaluation_path=args.evaluation,
+                        evaluation_seal_path=args.evaluation_seal,
                     ),
                     indent=2,
                 )
             )
+            return 0
+        if args.command == "evaluate":
+            if args.backend != "model" or args.strategy != "guided":
+                raise ValueError("evaluate uses the fixed model benchmark and strategy pair")
+            report = evaluate(args.trials, args.iterations)
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            temporary = args.output.with_suffix(args.output.suffix + ".tmp")
+            temporary.write_text(json.dumps(report, indent=2) + "\n")
+            temporary.replace(args.output)
+            print(json.dumps({key: report[key] for key in ("guided", "random")}, indent=2))
             return 0
         if args.runner and not args.runner.is_absolute():
             raise ValueError("runner must be an absolute executable path")
