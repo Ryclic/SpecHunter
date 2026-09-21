@@ -157,6 +157,27 @@ def _load_rtl_repair(seal_path: Path) -> dict:
     return seal
 
 
+def _load_issue_715_assessment(seal_path: Path) -> dict:
+    seal_path = seal_path.resolve()
+    seal = _read(seal_path)
+    if (
+        seal.get("classification") != "upstream-issue-715-not-reproduced-on-current-pin"
+        or seal.get("vulnerability_reproduced") is not False
+        or seal.get("security_fix_validated") is not False
+        or seal.get("executions") != 4
+    ):
+        raise PresentationError("issue #715 assessment classification differs")
+    for name_key, hash_key in (
+        ("source_provenance", "source_provenance_sha256"),
+        ("smoke_evidence", "smoke_evidence_sha256"),
+        ("assessment_matrix", "assessment_matrix_sha256"),
+    ):
+        artifact = seal_path.parent / str(seal.get(name_key, ""))
+        if not artifact.is_file() or seal.get(hash_key) != _digest(artifact):
+            raise PresentationError("issue #715 artifact does not match its seal")
+    return seal
+
+
 def render(
     report_path: Path,
     seal_path: Path,
@@ -171,6 +192,7 @@ def render(
     chia_path: Path | None = None,
     chia_seal_path: Path | None = None,
     rtl_repair_seal_path: Path | None = None,
+    issue_715_seal_path: Path | None = None,
 ) -> dict:
     report_path = report_path.resolve()
     seal_path = seal_path.resolve()
@@ -283,6 +305,17 @@ def render(
 <div class="card"><b>Yes</b><span>Distinct binary</span></div>
 <div class="card"><b>No</b><span>Security fix validated</span></div></div>
 <div class="card"><span>Repaired simulator SHA-256</span><code>{escape(str(rtl_repair["repaired_simulator_sha256"]))}</code></div></section>"""
+    issue_715_section = ""
+    issue_715_hash = None
+    if issue_715_seal_path is not None:
+        issue_715 = _load_issue_715_assessment(issue_715_seal_path)
+        issue_715_hash = _digest(issue_715_seal_path)
+        issue_715_section = f"""<section><h2>Known BOOM issue assessed</h2>
+<p>A reviewed branch-misprediction adaptation of upstream BOOM issue #715 ran against the current pinned simulator. All matched-secret executions were deterministic and clean, so no vulnerability or repair claim is made for this revision.</p>
+<div class="grid"><div class="card"><b>#715</b><span>Upstream issue</span></div>
+<div class="card"><b>{issue_715["executions"]}</b><span>BOOM executions</span></div>
+<div class="card"><b>Clean</b><span>Current pin result</span></div>
+<div class="card"><b>No</b><span>Fix claimed</span></div></div></section>"""
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpecHunter · Verified Agent Loop</title>
@@ -318,6 +351,7 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
 {repeatability_section}
 {chia_section}
 {rtl_repair_section}
+{issue_715_section}
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>{report_hash}</code></div><div class="card"><span>Simulator SHA-256</span><code>{simulator_hash}</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{raw_report}</pre></details></section>
 <footer>Generated locally from the sealed SpecHunter report. No network requests or external assets are required.</footer>
@@ -335,4 +369,5 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
         "repeatability_sha256": repeatability_hash,
         "chia_evidence_sha256": chia_hash,
         "rtl_repair_seal_sha256": rtl_repair_hash,
+        "issue_715_seal_sha256": issue_715_hash,
     }

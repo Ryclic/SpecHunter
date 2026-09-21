@@ -36,6 +36,12 @@ clean, and a seal binds the baseline binary, patch, repaired binary, and matrix.
 validates patch buildability and regression behavior; it is not a validated security fix
 because the pristine baseline did not exhibit the hypothesized violation.
 
+A reviewed adaptation of upstream BOOM issue #715 was also executed four times on the
+current pinned simulator. It used a delayed trained branch, wrong-path protected load,
+dependent cache encode, and matched secret worlds. All observations were deterministically
+clean, so the sealed assessment records that the older reported issue was not reproduced
+on this revision and makes no vulnerability or fix claim.
+
 Generate the presentation locally from its sealed evidence:
 
 ```bash
@@ -51,6 +57,7 @@ uv run spechunter present \
   --chia-evidence docs/evidence/chia-vertex-loop-2026-09-16.json \
   --chia-seal docs/evidence/chia-vertex-loop-seal-2026-09-16.json \
   --rtl-repair-seal docs/evidence/boom-load-gate-regression-seal-2026-09-16.json \
+  --issue-715-seal docs/evidence/boom-issue-715-assessment-seal-2026-09-16.json \
   --output artifacts/demo.html
 ```
 

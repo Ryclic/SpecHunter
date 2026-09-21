@@ -108,6 +108,23 @@ def test_positive_control_requires_protected_load_and_probe(tmp_path):
             validate(tmp_path, request(program, variant="seeded-cache-leak"))
 
 
+def test_issue_715_variant_requires_fixed_program_and_renders_mispredict_window(tmp_path):
+    fixed = ["enter_user", "load_secret", "probe"]
+    variant = RUNNER.ISSUE_715_BASELINE
+    assert validate(tmp_path, request(fixed, variant=variant))["variant"] == variant
+    assembly = RUNNER.render_candidate(fixed, 1, variant)
+    assert assembly.count(".Lissue715_branch:") == 1
+    assert "div s6, s7, s8" in assembly
+    assert assembly.index("beqz s6, .Lissue715_correct_path") < assembly.index("ld s1, 0(s2)")
+    assert assembly.index("ld s1, 0(s2)") < assembly.index("add t0, t0, s1")
+    assert "li t1, 512" in assembly
+    with pytest.raises(RUNNER.RunnerError, match="fixed reproduction"):
+        validate(
+            tmp_path,
+            request(["train", *fixed], variant=RUNNER.ISSUE_715_BASELINE),
+        )
+
+
 def test_runner_requires_complete_pin_set(tmp_path):
     pins = tmp_path / "pins.env"
     pins.write_text("CHIPYARD_REVISION=abc\nBOOM_CONFIG=SmallBoomV3Config\n")

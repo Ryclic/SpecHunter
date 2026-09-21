@@ -77,6 +77,13 @@ status column before the successful matrix. All raw artifacts were recovered and
 the worker and 200 GB disk were explicitly deleted, and the subsequent instance listing
 was empty.
 
+The upstream issue #715 assessment used one identically constrained worker on 2026-09-16.
+The pristine build and smoke gate completed in 776 seconds and reproduced the established
+simulator hash. Four parallel runs of the reviewed misprediction adaptation completed with
+deterministic clean observations. Because the baseline did not reproduce the older issue,
+the repaired build was deliberately skipped. Evidence was recovered and sealed, then the
+worker and 200 GB disk were deleted; the subsequent instance listing was empty.
+
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;
 record region, machine/model, maximum duration/tokens, disk/storage costs and a

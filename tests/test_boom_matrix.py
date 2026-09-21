@@ -50,6 +50,11 @@ def test_matrix_uses_two_fixed_scenarios_and_secret_independent_programs():
         "gate-faulting-loads": Path("/opt/spechunter/chipyard-gate-faulting-loads"),
         "seeded-cache-leak": Path("/opt/spechunter/chipyard"),
         "remove-seeded-cache-leak": Path("/opt/spechunter/chipyard"),
+        "issue-715-baseline": Path("/opt/spechunter/chipyard"),
+        "issue-715-repaired": Path("/opt/spechunter/chipyard-gate-faulting-loads"),
+    }
+    assert MATRIX.ISSUE_715_SCENARIOS == {
+        "issue-715-mispredict": ["enter_user", "load_secret", "probe"]
     }
 
 

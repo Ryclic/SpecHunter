@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "classification": "adapted-upstream-boom-issue-715-reproduction",
+  "upstream_issue": "riscv-boom/riscv-boom#715",
+  "upstream_issue_url": "https://github.com/riscv-boom/riscv-boom/issues/715",
+  "upstream_issue_opened_at": "2025-01-12T17:39:57Z",
+  "reported_chipyard_revision": "004297b6a8c01be1b2110c4cf4f9393ae1ff8805",
+  "reported_boom_revision": "fac2c370c9deae97ca52aca6b34857e9ac0f6e9d",
+  "reported_mechanism": "a delayed mispredicted branch permits a faulting privileged load and dependent access to execute transiently",
+  "upstream_attachment_url": "https://github.com/user-attachments/files/18390427/program.elf.zip",
+  "upstream_attachment_zip_sha256": "1d2b50a0ca3100adc3bb733de062c589238d677a1a8c085d08bc063088487b68",
+  "upstream_attachment_elf_sha256": "c7066c9e10d1d19233d5626670e404663c069afe1e168656dcab08efbaa2389b",
+  "adaptation": "reviewed fixed assembly for the pinned HTIF harness; this does not execute the stripped upstream Cascade ELF",
+  "adaptation_program": [
+    "enter_user",
+    "load_secret",
+    "probe"
+  ],
+  "adaptation_mechanism": "train a delayed conditional branch with a safe pointer, evict training cache state, then make the protected load and dependent two-line encode the predicted fall-through of an architecturally taken branch",
+  "current_chipyard_revision": "0acc1e1de2d3284bcd4d876956932a013ffe1949",
+  "current_boom_revision": "5223e44cfeb26f41380057a2eb4d651197475f69",
+  "current_boom_commits_after_reported_revision": 335,
+  "retrieved_at": "2026-09-16"
+}
