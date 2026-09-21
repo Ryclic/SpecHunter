@@ -43,11 +43,13 @@ installer digest, glibc 2.34, BOOM's stable `SmallBoomV3Config`, and the tool ve
 resolved by Chipyard. `SmallBoomConfig` is not a generator configuration in Chipyard
 1.14; the similarly named BOOM CI entry maps to the V3 configuration.
 
-On a glibc 2.34 host with `curl`, `git`, `gcc`, `g++`, `make`, and `dtc` installed:
+On a glibc 2.34 host with `curl`, `git`, `gcc`, `g++`, `make`, `dtc`, and `wget` installed:
 
 ```bash
-tools/boom/bootstrap.sh /opt/chipyard
-tools/boom/build_and_smoke.sh /opt/chipyard /tmp/boom-smoke.json
+sudo mkdir -p /opt/spechunter
+sudo chown "$USER" /opt/spechunter
+tools/boom/bootstrap.sh /opt/spechunter/chipyard
+tools/boom/build_and_smoke.sh /opt/spechunter/chipyard /tmp/boom-smoke.json
 ```
 
 The bootstrap rejects every other host ABI rather than silently regenerating dependency
@@ -58,10 +60,36 @@ the real Verilator simulator and runs Chipyard's bare-metal hello payload throug
 Success requires the expected payload output. Its JSON evidence records both repository
 revisions, config and tool versions, elapsed time, and SHA-256 hashes of the simulator,
 payload, and captured output.
+Bootstrap refuses to run as root so the later runner can read Git provenance without
+adding a global `safe.directory` bypass.
 The first successful run is checked in as
 [`docs/evidence/boom-smoke-2026-09-10.json`](evidence/boom-smoke-2026-09-10.json)
 with its hash-bound raw log. It establishes a real BOOM build and execution path; it is
-not yet a privilege-isolation experiment or vulnerability result.
+not a vulnerability result.
+
+## Privilege-boundary gate
+
+Run the reviewed architectural gate after building the pinned simulator:
+
+```bash
+tools/boom/run_privilege_smoke.sh \
+  /opt/spechunter/chipyard /tmp/boom-privilege-smoke.json
+```
+
+The runner compiles one bare-metal ELF and requires it to pass first on Spike and then
+on the generated BOOM simulator. Machine mode configures a 4 KiB PMP region with no
+user permissions, installs a trap handler, and enters user mode with `mret`. The user
+load must raise load-access-fault exception 5; the handler records the trap and advances
+`mepc`. The test fails if the protected value reaches the destination register, if the
+expected trap is absent, or if either executor fails. The runner imposes a 10-million
+cycle limit and records revisions plus SHA-256 hashes for the source, payload, Spike,
+simulator, and raw executor logs.
+
+The checked-in
+[`docs/evidence/boom-privilege-smoke-2026-09-10.json`](evidence/boom-privilege-smoke-2026-09-10.json)
+records a successful Spike and SmallBoomV3 run of this gate. It demonstrates the
+architectural PMP denial and trap-return substrate needed by later experiments. It does
+not test transient leakage or establish that BOOM is free of speculative attacks.
 
 `tools/boom/gcp_worker.sh create` provisions the corresponding official Rocky Linux 9
 image with no service account or API scopes. It has a six-hour maximum runtime and is

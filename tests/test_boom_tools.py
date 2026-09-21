@@ -16,6 +16,12 @@ def test_boom_inputs_are_pinned():
     assert pins["BOOM_CONFIG"] == "SmallBoomV3Config"
 
 
+def test_bootstrap_rejects_root_owned_build_flow():
+    script = (ROOT / "tools/boom/bootstrap.sh").read_text()
+    assert "EUID -ne 0" in script
+    assert '[[ -w "$parent_directory" ]]' in script
+
+
 def test_gcp_worker_has_hard_lifetime_and_no_cloud_identity():
     script = (ROOT / "tools/boom/gcp_worker.sh").read_text()
     assert "--max-run-duration=6h" in script
@@ -32,3 +38,20 @@ def test_smoke_requires_pinned_revision_and_real_payload_output():
     assert "run-binary-fast" in script
     assert "Hello world from core 0, a sonicboom" in script
     assert '"simulator_sha256"' in script
+    assert '-c safe.directory="$chipyard_directory"' in script
+
+
+def test_privilege_smoke_uses_pmp_user_mode_and_two_executors():
+    source = (ROOT / "tools/boom/privilege_smoke.S").read_text()
+    script = (ROOT / "tools/boom/run_privilege_smoke.sh").read_text()
+    assert "csrw pmpaddr0" in source
+    assert "csrw pmpcfg0" in source
+    assert "csrc mstatus" in source
+    assert "mret" in source
+    assert "mcause" in source
+    assert "spike --isa=" in script
+    assert '"$simulator"' in script
+    assert "+max-cycles=10000000" in script
+    assert '"spike_sha256"' in script
+    assert '"spike_passed": True' in script
+    assert '"boom_passed": True' in script

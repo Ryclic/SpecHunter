@@ -11,7 +11,6 @@ evidence_file=$2
 script_directory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=pins.env
 source "$script_directory/pins.env"
-
 [[ "$(git -c safe.directory="$chipyard_directory" -C "$chipyard_directory" rev-parse HEAD)" \
   == "$CHIPYARD_REVISION" ]] || {
   echo "Chipyard revision does not match pins.env" >&2
@@ -19,21 +18,25 @@ source "$script_directory/pins.env"
 }
 
 export PATH="$(dirname -- "$chipyard_directory")/miniforge3/bin:$PATH"
-# shellcheck disable=SC1091
 set +u
+# shellcheck disable=SC1091
 source "$chipyard_directory/env.sh"
 set -u
 
 start_seconds=$(date +%s)
-jobs=${SPECHUNTER_BUILD_JOBS:-$(nproc)}
-payload_directory="$chipyard_directory/tests/build"
+payload_directory="$(dirname -- "$evidence_file")/spechunter-payloads"
 mkdir -p "$payload_directory"
+payload="$payload_directory/spechunter-privilege-smoke.riscv"
+test_environment="$chipyard_directory/toolchains/riscv-tools/riscv-tests/env"
 riscv64-unknown-elf-gcc \
-  -march=rv64imafd -mabi=lp64d -mcmodel=medany -O2 -Wall -Wextra \
-  -fno-common -fno-builtin-printf -static -specs=htif_nano.specs -T htif.ld \
-  "$chipyard_directory/tests/hello.c" -o "$payload_directory/hello.riscv"
+  -march=rv64imafd_zicsr_zifencei -mabi=lp64d -mcmodel=medany \
+  -nostdlib -nostartfiles -static \
+  -I "$test_environment/p" -I "$test_environment" \
+  -T "$test_environment/p/link.ld" "$script_directory/privilege_smoke.S" -o "$payload"
 
-make -C "$chipyard_directory/sims/verilator" CONFIG="$BOOM_CONFIG" -j"$jobs"
+spike_log="${evidence_file%.json}.spike.log"
+boom_log="${evidence_file%.json}.boom.log"
+spike --isa=rv64imafd_zicsr_zifencei "$payload" >"$spike_log" 2>&1
 mapfile -t simulators < <(
   find "$chipyard_directory/sims/verilator" -maxdepth 1 -type f -executable \
     -name "simulator-*-${BOOM_CONFIG}" -print
@@ -43,23 +46,24 @@ mapfile -t simulators < <(
   exit 2
 }
 simulator=${simulators[0]}
-hello_binary="$chipyard_directory/tests/build/hello.riscv"
-smoke_log="${evidence_file%.json}.smoke.log"
-
-make -C "$chipyard_directory/sims/verilator" CONFIG="$BOOM_CONFIG" \
-  BINARY="$hello_binary" BREAK_SIM_PREREQ=1 run-binary-fast 2>&1 | tee "$smoke_log"
-grep -Fq "Hello world from core 0, a sonicboom" "$smoke_log" || {
-  echo "BOOM smoke output did not contain the expected payload" >&2
+"$simulator" \
+  +permissive \
+  +dramsim \
+  +dramsim_ini_dir="$chipyard_directory/generators/testchipip/src/main/resources/dramsim2_ini" \
+  +max-cycles=10000000 \
+  +permissive-off \
+  "$payload" 2>&1 | tee "$boom_log"
+grep -Fq "Verilog \$finish" "$boom_log" || {
+  echo "BOOM privilege smoke did not complete" >&2
   exit 1
 }
 
-export EVIDENCE_FILE="$evidence_file" SMOKE_LOG="$smoke_log" SIMULATOR="$simulator"
-export HELLO_BINARY="$hello_binary" START_SECONDS="$start_seconds"
-export CHIPYARD_REVISION BOOM_CONFIG
+export EVIDENCE_FILE="$evidence_file" BOOM_LOG="$boom_log" SPIKE_LOG="$spike_log"
+export PAYLOAD="$payload" SIMULATOR="$simulator" SOURCE="$script_directory/privilege_smoke.S"
+export START_SECONDS="$start_seconds" CHIPYARD_REVISION BOOM_CONFIG
 export BOOM_REVISION="$(git -c safe.directory="$chipyard_directory/generators/boom" \
   -C "$chipyard_directory/generators/boom" rev-parse HEAD)"
-export VERILATOR_VERSION="$(verilator --version)"
-export RISCV_GCC_VERSION="$(riscv64-unknown-elf-gcc --version | head -1)"
+export VERILATOR_VERSION="$(verilator --version)" SPIKE_EXECUTABLE="$(command -v spike)"
 python - <<'PY'
 import hashlib
 import json
@@ -75,19 +79,23 @@ def digest(name: str) -> str:
 evidence = {
     "schema_version": 1,
     "target": "boom",
+    "experiment": "pmp-user-load-denial",
     "chipyard_revision": os.environ["CHIPYARD_REVISION"],
     "boom_revision": os.environ["BOOM_REVISION"],
     "config": os.environ["BOOM_CONFIG"],
     "verilator_version": os.environ["VERILATOR_VERSION"],
-    "riscv_gcc_version": os.environ["RISCV_GCC_VERSION"],
+    "spike_sha256": digest("SPIKE_EXECUTABLE"),
+    "source_sha256": digest("SOURCE"),
+    "payload_sha256": digest("PAYLOAD"),
     "simulator_sha256": digest("SIMULATOR"),
-    "payload_sha256": digest("HELLO_BINARY"),
-    "smoke_log_sha256": digest("SMOKE_LOG"),
+    "spike_log_sha256": digest("SPIKE_LOG"),
+    "boom_log_sha256": digest("BOOM_LOG"),
+    "spike_passed": True,
+    "boom_passed": True,
     "elapsed_seconds": int(datetime.now(timezone.utc).timestamp())
     - int(os.environ["START_SECONDS"]),
     "completed_at": datetime.now(timezone.utc).isoformat(),
 }
 Path(os.environ["EVIDENCE_FILE"]).write_text(json.dumps(evidence, indent=2) + "\n")
 PY
-
 cat "$evidence_file"
