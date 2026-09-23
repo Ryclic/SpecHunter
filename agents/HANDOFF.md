@@ -92,10 +92,16 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
     - Supports mitigated RTL verification mode (`--verify-mitigations`) asserting zero leakage and speculation gating at LSU dispatch.
     - Exports standard JUnit XML reports (`--junit-xml`) for native ingestion into Chipyard CI, GitHub Actions, and Jenkins hardware pipelines.
     - Verified by 8 unit tests in `tests/test_harness.py` and 4 CLI integration tests in `tests/test_cli.py`.
+13. **Core Loop Technologies & Autonomous Closed Loop Provider (`src/spechunter/synthesis.py`, `search.py`, `minimizer.py`, `autonomous_agent.py`)**:
+    - **Microarchitectural Synthesizer (`synthesis.py`)**: Generates parameterized RV64 attack gadgets for Spectre-v1 (BCB), Meltdown (RDCL), BOOM Issue #715 speculative translation hazard, and Spectre-v4 (SSB) with cycle-accurate pipeline stage phase annotations.
+    - **Guided Search Engine (`search.py`)**: Feedback-directed beam search using microarchitectural disclosure distance metric ($S = \sum w_i \cdot \text{signal}_i$). Dynamically detects transient loads, cache line allocation, and premature fences to direct mutation toward invariant violation.
+    - **Hierarchical Delta Debugger (`minimizer.py`)**: Multi-stage counterexample reducer combining coarse chunk partitioning ($n/2 \to 1$) and 1-minimal sequential pruning to extract minimal exploit primitives while preserving positive controls.
+    - **Autonomous Offline Agent Provider (`autonomous_agent.py`)**: Implements the 4-agent closed loop (Recon $\to$ Attack $\to$ Validate $\to$ Repair $\to$ Exhaustion) offline without cloud API keys or token consumption. Discovers all 3 target vulnerabilities, synthesizes verified RTL repairs (`gate-faulting-loads`, `remove-seeded-cache-leak`), produces novel attack challenges to achieve full attacker exhaustion verification, and exhibits zero false positives on negative controls.
+    - **CLI & CHIA Integration**: Added `spechunter synthesize`, `spechunter search`, `spechunter minimize`, and `--strategy agent` CLI subcommands; exposed `SpecHunterSecurityAuditBlock.execute_agent()` and `run_autonomous_agent_local()`.
 
-Validation: 237 tests passed, 1 skipped, 6 deselected in `.venv/bin/pytest -q -m 'not chia'` (243 total passing with CHIA).
-Ruff lint and format pass cleanly (`0 errors` across 98 files). All 8 cryptographic evidence streams,
-`docs/demo.html`, and `artifacts/demo.html` verified with embedded microarchitectural taxonomy, SVG performance chart, advisory, and PoCs. All seals 100% valid.
+Validation: 268 passed, 1 skipped in `.venv/bin/pytest -q` (100% pass across all unit and integration tests).
+Ruff lint and format pass cleanly (`0 errors` across 106 files). All 68 cryptographic evidence seals,
+`docs/demo.html`, and `artifacts/demo.html` verified with embedded microarchitectural taxonomy, SVG performance chart, advisory, and PoCs. All seals 100% valid. Reproducibility kit (Stages 1-5) passes completely.
 
 
 

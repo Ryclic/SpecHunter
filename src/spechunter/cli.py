@@ -521,6 +521,130 @@ def _run_harness(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_synthesize(args: argparse.Namespace) -> int:
+    from spechunter.synthesis import MicroarchitecturalSynthesizer, SynthesisConfig, ThreatModel
+
+    threat_name = getattr(args, "threat", "spectre_bcb") or "spectre_bcb"
+    try:
+        tm = ThreatModel(threat_name)
+    except ValueError:
+        tm = ThreatModel.SPECTRE_BCB
+
+    cfg = SynthesisConfig(threat_model=tm)
+    synth = MicroarchitecturalSynthesizer(seed=args.seed)
+    artifact = synth.synthesize(cfg)
+
+    if getattr(args, "assembly", False):
+        print(artifact.assembly_source)
+    elif args.json:
+        print(artifact.to_json())
+    else:
+        print("=== SpecHunter Microarchitectural Program Synthesizer ===")
+        print(f"Threat Model:       {artifact.config.threat_model.value}")
+        print(f"Transmitter:        {artifact.config.transmitter.value}")
+        print(f"Window Widening:    {artifact.config.window_widening.value}")
+        print(f"Expected TTFE:      {artifact.expected_ttfe_cycles} cycles")
+        print(f"High-Level Gadget:  {' -> '.join(op.value for op in artifact.program.ops)}")
+        print("Pipeline Execution Phases:")
+        for phase in artifact.pipeline_phases:
+            print(f"  Cycle {phase['cycle']:4d} | [{phase['stage']:12s}] {phase['signal']}")
+    return 0
+
+
+def _run_search(args: argparse.Namespace) -> int:
+    from spechunter.backends import BackendConfig
+    from spechunter.domain import BENCHMARKS
+    from spechunter.search import GuidedSearchEngine
+
+    benchmark_id = getattr(args, "benchmark", None) or "transient-cache"
+    benchmark = next((b for b in BENCHMARKS if b.id == benchmark_id), None)
+    if not benchmark:
+        print(f"Unknown benchmark: {benchmark_id}", file=sys.stderr)
+        return 2
+
+    config = BackendConfig(kind=args.backend)
+    engine = GuidedSearchEngine(config, max_iterations=args.iterations, seed=args.seed)
+    result = engine.search(benchmark)
+
+    if args.json:
+        data = {
+            "benchmark": benchmark.id,
+            "success": result.success,
+            "verdict": result.verdict,
+            "iterations_used": result.iterations_used,
+            "time_to_first_exploit_ms": result.time_to_first_exploit_ms,
+            "simulations_evaluated": result.simulations_evaluated,
+            "score_trajectory": result.score_trajectory,
+            "discovered_ops": [op.value for op in result.discovered_program.ops]
+            if result.discovered_program
+            else [],
+            "minimized_ops": [op.value for op in result.minimized_program.ops]
+            if result.minimized_program
+            else [],
+            "rationale": result.rationale,
+        }
+        print(json.dumps(data, indent=2))
+    else:
+        print("=== SpecHunter Feedback-Driven Microarchitectural Search ===")
+        print(f"Target Benchmark:        {benchmark.id} ({benchmark.invariant})")
+        print(f"Search Outcome:          {result.verdict}")
+        print(f"Iterations Evaluated:    {result.iterations_used}")
+        print(f"Simulations Executed:    {result.simulations_evaluated}")
+        print(f"Time to First Exploit:   {result.time_to_first_exploit_ms:.2f} ms")
+        if result.discovered_program:
+            disc_ops = " -> ".join(op.value for op in result.discovered_program.ops)
+            min_ops = " -> ".join(op.value for op in result.minimized_program.ops)
+            print(f"Discovered Gadget:       {disc_ops}")
+            print(f"Minimized 1-Minimal:     {min_ops}")
+        print(f"Search Rationale:        {result.rationale}")
+    return 0 if result.success else 1
+
+
+def _run_minimize(args: argparse.Namespace) -> int:
+    from spechunter.backends import Backend, BackendConfig
+    from spechunter.domain import BENCHMARKS, Op, Program
+    from spechunter.minimizer import HierarchicalDeltaDebugger
+
+    benchmark_id = getattr(args, "benchmark", None) or "transient-cache"
+    benchmark = next((b for b in BENCHMARKS if b.id == benchmark_id), None)
+    if not benchmark:
+        print(f"Unknown benchmark: {benchmark_id}", file=sys.stderr)
+        return 2
+
+    candidate = Program(
+        (
+            Op.NOP,
+            Op.TRAIN,
+            Op.NOP,
+            Op.ENTER_USER,
+            Op.NOP,
+            Op.LOAD_SECRET,
+            Op.ENCODE,
+            Op.SQUASH,
+            Op.PROBE,
+        )
+    )
+    config = BackendConfig(kind=args.backend)
+    debugger = HierarchicalDeltaDebugger()
+
+    with Backend(config) as backend:
+        report = debugger.minimize(backend, candidate, benchmark)
+
+    if args.json:
+        print(report.to_json())
+    else:
+        print("=== SpecHunter Hierarchical Delta Debugger ===")
+        print(f"Target Benchmark:     {benchmark.id}")
+        orig_ops = " -> ".join(report.original_ops)
+        min_ops = " -> ".join(report.minimized_ops)
+        print(f"Original Length:      {report.original_length} ops ({orig_ops})")
+        print(f"Minimized Length:     {report.minimized_length} ops ({min_ops})")
+        print(f"Reduction Ratio:      {report.reduction_percentage:.1f}%")
+        print(f"Validation Queries:   {report.total_validations}")
+        print(f"Minimized SHA-256:    {report.minimized_digest[:16]}...")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -539,10 +663,15 @@ def main() -> int:
             "poc",
             "ablation",
             "harness",
+            "search",
+            "synthesize",
+            "minimize",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
-    parser.add_argument("--strategy", choices=["guided", "random", "llm"], default="guided")
+    parser.add_argument(
+        "--strategy", choices=["guided", "random", "llm", "agent"], default="guided"
+    )
     parser.add_argument("--iterations", type=int, default=16)
     parser.add_argument("--trials", type=int, default=100)
     parser.add_argument("--seed", type=int, default=0)
@@ -581,6 +710,20 @@ def main() -> int:
         "--suite",
         action="store_true",
         help="Audit all taxonomy benchmarks in sequence as a suite (for audit command)",
+    )
+    parser.add_argument(
+        "--threat",
+        type=str,
+        default="spectre_bcb",
+        help=(
+            "Threat model for synthesize "
+            "(spectre_bcb, meltdown_rdcl, boom_issue_715, spec_store_bypass)"
+        ),
+    )
+    parser.add_argument(
+        "--assembly",
+        action="store_true",
+        help="Output raw assembly code (supported for synthesize and poc)",
     )
     parser.add_argument(
         "--svg",
@@ -676,6 +819,12 @@ def main() -> int:
             return _run_ablation(args)
         if args.command == "harness":
             return _run_harness(args)
+        if args.command == "search":
+            return _run_search(args)
+        if args.command == "synthesize":
+            return _run_synthesize(args)
+        if args.command == "minimize":
+            return _run_minimize(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")
@@ -743,7 +892,32 @@ def main() -> int:
 
             execute = run_local
         strategies = ["guided", "random"] if args.command == "compare" else [args.strategy]
-        if "llm" in strategies:
+        if "agent" in strategies:
+            if args.chia:
+                from spechunter.chia_nodes import run_autonomous_agent_local
+
+                report = run_autonomous_agent_local(
+                    config,
+                    recon_cycles=args.recon_cycles,
+                    attack_limit=args.attack_limit,
+                    repair_limit=args.repair_limit,
+                    benchmark_id=benchmark_id,
+                )
+            else:
+                from spechunter.agent_loop import agent_experiment
+                from spechunter.autonomous_agent import AutonomousAgentProvider
+
+                provider = AutonomousAgentProvider()
+                report = agent_experiment(
+                    provider,
+                    config,
+                    args.recon_cycles,
+                    args.attack_limit,
+                    args.repair_limit,
+                    benchmark_id,
+                )
+            reports = [report]
+        elif "llm" in strategies:
             if not args.llm_model:
                 raise ValueError("--llm-model is required for --strategy llm")
             if args.chia:

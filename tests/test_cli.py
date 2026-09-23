@@ -453,3 +453,99 @@ def test_cli_harness_json(capsys, monkeypatch):
     data = json.loads(captured)
     assert data["total_tests"] == 3
     assert data["vulnerabilities_confirmed"] == 3
+
+
+def test_cli_synthesize(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "synthesize", "--threat", "spectre_bcb"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Microarchitectural Program Synthesizer" in captured
+    assert "spectre_bcb" in captured
+
+
+def test_cli_synthesize_assembly(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", ["spechunter", "synthesize", "--threat", "boom_issue_715", "--assembly"]
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "spechunter_issue_715" in captured
+    assert ".section .text" in captured
+
+
+def test_cli_synthesize_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", ["spechunter", "synthesize", "--threat", "meltdown_rdcl", "--json"]
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["threat_model"] == "meltdown_rdcl"
+    assert "enter_user" in data["program_ops"]
+
+
+def test_cli_search_terminal(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "search", "--benchmark", "transient-cache"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Feedback-Driven Microarchitectural Search" in captured
+    assert "VIOLATION_CONFIRMED" in captured
+
+
+def test_cli_search_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", ["spechunter", "search", "--benchmark", "transient-cache", "--json"]
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["benchmark"] == "transient-cache"
+    assert data["success"] is True
+    assert "train" in data["minimized_ops"]
+
+
+def test_cli_minimize_terminal(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "minimize", "--benchmark", "transient-cache"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Hierarchical Delta Debugger" in captured
+    assert "Reduction Ratio:" in captured
+
+
+def test_cli_minimize_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", ["spechunter", "minimize", "--benchmark", "transient-cache", "--json"]
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["original_length"] == 9
+    assert data["minimized_length"] == 5
+    assert data["reduction_percentage"] > 40.0
+
+
+def test_cli_run_agent_strategy(capsys, monkeypatch, tmp_path):
+    out_file = tmp_path / "agent_run.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "spechunter",
+            "run",
+            "--strategy",
+            "agent",
+            "--benchmark",
+            "transient-cache",
+            "--output",
+            str(out_file),
+        ],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert "llm" in data
+    assert data["llm"]["discovered"] == 1
+    assert data["llm"]["false_positives"] == 0
+    assert data["llm"]["inconclusive_cases"] == 0
+    assert data["llm"]["repairs_attacker_exhausted"] == 1
+    assert out_file.is_file()
