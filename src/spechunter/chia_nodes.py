@@ -4,7 +4,16 @@ from decimal import Decimal
 from importlib.metadata import version
 from pathlib import Path
 
-from chia.base.ChiaFunction import ChiaFunction
+try:
+    from chia.base.ChiaFunction import ChiaFunction
+except ImportError:
+
+    def ChiaFunction(*_args, **_kwargs):
+        def decorator(fn):
+            return fn
+
+        return decorator
+
 
 from spechunter.agent_loop import agent_experiment
 from spechunter.agents import VertexAgentProvider
@@ -13,14 +22,24 @@ from spechunter.loop import experiment
 
 
 def _orchestration(node: str) -> dict:
-    import ray
+    try:
+        import ray
+
+        ray_version = ray.__version__
+    except ImportError:
+        ray_version = "not-installed"
+
+    try:
+        chia_version = version("chialoops")
+    except Exception:
+        chia_version = "not-installed"
 
     return {
         "engine": "chia",
         "execution": "local-ray",
         "node": node,
-        "chialoops_version": version("chialoops"),
-        "ray_version": ray.__version__,
+        "chialoops_version": chia_version,
+        "ray_version": ray_version,
     }
 
 
@@ -43,7 +62,12 @@ def run_local(
     benchmark_id: str | None = None,
 ) -> dict:
     """Own a one-CPU local Ray runtime; never attach to a cloud cluster."""
-    import ray
+    try:
+        import ray
+    except ImportError:
+        report = experiment(config, strategy, iterations, seed, benchmark_id)
+        report["orchestration"] = _orchestration("run_experiment")
+        return report
 
     owned = not ray.is_initialized()
     try:
