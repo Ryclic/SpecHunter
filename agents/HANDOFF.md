@@ -161,9 +161,15 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
     - Proves baseline cores leak intermediate page table addresses into the cache hierarchy (allocating 3 cache lines during speculative walks) and alter architectural A/D bits transiently (`VULNERABLE_SPECULATIVE_PTW_SIDE_CHANNEL`).
     - Synthesizes a co-designed Gated Speculative Page Table Walker (G-PTW) Chisel 3 RTL patch and IEEE 1800-2017 SVA properties (`p_speculative_ptw_mem_gate`, `p_speculative_ad_bit_gate`, `p_issue_715_strict_translation_order`), certifying 0 cache lines leaked and strict translation isolation (`VERIFIED_ISOLATED_GATED_TRANSLATION`).
     - Added CLI subcommand: `spechunter mmu` (with `--target`, `--mitigated`, `--export`, `--json`, and `--markdown`).
+25. **Branch Prediction Unit & Cross-Privilege Branch History Injection (BHI) Oracle (`src/spechunter/bpu.py`)**:
+    - Formally models the Branch Prediction Unit (BPU) global history register (GHR), branch target buffer (BTB) index hashing, and cross-privilege branch training dynamics (Spectre-BTI / Spectre-BHB / CVE-2022-0001).
+    - Proves unmitigated baseline cores leak user-space branch histories into supervisor and machine mode indirect jumps (`jalr`), causing `CROSS_PRIVILEGE_BHI_COLLISION`, `UNPARTITIONED_BTB_ALIASING`, and `INDIRECT_TARGET_INJECTION` (Privilege Isolation: 12.5%, `VULNERABLE_CROSS_PRIVILEGE_BRANCH_HISTORY_INJECTION`).
+    - Synthesizes a co-designed `PrivTaggedBPU` Chisel 3 RTL patch that hashes the current CPU privilege mode (`priv_mode[1:0]`) into BTB indexing/tagging and enforces an SRET/MRET history barrier (`VERIFIED_BPU_PRIVILEGE_DOMAIN_ISOLATION`, 100.0% isolation).
+    - Emits IEEE 1800-2017 formal SystemVerilog Assertions (`p_bpu_privilege_domain_isolation`, `p_btb_target_privilege_gate`, `p_sret_history_barrier`).
+    - Added CLI subcommand: `spechunter bpu` (with `--target`, `--predictor`, `--mitigated`, `--export`, `--json`, and `--markdown`).
 
-Validation: 388 passed, 1 skipped in `.venv/bin/pytest -q` (100% pass across all unit and integration tests).
-Ruff lint and format pass cleanly (`0 errors` across 132 files). All 68 cryptographic evidence seals,
+Validation: 397 passed, 1 skipped in `.venv/bin/pytest -q` (100% pass across all unit and integration tests).
+Ruff lint and format pass cleanly (`0 errors` across 134 files). All 68 cryptographic evidence seals,
 `docs/demo.html`, and `artifacts/demo.html` verified with embedded microarchitectural taxonomy, SVG performance chart, advisory, and PoCs. All seals 100% valid. Reproducibility kit (Stages 1-5) passes completely. Remote GitHub Actions CI passes 100% Green across all 3 matrix jobs (Ray CHIA, Python 3.12, Python 3.13).
 
 

@@ -1380,6 +1380,59 @@ def _run_mmu(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_bpu(args: argparse.Namespace) -> int:
+    from spechunter.bpu import BranchPredictorType, SpeculativeBPUOracle
+
+    target_id = getattr(args, "target", None) or "privilege-bypass"
+    mitigated = getattr(args, "mitigated", False)
+    pred_str = getattr(args, "predictor", None) or "tage"
+
+    try:
+        pred_type = BranchPredictorType(pred_str.lower())
+    except ValueError:
+        pred_type = BranchPredictorType.TAGE
+
+    oracle = SpeculativeBPUOracle(target_benchmark=target_id)
+    report = oracle.audit(predictor_type=pred_type, mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        oracle.export_report(args.export, report)
+        print(f"Exported speculative BPU report to: {args.export}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    status_str = "Mitigated Core (Priv-Tagged)" if mitigated else "Baseline Core (Shared)"
+    print("=== SpecHunter Branch Prediction & History Injection Oracle ===")
+    print(f"Target Benchmark:             {report.target_benchmark}")
+    print(f"Predictor Architecture:       {report.predictor_type.upper()}")
+    print(f"Hardware Mitigation Status:   {status_str}")
+    print(f"Global History Register:      {report.ghr_length_bits} bits")
+    print(f"BTB Capacity:                 {report.btb_entries} entries")
+    print(f"Privilege Isolation Score:    {report.privilege_isolation_score * 100.0:.1f}%")
+    bhi_str = (
+        "ISOLATED (Privilege Partitioned)"
+        if not report.cross_privilege_collision_detected
+        else "COLLISION DETECTED (Vulnerable)"
+    )
+    print(f"BHI Cross-Privilege State:    {bhi_str}")
+    print(f"Formal BPU Verdict:           {report.verdict}")
+    print("-" * 75)
+    if report.detected_vulnerabilities:
+        print("Detected Microarchitectural Branch Predictor Vulnerabilities:")
+        for v in report.detected_vulnerabilities:
+            print(f"  [!] {v}")
+    else:
+        print("Branch Predictor Certified Strictly Isolated Across Privilege Modes")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1415,7 +1468,14 @@ def main() -> int:
             "contract",
             "rollback",
             "mmu",
+            "bpu",
         ],
+    )
+    parser.add_argument(
+        "--predictor",
+        choices=["tage", "gshare", "bimodal", "tournament"],
+        default="tage",
+        help="Branch predictor architecture for BPU oracle",
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
     parser.add_argument(
@@ -1631,6 +1691,8 @@ def main() -> int:
             return _run_rollback(args)
         if args.command == "mmu":
             return _run_mmu(args)
+        if args.command == "bpu":
+            return _run_bpu(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")

@@ -1120,3 +1120,55 @@ def test_cli_mmu_export(capsys, monkeypatch, tmp_path):
     assert main() == 0
     assert out.is_file()
     assert "VERIFIED_ISOLATED_GATED_TRANSLATION" in out.read_text(encoding="utf-8")
+
+
+def test_cli_bpu_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "bpu", "--target", "privilege-bypass"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Branch Prediction & History Injection Oracle" in captured
+    assert "Baseline Core (Shared)" in captured
+    assert "COLLISION DETECTED (Vulnerable)" in captured
+    assert "VULNERABLE_CROSS_PRIVILEGE_BRANCH_HISTORY_INJECTION" in captured
+
+
+def test_cli_bpu_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "bpu", "--target", "privilege-bypass", "--mitigated"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Mitigated Core (Priv-Tagged)" in captured
+    assert "ISOLATED (Privilege Partitioned)" in captured
+    assert "VERIFIED_BPU_PRIVILEGE_DOMAIN_ISOLATION" in captured
+
+
+def test_cli_bpu_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "bpu", "--target", "privilege-bypass", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["target_benchmark"] == "privilege-bypass"
+    assert data["cross_privilege_collision_detected"]
+
+
+def test_cli_bpu_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "bpu.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "bpu", "--target", "privilege-bypass", "--mitigated", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "VERIFIED_BPU_PRIVILEGE_DOMAIN_ISOLATION" in out.read_text(encoding="utf-8")
