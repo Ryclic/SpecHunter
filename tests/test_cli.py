@@ -1289,7 +1289,7 @@ def test_cli_matrix_default(capsys, monkeypatch):
     assert "HARDWARE SECURITY CERTIFICATE" in captured
     assert "HSA-CERT-2026-CHIA-001" in captured
     assert "SILICON_SECURITY_CO_DESIGN_CERTIFIED" in captured
-    assert "Subsystems Formally Audited:      7" in captured
+    assert "Subsystems Formally Audited:      8" in captured
 
 
 def test_cli_matrix_json(capsys, monkeypatch):
@@ -1302,7 +1302,7 @@ def test_cli_matrix_json(capsys, monkeypatch):
     captured = capsys.readouterr().out
     data = json.loads(captured)
     assert data["certification_id"] == "HSA-CERT-2026-CHIA-001"
-    assert data["total_subsystems_audited"] == 7
+    assert data["total_subsystems_audited"] == 8
     assert data["average_mitigated_isolation"] == 100.0
 
 
@@ -1328,3 +1328,54 @@ def test_cli_matrix_export(capsys, monkeypatch, tmp_path):
     assert main() == 0
     assert out.is_file()
     assert "SILICON_SECURITY_CO_DESIGN_CERTIFIED" in out.read_text(encoding="utf-8")
+
+
+def test_cli_pmp_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "pmp"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "RISC-V PHYSICAL MEMORY PROTECTION (PMP) SPECULATIVE BOUNDARY ORACLE" in captured
+    assert "BASELINE UNMITIGATED PMP" in captured
+    assert "VULNERABLE_SPECULATIVE_PMP_BYPASS" in captured
+
+
+def test_cli_pmp_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "pmp", "--mitigated"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "CO-DESIGNED GATED PMP [ACTIVE]" in captured
+    assert "VERIFIED_PMP_HARDWARE_ENFORCEMENT" in captured
+    assert "100.0%" in captured
+
+
+def test_cli_pmp_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "pmp", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["pmp_isolation_score"] == 0.125
+    assert data["security_verdict"] == "VULNERABLE_SPECULATIVE_PMP_BYPASS"
+
+
+def test_cli_pmp_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "pmp.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "pmp", "--mitigated", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "VERIFIED_PMP_HARDWARE_ENFORCEMENT" in out.read_text(encoding="utf-8")

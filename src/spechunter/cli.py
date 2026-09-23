@@ -1572,6 +1572,53 @@ def _run_matrix(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_pmp(args: argparse.Namespace) -> int:
+    from spechunter.pmp import SpeculativePMPOracle
+
+    target_core = getattr(args, "target", None) or "UC Berkeley BOOMv3 (SonicBOOM)"
+    mitigated = getattr(args, "mitigated", False)
+    oracle = SpeculativePMPOracle(target_core=target_core)
+    report = oracle.audit(mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        oracle.export_report(args.export, report)
+        print(f"Exported PMP speculative audit report to: {args.export}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    status_str = (
+        "CO-DESIGNED GATED PMP [ACTIVE]" if report.mitigated else "BASELINE UNMITIGATED PMP"
+    )
+    print("================================================================================")
+    print("   RISC-V PHYSICAL MEMORY PROTECTION (PMP) SPECULATIVE BOUNDARY ORACLE")
+    print(f"   Target Core:        {report.target_core}")
+    print(f"   Status:             {status_str}")
+    print(f"   PMP Isolation:      {report.pmp_isolation_score * 100.0:.1f}%")
+    print(f"   TOCTOU Leak Window: {report.pmp_toctou_cycles} cycles")
+    print(f"   Verdict:            {report.security_verdict}")
+    print("================================================================================")
+    print(
+        f"PMP Entries Configured:       "
+        f"{report.pmp_entries_configured} / {report.total_pmp_entries}"
+    )
+    print(f"Memory Access Trials:         {report.access_trials}")
+    print(f"Speculative Bypasses Detected:{report.speculative_bypasses_detected}")
+    if report.detected_vulnerabilities:
+        print("Detected Vulnerabilities:")
+        for v in report.detected_vulnerabilities:
+            print(f"  [!] {v}")
+    else:
+        print("PMP Physical Address Boundary Formally Certified Gated & Isolated")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1611,6 +1658,7 @@ def main() -> int:
             "stlf",
             "mds",
             "matrix",
+            "pmp",
         ],
     )
     parser.add_argument(
@@ -1841,6 +1889,8 @@ def main() -> int:
             return _run_mds(args)
         if args.command == "matrix":
             return _run_matrix(args)
+        if args.command == "pmp":
+            return _run_pmp(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")
