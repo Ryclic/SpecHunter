@@ -198,6 +198,24 @@ def test_cli_benchmark(capsys, monkeypatch, tmp_path):
     assert "search_strategies" in data
 
 
+def test_cli_benchmark_json(capsys, monkeypatch, tmp_path):
+    out_file = tmp_path / "bench.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "benchmark", "--trials", "2", "--output", str(out_file), "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    json_start = captured.find("{")
+    assert json_start != -1
+    data = json.loads(captured[json_start:])
+    assert "search_strategies" in data
+    assert "guided" in data["search_strategies"]
+    assert "random" in data["search_strategies"]
+    assert data["search_strategies"]["guided"]["discovery_rate_pct"] == 100.0
+
+
 def test_cli_audit_suite_fast(capsys, monkeypatch):
     class FakeSuiteBlock:
         @classmethod

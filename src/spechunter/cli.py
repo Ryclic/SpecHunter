@@ -385,7 +385,10 @@ def _run_benchmark(args: argparse.Namespace) -> int:
         else Path("artifacts/performance_benchmark.json")
     )
     trials = args.trials if args.trials != 100 else 3
-    mod.run_benchmarks(trials=trials, output_path=out_path)
+    is_json = getattr(args, "json", False)
+    res = mod.run_benchmarks(trials=trials, output_path=out_path, quiet=is_json)
+    if is_json:
+        print(json.dumps(res, indent=2))
     return 0
 
 
@@ -414,7 +417,7 @@ def main() -> int:
     parser.add_argument(
         "--json",
         action="store_true",
-        help="Format output as machine-readable JSON (supported for audit and taxonomy)",
+        help="Format output as JSON (supported for audit, taxonomy, and benchmark)",
     )
     parser.add_argument(
         "--suite",

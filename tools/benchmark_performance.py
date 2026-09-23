@@ -84,9 +84,10 @@ def benchmark_chia_block(benchmark_id: str = "transient-cache", iterations: int 
     }
 
 
-def run_benchmarks(trials: int = 5, output_path: Path | None = None) -> dict:
-    print("=== SpecHunter Microarchitectural Security Performance Benchmark ===")
-    print(f"Running {trials} trials per search strategy on 'transient-cache' threat model...\n")
+def run_benchmarks(trials: int = 5, output_path: Path | None = None, quiet: bool = False) -> dict:
+    if not quiet:
+        print("=== SpecHunter Microarchitectural Security Performance Benchmark ===")
+        print(f"Running {trials} trials per search strategy on 'transient-cache' threat model...\n")
 
     guided_res = benchmark_strategy("guided", iterations=16, trials=trials)
     random_res = benchmark_strategy("random", iterations=16, trials=trials)
@@ -101,30 +102,32 @@ def run_benchmarks(trials: int = 5, output_path: Path | None = None) -> dict:
         "system_peak_rss_mb": round(get_peak_rss_mb(), 2),
     }
 
-    print(
-        f"{'Strategy':<12} | {'Avg Latency (s)':<16} | {'Sims / Sec':<12} | "
-        f"{'Discovery Rate':<15} | {'Peak RSS (MB)'}"
-    )
-    print("-" * 80)
-    for name, data in [("Guided", guided_res), ("Random", random_res)]:
-        row = (
-            f"{name:<12} | {data['avg_duration_sec']:<16.4f} | "
-            f"{data['sim_throughput_hz']:<12.1f} | "
-            f"{data['discovery_rate_pct']:>5.1f}%          | {data['peak_rss_mb']:<10.2f}"
+    if not quiet:
+        print(
+            f"{'Strategy':<12} | {'Avg Latency (s)':<16} | {'Sims / Sec':<12} | "
+            f"{'Discovery Rate':<15} | {'Peak RSS (MB)'}"
         )
-        print(row)
-    print("-" * 80)
-    chia_line = (
-        f"CHIA Security Block Latency: {chia_res['duration_sec']:.4f}s "
-        f"({chia_res['executions']} simulations)"
-    )
-    print(chia_line)
-    print(f"Overall Peak Resident Memory: {results['system_peak_rss_mb']} MB")
+        print("-" * 80)
+        for name, data in [("Guided", guided_res), ("Random", random_res)]:
+            row = (
+                f"{name:<12} | {data['avg_duration_sec']:<16.4f} | "
+                f"{data['sim_throughput_hz']:<12.1f} | "
+                f"{data['discovery_rate_pct']:>5.1f}%          | {data['peak_rss_mb']:<10.2f}"
+            )
+            print(row)
+        print("-" * 80)
+        chia_line = (
+            f"CHIA Security Block Latency: {chia_res['duration_sec']:.4f}s "
+            f"({chia_res['executions']} simulations)"
+        )
+        print(chia_line)
+        print(f"Overall Peak Resident Memory: {results['system_peak_rss_mb']} MB")
 
     if output_path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
-        print(f"\n✓ Performance benchmark written to {output_path}")
+        if not quiet:
+            print(f"\n✓ Performance benchmark written to {output_path}")
 
     return results
 
@@ -133,9 +136,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--trials", type=int, default=5, help="Number of benchmark trials")
     parser.add_argument("--output", type=Path, default=Path("artifacts/performance_benchmark.json"))
+    parser.add_argument("--json", action="store_true", help="Output results as JSON to stdout")
     args = parser.parse_args()
 
-    run_benchmarks(trials=args.trials, output_path=args.output)
+    results = run_benchmarks(trials=args.trials, output_path=args.output, quiet=args.json)
+    if args.json:
+        print(json.dumps(results, indent=2))
     return 0
 
 
