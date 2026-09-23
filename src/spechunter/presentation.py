@@ -394,6 +394,26 @@ def render(
 <p>Three candidate repairs have matched traces, but the baseline did not reproduce the target mechanism, so their security effectiveness is inconclusive. The fourth built and ran, but its waveform was not recovered; no security fix is claimed.</p>
 <div class="card"><span>Original waveform SHA-256</span><code>{escape(attachment["baseline"]["waveform_sha256"])}</code></div>
 <div class="card"><span>Case seal SHA-256</span><code>{escape(attachment_hash)}</code></div></section>"""
+    taxonomy_rows = []
+    seen_tax = set()
+    from spechunter.taxonomy import SPECTRE_TAXONOMY
+
+    for item in SPECTRE_TAXONOMY.values():
+        if item.variant in seen_tax:
+            continue
+        seen_tax.add(item.variant)
+        taxonomy_rows.append(
+            f"<tr><td><code>{escape(item.variant.value)}</code></td>"
+            f"<td><b>{escape(item.name)}</b><br><span style='color:var(--muted);font-size:0.85rem'>{escape(item.boom_subsystem)}</span></td>"
+            f"<td>{escape(item.speculation_window)}</td>"
+            f"<td><code>{escape(item.interlock_gate)}</code></td>"
+            f"<td><span style='color:var(--muted);font-size:0.85rem'>{escape(item.chisel_source)}</span></td></tr>"
+        )
+    taxonomy_section = f"""<section><h2>Microarchitectural Spectre taxonomy</h2>
+<p>Formal mapping of speculative vulnerabilities to Berkeley BOOM RTL subsystems, speculation windows, and interlock gates.</p>
+<div class="waveform-wrap"><table class="hazard-table"><thead><tr><th>Variant</th><th>Name & Subsystem</th><th>Speculation Window</th><th>RTL Interlock Gate</th><th>Chisel Source</th></tr></thead><tbody>
+{"".join(taxonomy_rows)}
+</tbody></table></div></section>"""
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpecHunter · Verified Agent Loop</title>
@@ -440,6 +460,7 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
 {rtl_repair_section}
 {issue_715_section}
 {attachment_section}
+{taxonomy_section}
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>{report_hash}</code></div><div class="card"><span>Simulator SHA-256</span><code>{simulator_hash}</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{raw_report}</pre></details></section>
 <footer>Generated locally from the sealed SpecHunter report. No network requests or external assets are required.</footer>
