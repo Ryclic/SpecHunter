@@ -761,3 +761,50 @@ def test_cli_testbench_export(capsys, monkeypatch, tmp_path):
     assert main() == 0
     assert out.is_file()
     assert "package boom.tests" in out.read_text(encoding="utf-8")
+
+
+def test_cli_waveform_target_diagram(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", ["spechunter", "waveform", "--target", "transient-cache", "--diagram"]
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Microarchitectural Waveform Timing Diagram" in captured
+    assert "io_lsu_req_valid" in captured
+    assert "TRANSIENT_COVERT_MODULATION" in captured
+
+
+def test_cli_waveform_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "waveform", "--target", "transient-cache", "--mitigated", "--diagram"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SUPPRESSED BY MITIGATION" in captured
+    assert "Window: 0 cycles" in captured
+
+
+def test_cli_waveform_vcd(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", ["spechunter", "waveform", "--target", "privilege-bypass", "--vcd"]
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "$timescale 1ns $end" in captured
+    assert "$scope module BoomTile $end" in captured
+
+
+def test_cli_waveform_export_json(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "waveform.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "waveform", "--target", "privilege-bypass", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert data["benchmark_id"] == "privilege-bypass"
+    assert "hazards" in data

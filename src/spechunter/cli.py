@@ -13,7 +13,57 @@ from spechunter.loop import experiment
 from spechunter.presentation import render
 
 
-def _run_waveform() -> int:
+def _run_waveform(args: argparse.Namespace | None = None) -> int:
+    if args is not None and (
+        getattr(args, "target", None)
+        or getattr(args, "diagram", False)
+        or getattr(args, "vcd", False)
+        or getattr(args, "json", False)
+        or getattr(args, "export", None)
+    ):
+        from spechunter.domain import BENCHMARKS
+        from spechunter.synthesis import MicroarchitecturalSynthesizer, ThreatModel
+        from spechunter.waveform import WaveformSynthesizer
+
+        target = getattr(args, "target", None) or "transient-cache"
+        bench = next((b for b in BENCHMARKS if b.id == target), BENCHMARKS[1])
+
+        model_map = {
+            "transient-cache": ThreatModel.SPECTRE_BCB,
+            "privilege-bypass": ThreatModel.MELTDOWN_RDCL,
+            "issue-715": ThreatModel.BOOM_ISSUE_715,
+        }
+        model = model_map.get(target, ThreatModel.SPECTRE_BCB)
+        synth = MicroarchitecturalSynthesizer()
+        gadget = synth.synthesize(model)
+        prog = gadget.program
+
+        mitigated = getattr(args, "mitigated", False)
+        wsynth = WaveformSynthesizer()
+        trace = wsynth.synthesize(prog, bench, mitigated=mitigated)
+
+        if getattr(args, "export", None):
+            dest = args.export
+            if str(dest).endswith(".vcd"):
+                wsynth.export_vcd(dest, trace)
+            elif str(dest).endswith(".json"):
+                dest.write_text(trace.to_json() + "\n", encoding="utf-8")
+            else:
+                dest.write_text(trace.to_vcd(), encoding="utf-8")
+            print(f"Exported waveform trace to: {dest}")
+            return 0
+
+        if getattr(args, "vcd", False):
+            print(trace.to_vcd())
+            return 0
+
+        if getattr(args, "json", False):
+            print(trace.to_json())
+            return 0
+
+        print(trace.render_diagram())
+        return 0
+
     divider = "=" * 80 + "\n"
     rule = "-" * 80 + "\n"
     diagram = (
@@ -1175,12 +1225,14 @@ def main() -> int:
     parser.add_argument("--recon-cycles", type=int, default=2)
     parser.add_argument("--attack-limit", type=int, default=8)
     parser.add_argument("--repair-limit", type=int, default=4)
+    parser.add_argument("--vcd", action="store_true", help="Emit IEEE 1364 standard VCD waveform")
+    parser.add_argument("--diagram", action="store_true", help="Emit ASCII waveform timing diagram")
     args = parser.parse_args()
     try:
         if args.command == "verify":
             return _run_verify()
         if args.command == "waveform":
-            return _run_waveform()
+            return _run_waveform(args)
         if args.command == "audit":
             return _run_audit(args)
         if args.command == "taxonomy":
