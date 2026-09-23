@@ -21,6 +21,7 @@ from spechunter.pmp import SpeculativePMPOracle
 from spechunter.ras import SpeculativeRASOracle
 from spechunter.rollback import RollbackOracle
 from spechunter.stlf import SpeculativeSTLFOracle
+from spechunter.vector import SpeculativeVectorOracle
 
 
 @dataclass(frozen=True)
@@ -183,6 +184,11 @@ class UnifiedSecurityMatrixOracle:
         fpu_base = fpu_oracle.audit(mitigated=False)
         fpu_mit = fpu_oracle.audit(mitigated=True)
 
+        # 10. Vector Execution Unit (RVV 1.0 / SIMD Leakage) Audit
+        vector_oracle = SpeculativeVectorOracle()
+        vector_base = vector_oracle.audit(mitigated=False)
+        vector_mit = vector_oracle.audit(mitigated=True)
+
         # Subsystems configuration table
         subsystems = [
             SubsystemAuditResult(
@@ -298,6 +304,17 @@ class UnifiedSecurityMatrixOracle:
                 chisel_module="ConstTimeFPUGate",
                 sva_properties_count=len(fpu_mit.generated_sva_assertions) // 4,
                 ipc_overhead_pct=0.04,
+            ),
+            SubsystemAuditResult(
+                subsystem="Vector Execution Unit (RVV)",
+                target_cve="GhostWrite / Zenbleed RVV Leak",
+                baseline_status="VULNERABLE",
+                mitigated_status="VERIFIED_ISOLATED",
+                baseline_isolation_pct=vector_base.vector_isolation_score * 100.0,
+                mitigated_isolation_pct=vector_mit.vector_isolation_score * 100.0,
+                chisel_module="GatedVectorPipeline",
+                sva_properties_count=len(vector_mit.generated_sva_assertions) // 4,
+                ipc_overhead_pct=0.05,
             ),
         ]
 

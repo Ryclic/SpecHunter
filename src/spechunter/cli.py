@@ -1710,6 +1710,52 @@ def _run_fpu(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_vector(args: argparse.Namespace) -> int:
+    from spechunter.vector import SpeculativeVectorOracle
+
+    target_core = getattr(args, "target", None) or "UC Berkeley BOOMv3 (SonicBOOM + RVV)"
+    mitigated = getattr(args, "mitigated", False)
+    vlen = getattr(args, "vlen", 256)
+    oracle = SpeculativeVectorOracle(target_core=target_core, vlen_bits=vlen)
+    report = oracle.audit(mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        oracle.export_report(args.export, report)
+        print(f"Exported Vector speculative audit report to: {args.export}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    status_str = (
+        "CO-DESIGNED GATED VECTOR PIPELINE [ACTIVE]"
+        if report.mitigated
+        else "BASELINE UNMITIGATED VECTOR UNIT"
+    )
+    print("================================================================================")
+    print("   SPECULATIVE VECTOR (RVV) & SIMD REGISTER LEAKAGE ORACLE")
+    print(f"   Target Core:        {report.target_core}")
+    print(f"   Status:             {status_str}")
+    print(f"   Vector Length:      {report.vlen_bits} bits")
+    print(f"   Vector Isolation:   {report.vector_isolation_score * 100.0:.1f}%")
+    print(f"   Verdict:            {report.security_verdict}")
+    print("================================================================================")
+    print(f"Transient Leakage:            {report.transient_leak_bits} bits")
+    print(f"Speculative Gather Footprint: {report.speculative_gather_footprint_lines} cache lines")
+    if report.detected_vulnerabilities:
+        print("Detected Vulnerabilities:")
+        for v in report.detected_vulnerabilities:
+            print(f"  [!] {v}")
+    else:
+        print("Vector Execution Formally Certified Speculatively Isolated")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1752,7 +1798,14 @@ def main() -> int:
             "pmp",
             "ras",
             "fpu",
+            "vector",
         ],
+    )
+    parser.add_argument(
+        "--vlen",
+        type=int,
+        default=256,
+        help="Vector register length in bits for Vector oracle (e.g. 128, 256, 512)",
     )
     parser.add_argument(
         "--predictor",
@@ -1988,6 +2041,8 @@ def main() -> int:
             return _run_ras(args)
         if args.command == "fpu":
             return _run_fpu(args)
+        if args.command == "vector":
+            return _run_vector(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")

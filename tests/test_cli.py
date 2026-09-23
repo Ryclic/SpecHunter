@@ -1289,7 +1289,7 @@ def test_cli_matrix_default(capsys, monkeypatch):
     assert "HARDWARE SECURITY CERTIFICATE" in captured
     assert "HSA-CERT-2026-CHIA-001" in captured
     assert "SILICON_SECURITY_CO_DESIGN_CERTIFIED" in captured
-    assert "Subsystems Formally Audited:      10" in captured
+    assert "Subsystems Formally Audited:      11" in captured
 
 
 def test_cli_matrix_json(capsys, monkeypatch):
@@ -1302,7 +1302,7 @@ def test_cli_matrix_json(capsys, monkeypatch):
     captured = capsys.readouterr().out
     data = json.loads(captured)
     assert data["certification_id"] == "HSA-CERT-2026-CHIA-001"
-    assert data["total_subsystems_audited"] == 10
+    assert data["total_subsystems_audited"] == 11
     assert data["average_mitigated_isolation"] == 100.0
 
 
@@ -1481,3 +1481,55 @@ def test_cli_fpu_export(capsys, monkeypatch, tmp_path):
     assert main() == 0
     assert out.is_file()
     assert "VERIFIED_FPU_CONSTANT_TIME_ISOLATION" in out.read_text(encoding="utf-8")
+
+
+def test_cli_vector_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "vector"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SPECULATIVE VECTOR (RVV) & SIMD REGISTER LEAKAGE ORACLE" in captured
+    assert "BASELINE UNMITIGATED VECTOR UNIT" in captured
+    assert "VULNERABLE_SPECULATIVE_VECTOR_REGISTER_LEAK" in captured
+
+
+def test_cli_vector_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "vector", "--mitigated", "--vlen", "512"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "CO-DESIGNED GATED VECTOR PIPELINE [ACTIVE]" in captured
+    assert "VERIFIED_VECTOR_SPECULATIVE_ISOLATION" in captured
+    assert "512 bits" in captured
+    assert "100.0%" in captured
+
+
+def test_cli_vector_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "vector", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["vector_isolation_score"] == 0.1
+    assert data["security_verdict"] == "VULNERABLE_SPECULATIVE_VECTOR_REGISTER_LEAK"
+
+
+def test_cli_vector_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "vector.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "vector", "--mitigated", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "VERIFIED_VECTOR_SPECULATIVE_ISOLATION" in out.read_text(encoding="utf-8")
