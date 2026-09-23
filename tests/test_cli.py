@@ -123,3 +123,4 @@ def test_cli_verify_all(capsys, monkeypatch):
     captured = capsys.readouterr().out
     assert "ALL ARTIFACTS AND SEALS 100% VERIFIED" in captured
     assert "Historical Issue #715 Attachment: VERIFIED" in captured
+    assert "Submission Dossier (SUBMISSION.md): VERIFIED" in captured

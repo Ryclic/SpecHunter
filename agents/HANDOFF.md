@@ -43,10 +43,15 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
 
 6. **Automated Reproducibility Kit:**
    - Single push-button script: `tools/run_reproducibility_kit.sh`.
-   - Comprehensive validation: 184 unit tests passed, all 8 cryptographic evidence seals verified,
+   - Comprehensive validation: 185 unit tests passed, all 8 cryptographic evidence seals verified,
      4-page IEEE/ACM paper verified, interactive demo generated.
 
-Validation: 184 tests passed, 1 skipped, 2 deselected in `.venv/bin/pytest -q -m 'not chia'`.
+7. **Complete HotCRP Submission Dossier (`SUBMISSION.md`):**
+   - Formatted for direct HotCRP submission, containing Author-Identified Highlights, paper abstract,
+     quickstart judge reproducibility guide, deliverable inventory, and cryptographic provenance manifest.
+   - Verified by `tests/test_submission.py` and `tools/verify_all_artifacts.py`.
+
+Validation: 185 tests passed, 1 skipped, 2 deselected in `.venv/bin/pytest -q -m 'not chia'`.
 Ruff lint and format pass cleanly (`0 errors`). All 8 cryptographic evidence streams and
 `artifacts/demo.html` rendered successfully. All seals 100% valid.
 

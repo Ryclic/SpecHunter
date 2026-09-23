@@ -126,6 +126,17 @@ def _run_verify() -> int:
         errors.append(f"Missing {pdf_path}")
         print(f"[-] Paper PDF: MISSING ({pdf_path})")
 
+    sub_path = Path("SUBMISSION.md")
+    if (
+        sub_path.exists()
+        and "MICRO 2026 A³ CHIA Hackathon Submission Dossier"
+        in sub_path.read_text(encoding="utf-8")
+    ):
+        print("[✓] Submission Dossier (SUBMISSION.md): VERIFIED")
+    else:
+        errors.append("Missing or incomplete SUBMISSION.md")
+        print("[-] Submission Dossier: MISSING or INCOMPLETE (SUBMISSION.md)")
+
     if errors:
         print("\nVerification Failures:")
         for err in errors:
