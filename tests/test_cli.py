@@ -1224,3 +1224,55 @@ def test_cli_stlf_export(capsys, monkeypatch, tmp_path):
     assert main() == 0
     assert out.is_file()
     assert "VERIFIED_ISOLATED_STORE_FORWARDING" in out.read_text(encoding="utf-8")
+
+
+def test_cli_mds_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "mds", "--target", "privilege-bypass"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Microarchitectural Data Sampling (MDS) Oracle" in captured
+    assert "Baseline Core (Unmitigated MSHR)" in captured
+    assert "LEAK DETECTED (Vulnerable)" in captured
+    assert "VULNERABLE_MICROARCHITECTURAL_DATA_SAMPLING" in captured
+
+
+def test_cli_mds_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "mds", "--target", "privilege-bypass", "--mitigated"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Mitigated Core (LFB-Gate)" in captured
+    assert "ISOLATED (0 Leaks)" in captured
+    assert "VERIFIED_MDS_ISOLATION" in captured
+
+
+def test_cli_mds_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "mds", "--target", "privilege-bypass", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["target_benchmark"] == "privilege-bypass"
+    assert data["residual_leak_detected"]
+
+
+def test_cli_mds_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "mds.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "mds", "--target", "privilege-bypass", "--mitigated", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "VERIFIED_MDS_ISOLATION" in out.read_text(encoding="utf-8")

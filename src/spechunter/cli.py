@@ -1479,6 +1479,50 @@ def _run_stlf(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_mds(args: argparse.Namespace) -> int:
+    from spechunter.mds import SpeculativeMDSOracle
+
+    target_id = getattr(args, "target", None) or "privilege-bypass"
+    mitigated = getattr(args, "mitigated", False)
+
+    oracle = SpeculativeMDSOracle(target_benchmark=target_id)
+    report = oracle.audit(mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        oracle.export_report(args.export, report)
+        print(f"Exported speculative MDS report to: {args.export}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    status_str = "Mitigated Core (LFB-Gate)" if mitigated else "Baseline Core (Unmitigated MSHR)"
+    print("=== SpecHunter Microarchitectural Data Sampling (MDS) Oracle ===")
+    print(f"Target Benchmark:             {report.target_benchmark}")
+    print(f"Hardware Mitigation Status:   {status_str}")
+    print(f"MSHR / LFB Capacity:          {report.mshr_entries} entries")
+    print(f"Sampling Rate:                {report.sampling_rate * 100.0:.1f}%")
+    print(f"MDS Isolation Score:          {report.mds_isolation_score * 100.0:.1f}%")
+    leak_str = (
+        "ISOLATED (0 Leaks)" if not report.residual_leak_detected else "LEAK DETECTED (Vulnerable)"
+    )
+    print(f"Line Fill Buffer Security:    {leak_str}")
+    print(f"Formal MDS Verdict:           {report.verdict}")
+    print("-" * 75)
+    if report.detected_vulnerabilities:
+        print("Detected Microarchitectural Data Sampling Vulnerabilities:")
+        for v in report.detected_vulnerabilities:
+            print(f"  [!] {v}")
+    else:
+        print("Line Fill Buffer Certified Strictly Isolated Across Contexts")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1516,6 +1560,7 @@ def main() -> int:
             "mmu",
             "bpu",
             "stlf",
+            "mds",
         ],
     )
     parser.add_argument(
@@ -1742,6 +1787,8 @@ def main() -> int:
             return _run_bpu(args)
         if args.command == "stlf":
             return _run_stlf(args)
+        if args.command == "mds":
+            return _run_mds(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")
