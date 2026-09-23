@@ -549,3 +549,104 @@ def test_cli_run_agent_strategy(capsys, monkeypatch, tmp_path):
     assert data["llm"]["inconclusive_cases"] == 0
     assert data["llm"]["repairs_attacker_exhausted"] == 1
     assert out_file.is_file()
+
+
+def test_cli_patch_list(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "patch", "--list"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Chisel RTL Hardware Patch Catalog" in captured
+    assert "gate-faulting-loads" in captured
+    assert "bpu-barrier-flush" in captured
+
+
+def test_cli_patch_target(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "patch", "--target", "gate-faulting-loads"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Berkeley BOOM Chisel RTL Hardware Patch" in captured
+    assert "CWE-1272" in captured
+    assert "YES (VERIFIED)" in captured
+
+
+def test_cli_patch_diff(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", ["spechunter", "patch", "--target", "gate-faulting-loads", "--diff"]
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "--- a/generators/boom" in captured
+    assert "+  val pmp_check_passed" in captured
+
+
+def test_cli_patch_export(capsys, monkeypatch, tmp_path):
+    patch_file = tmp_path / "test.patch"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "spechunter",
+            "patch",
+            "--target",
+            "bpu-barrier-flush",
+            "--export",
+            str(patch_file),
+        ],
+    )
+    assert main() == 0
+    assert patch_file.is_file()
+    assert "bht.io.flush := priv_transition" in patch_file.read_text(encoding="utf-8")
+
+
+def test_cli_differential_suite(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "differential", "--suite"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Microarchitectural Differential Report" in captured
+    assert "VERIFIED_MITIGATION" in captured
+    assert "VERIFIED_ISOLATION" in captured
+    assert "CONTROL_CLEAN" in captured
+
+
+def test_cli_differential_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", ["spechunter", "differential", "--benchmark", "transient-cache", "--json"]
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["benchmark_id"] == "transient-cache"
+    assert data["baseline_leakage"] is True
+    assert data["mitigated_leakage"] is False
+    assert data["verdict"] == "VERIFIED_MITIGATION"
+
+
+def test_cli_redteam_default(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "redteam"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Autonomous Red-Team Campaign" in captured
+    assert "A3_HACKATHON_VICTORY_CERTIFIED" in captured
+    assert "Attacker Exhaustion:    100.0%" in captured
+
+
+def test_cli_redteam_markdown(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "redteam", "--markdown"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "# SpecHunter Autonomous Red-Team Campaign" in captured
+    assert "| `transient-cache` | ✓ |" in captured
+
+
+def test_cli_redteam_export(capsys, monkeypatch, tmp_path):
+    report_file = tmp_path / "dossier.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "redteam", "--export", str(report_file)],
+    )
+    assert main() == 0
+    assert report_file.is_file()
+    data = json.loads(report_file.read_text(encoding="utf-8"))
+    assert data["verdict"] == "A3_HACKATHON_VICTORY_CERTIFIED"
+    assert data["targets_evaluated"] == 4

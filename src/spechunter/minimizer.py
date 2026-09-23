@@ -25,6 +25,7 @@ class MinimizationReport:
     total_validations: int
     minimized_digest: str
     steps_record: list[dict[str, Any]]
+    minimized_program: Program | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -148,4 +149,5 @@ class HierarchicalDeltaDebugger:
             total_validations=total_evals,
             minimized_digest=curr_program.digest,
             steps_record=steps,
+            minimized_program=curr_program,
         )

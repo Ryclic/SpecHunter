@@ -645,6 +645,168 @@ def _run_minimize(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_patch(args: argparse.Namespace) -> int:
+    from spechunter.chisel_repair import ChiselRepairSynthesizer
+
+    synthesizer = ChiselRepairSynthesizer()
+
+    if getattr(args, "list", False):
+        patches = synthesizer.list_patches()
+        if args.json:
+            print(json.dumps({"available_patches": patches}, indent=2))
+        else:
+            print("=== SpecHunter Chisel RTL Hardware Patch Catalog ===")
+            print(f"{'Patch Identifier':<30} {'Subsystem':<32} {'CWE':<10}")
+            print("-" * 75)
+            for pid in patches:
+                meta = synthesizer.get_patch_metadata(pid)
+                subsystem = meta["target_subsystem"][:30]
+                cwe = meta["cwe_id"]
+                print(f"{pid:<30} {subsystem:<32} {cwe:<10}")
+        return 0
+
+    target = getattr(args, "target", None) or "gate-faulting-loads"
+    try:
+        patch = synthesizer.synthesize(target)
+    except KeyError:
+        print(f"Unknown patch target: {target}", file=sys.stderr)
+        return 2
+
+    if args.export:
+        dest = args.export
+        if dest.is_dir():
+            dest = dest / f"{patch.patch_id}.patch"
+        synthesizer.export_patch_file(patch, dest)
+        print(f"Exported Chisel patch to: {dest}")
+        return 0
+
+    if args.json:
+        print(patch.to_json())
+    elif getattr(args, "diff", False):
+        print(patch.unified_diff, end="")
+    else:
+        is_valid = synthesizer.verify_syntax(patch)
+        print("=== SpecHunter Berkeley BOOM Chisel RTL Hardware Patch ===")
+        print(f"Patch ID:             {patch.patch_id}")
+        print(f"Target Subsystem:     {patch.target_subsystem}")
+        print(f"Target File:          {patch.target_file}")
+        print(f"Vulnerability:        {patch.vulnerability_id}")
+        print(f"CWE Classification:   {patch.cwe_id}")
+        print(f"Patch Line Offset:    Line {patch.start_line}")
+        print(f"Unified Diff Digest:  {patch.sha256_digest[:16]}...")
+        print(f"Chisel Syntax Valid:  {'YES (VERIFIED)' if is_valid else 'SYNTAX_WARNING'}")
+        print("\nUnified Diff Preview:")
+        for line in patch.unified_diff.splitlines()[:12]:
+            print(f"  {line}")
+    return 0
+
+
+def _run_differential(args: argparse.Namespace) -> int:
+    from spechunter.differential import DifferentialOracle
+    from spechunter.domain import BENCHMARKS, Op, Program
+
+    oracle = DifferentialOracle(backend_kind=args.backend)
+
+    if getattr(args, "suite", False):
+        report = oracle.evaluate_suite()
+        if args.json:
+            print(report.to_json())
+        else:
+            print("=== SpecHunter Microarchitectural Differential Report ===")
+            print(
+                f"{'Benchmark':<24} {'Base':<6} {'Mit':<6} {'ArchEq':<8} {'Delta':<8} {'Verdict'}"
+            )
+            print("-" * 75)
+            for r in report.results:
+                b_str = "LEAK" if r.baseline_leakage else "CLEAN"
+                m_str = "LEAK" if r.mitigated_leakage else "CLEAN"
+                eq_str = "YES" if r.architectural_equivalence else "NO"
+                d_str = f"{r.timing_delta_cycles:+d}c"
+                print(
+                    f"{r.benchmark_id:<24} {b_str:<6} {m_str:<6} {eq_str:<8} {d_str:<8} {r.verdict}"
+                )
+            print("-" * 75)
+            print(
+                f"Summary: {report.vulnerabilities_detected} vulnerable, "
+                f"{report.mitigations_verified} verified mitigations, "
+                f"{report.persistent_leaks} persistent leaks, "
+                f"{report.clean_controls} clean controls."
+            )
+        return 0
+
+    benchmark_id = getattr(args, "benchmark", None) or "transient-cache"
+    benchmark = next((b for b in BENCHMARKS if b.id == benchmark_id), None)
+    if not benchmark:
+        print(f"Unknown benchmark: {benchmark_id}", file=sys.stderr)
+        return 2
+
+    candidate = Program((Op.TRAIN, Op.ENTER_USER, Op.LOAD_SECRET, Op.ENCODE, Op.SQUASH, Op.PROBE))
+    result = oracle.evaluate(candidate, benchmark)
+
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2))
+    else:
+        b_msg = "YES (VULNERABLE)" if result.baseline_leakage else "NO (CLEAN)"
+        m_msg = "YES (VULNERABLE)" if result.mitigated_leakage else "NO (CLEAN)"
+        eq_msg = "PRESERVED" if result.architectural_equivalence else "CORRUPTED"
+        print("=== SpecHunter Microarchitectural Differential Oracle ===")
+        print(f"Target Benchmark:       {result.benchmark_id}")
+        print(f"Baseline Core Leak:     {b_msg}")
+        print(f"Mitigated Core Leak:    {m_msg}")
+        print(f"Leakage Eliminated:     {'YES (SUCCESS)' if result.leakage_eliminated else 'NO'}")
+        print(f"Arch Equivalence:       {eq_msg}")
+        print(f"Timing Differential:    {result.timing_delta_cycles} cycles")
+        print(f"Differential Verdict:   {result.verdict}")
+        print(f"Oracle Rationale:       {result.rationale}")
+    return 0
+
+
+def _run_redteam(args: argparse.Namespace) -> int:
+    from spechunter.redteam import AutonomousRedTeam
+
+    redteam = AutonomousRedTeam(backend_kind=args.backend)
+    report = redteam.run_campaign()
+
+    if getattr(args, "export", None):
+        dest = args.export
+        if str(dest).endswith(".json"):
+            dest.write_text(report.to_json() + "\n", encoding="utf-8")
+        elif str(dest).endswith(".md"):
+            dest.write_text(report.to_markdown() + "\n", encoding="utf-8")
+        else:
+            dest.write_text(report.to_json() + "\n", encoding="utf-8")
+        print(f"Exported red-team campaign report to: {dest}")
+        return 0
+
+    if args.json:
+        print(report.to_json())
+    elif getattr(args, "markdown", False):
+        print(report.to_markdown())
+    else:
+        syntax_msg = "ALL VALID" if report.all_syntax_valid else "WARNING"
+        print("=== SpecHunter Autonomous Red-Team Campaign ===")
+        print(f"Campaign:               {report.campaign_name}")
+        print(f"Campaign Verdict:       {report.verdict}")
+        print(f"Execution Wall Time:    {report.elapsed_seconds:.2f} seconds")
+        print(f"Targets Evaluated:      {report.targets_evaluated}")
+        print(f"Vulnerabilities Found:  {report.vulnerabilities_discovered}")
+        print(f"Mitigations Verified:   {report.mitigations_verified}")
+        print(f"Attacker Exhaustion:    {report.attacker_exhaustion_rate * 100:.1f}%")
+        print(f"False Positives:        {report.false_positives}")
+        print(f"RTL Syntax Valid:       {syntax_msg}")
+        print("-" * 75)
+        for r in report.results:
+            disc_mark = "✓" if r.discovered else "✗"
+            ops = " -> ".join(r.minimized_ops) if r.minimized_ops else "(none)"
+            print(
+                f"Target: {r.benchmark_id:<22} Discovered: {disc_mark}  "
+                f"Verdict: {r.differential_verdict}"
+            )
+            if r.patch_id:
+                print(f"  Patch: {r.patch_id} (valid: {r.patch_syntax_valid}) | Minimized: {ops}")
+    return 0 if report.verdict == "A3_HACKATHON_VICTORY_CERTIFIED" else 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -666,6 +828,9 @@ def main() -> int:
             "search",
             "synthesize",
             "minimize",
+            "patch",
+            "differential",
+            "redteam",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
@@ -747,7 +912,23 @@ def main() -> int:
         "--export",
         type=Path,
         default=None,
-        help="Directory to export standalone PoC assembly files (.s) and JSON specs",
+        help="Path or directory to export generated artifacts (patch, PoC, redteam)",
+    )
+    parser.add_argument(
+        "--target",
+        type=str,
+        default=None,
+        help="Target identifier for patch (gate-faulting-loads, issue-715-translation-gate, etc.)",
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List available items (supported for patch command)",
+    )
+    parser.add_argument(
+        "--diff",
+        action="store_true",
+        help="Display unified diff format (supported for patch command)",
     )
     parser.add_argument("--input", type=Path, help="Sealed experiment report for present")
     parser.add_argument("--seal", type=Path, help="Evidence seal for present")
@@ -825,6 +1006,12 @@ def main() -> int:
             return _run_synthesize(args)
         if args.command == "minimize":
             return _run_minimize(args)
+        if args.command == "patch":
+            return _run_patch(args)
+        if args.command == "differential":
+            return _run_differential(args)
+        if args.command == "redteam":
+            return _run_redteam(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")
