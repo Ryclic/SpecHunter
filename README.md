@@ -1,5 +1,13 @@
 # SpecHunter
 
+> **MICRO 2026 A³ Workshop — CHIA Hackathon Submission**
+> **Track:** *Discovery and resolution of architectural and microarchitectural bugs in widely-used open-source designs such as the BOOM core.*
+>
+> 📄 **4-Page Submission Paper:** [`paper/spechunter_micro2026.pdf`](paper/spechunter_micro2026.pdf) (LaTeX: [`paper/spechunter.tex`](paper/spechunter.tex))
+> 🖥️ **Interactive Sealed Evidence Demo:** [`docs/demo.html`](docs/demo.html)
+> 🚀 **Push-Button Reproducibility Kit:** `./tools/run_reproducibility_kit.sh`
+> 🧩 **Composable CHIA Block:** [`spechunter.chia_nodes.SpecHunterSecurityAuditBlock`](src/spechunter/chia_nodes.py) (See [`examples/run_chia_pipeline.py`](examples/run_chia_pipeline.py))
+
 An LLM-driven microarchitectural security system that attacks a real RISC-V BOOM RTL
 simulation, validates observations, minimizes a witness, selects a bounded repair, and
 returns to the attacker until the supported search is exhausted.
@@ -91,6 +99,15 @@ uv run spechunter run
 uv run spechunter compare --iterations 32 --seed 42 --output artifacts/comparison.json
 uv run spechunter evaluate --trials 1000 --iterations 16 \
   --output artifacts/fixture-evaluation.json
+
+# Interactive engineering and verification subcommands
+uv run spechunter verify           # Cryptographic verification of all 8 seals & paper
+uv run spechunter waveform         # Terminal cycle-accurate hazard timing explorer
+uv run spechunter taxonomy         # Formal Spectre microarchitectural taxonomy table
+uv run spechunter taxonomy --json  # Machine-readable JSON taxonomy export
+uv run spechunter audit --benchmark transient-cache --iterations 4 --json
+uv run spechunter benchmark        # Microarchitectural latency, throughput & memory profiler
+
 uv run pytest
 ```
 

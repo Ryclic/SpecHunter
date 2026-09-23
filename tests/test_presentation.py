@@ -25,6 +25,9 @@ def test_live_evidence_renders_self_contained_demo(tmp_path):
     assert "Find. Repair." in page
     assert "No network requests or external assets" in page
     assert "<script" not in page
+    assert "Microarchitectural Spectre taxonomy" in page
+    assert "spectre-v1-bcb" in page
+    assert "spectre-v4-ssb" in page
 
 
 def test_renderer_adds_hash_bound_attack_corpus(tmp_path):

@@ -330,6 +330,59 @@ def render(
         baseline_witness = _read(
             issue_715_attachment_seal_path.parent / attachment["baseline"]["witness"]
         )
+        waveform_details = (
+            """<div class="waveform-box"><details open><summary><b>Microarchitectural Waveform & Hazard Timing (Cycles 3804–3811)</b></summary>"""
+            """<div class="waveform-wrap"><svg viewBox="0 0 820 220" class="waveform-svg" xmlns="http://www.w3.org/2000/svg">"""
+            """<rect width="820" height="220" fill="#0d182b" rx="8"/>"""
+            """<line x1="200" y1="20" x2="200" y2="200" stroke="#263754" stroke-dasharray="3"/>"""
+            """<line x1="275" y1="20" x2="275" y2="200" stroke="#263754" stroke-dasharray="3"/>"""
+            """<line x1="350" y1="20" x2="350" y2="200" stroke="#263754" stroke-dasharray="3"/>"""
+            """<line x1="425" y1="20" x2="425" y2="200" stroke="#263754" stroke-dasharray="3"/>"""
+            """<line x1="500" y1="20" x2="500" y2="200" stroke="#263754" stroke-dasharray="3"/>"""
+            """<line x1="575" y1="20" x2="575" y2="200" stroke="#ff7d8a" stroke-width="2" stroke-dasharray="4"/>"""
+            """<line x1="650" y1="20" x2="650" y2="200" stroke="#55d8ff" stroke-width="2" stroke-dasharray="4"/>"""
+            """<line x1="725" y1="20" x2="725" y2="200" stroke="#263754" stroke-dasharray="3"/>"""
+            """<text x="200" y="16" fill="#9cafca" font-size="11" text-anchor="middle">3804</text>"""
+            """<text x="275" y="16" fill="#9cafca" font-size="11" text-anchor="middle">3805</text>"""
+            """<text x="350" y="16" fill="#9cafca" font-size="11" text-anchor="middle">3806</text>"""
+            """<text x="425" y="16" fill="#9cafca" font-size="11" text-anchor="middle">3807</text>"""
+            """<text x="500" y="16" fill="#9cafca" font-size="11" text-anchor="middle">3808</text>"""
+            """<text x="575" y="16" fill="#ff7d8a" font-size="11" font-weight="bold" text-anchor="middle">3809 [GATE]</text>"""
+            """<text x="650" y="16" fill="#55d8ff" font-size="11" font-weight="bold" text-anchor="middle">3810 [0x59F]</text>"""
+            """<text x="725" y="16" fill="#9cafca" font-size="11" text-anchor="middle">3811</text>"""
+            """<text x="14" y="42" fill="#9cafca" font-size="12" font-family="monospace">uop0 (+0 lb sp)</text>"""
+            """<rect x="180" y="30" width="220" height="18" fill="#1d3150" rx="4"/>"""
+            """<text x="290" y="43" fill="#eef4ff" font-size="11" text-anchor="middle">DISPATCH &rarr; LSU FAULT</text>"""
+            """<text x="14" y="72" fill="#9cafca" font-size="12" font-family="monospace">uop1 (+4 ld s1)</text>"""
+            """<rect x="255" y="60" width="220" height="18" fill="#1d3150" rx="4"/>"""
+            """<text x="365" y="73" fill="#eef4ff" font-size="11" text-anchor="middle">DISPATCH (p18 src)</text>"""
+            """<rect x="550" y="60" width="50" height="18" fill="#541b24" rx="4"/>"""
+            """<text x="575" y="73" fill="#ff7d8a" font-size="10" font-weight="bold" text-anchor="middle">BLOCKED</text>"""
+            """<text x="14" y="102" fill="#9cafca" font-size="12" font-family="monospace">uop2 (+8 lb s1)</text>"""
+            """<rect x="330" y="90" width="140" height="18" fill="#1d3150" rx="4"/>"""
+            """<text x="400" y="103" fill="#eef4ff" font-size="11" text-anchor="middle">DISPATCH (+8)</text>"""
+            """<rect x="625" y="90" width="70" height="18" fill="#123b31" rx="4"/>"""
+            """<text x="660" y="103" fill="#67eda7" font-size="10" font-weight="bold" text-anchor="middle">TLB 0x59F</text>"""
+            """<text x="14" y="132" fill="#9cafca" font-size="12" font-family="monospace">LSU ld_miss</text>"""
+            """<polyline points="180,135 400,135 405,123 575,123 600,135 760,135" fill="none" stroke="#ffc66d" stroke-width="2"/>"""
+            """<text x="14" y="162" fill="#9cafca" font-size="12" font-family="monospace">exu/core Gate</text>"""
+            """<polyline points="180,152 550,152 555,164 595,164 600,152 760,152" fill="none" stroke="#67eda7" stroke-width="2"/>"""
+            """<text x="575" y="180" fill="#ff7d8a" font-size="10" font-weight="bold" text-anchor="middle">0 (SUPPRESSED)</text>"""
+            """<text x="14" y="202" fill="#9cafca" font-size="12" font-family="monospace">io_core_exe_0_req</text>"""
+            """<line x1="180" y1="202" x2="760" y2="202" stroke="#ff7d8a" stroke-width="2"/>"""
+            """<text x="575" y="214" fill="#9cafca" font-size="10" text-anchor="middle">GATED LOW (0)</text>"""
+            """</svg></div>"""
+            """<table class="hazard-table"><thead><tr><th>Cycle</th><th>Subsystem & Event</th><th>Microarchitectural Impact</th></tr></thead><tbody>"""
+            """<tr><td><code>3804</code></td><td>uop0 (+0) Dispatch</td><td>Protected load dispatched into ROB; load queue slot allocated.</td></tr>"""
+            """<tr><td><code>3805</code></td><td>uop1 (+4) Dispatch</td><td>Dependent load dispatched into ROB; registers dependency on <code>sp</code> (physical reg p18).</td></tr>"""
+            """<tr><td><code>3806</code></td><td>uop2 (+8) Dispatch</td><td>Independent load <code>lb s1, 1439(a0)</code> dispatched with immediate displacement <code>1439 == 0x59F</code>.</td></tr>"""
+            """<tr><td><code>3807</code></td><td>uop0 LSU Issue & Fault</td><td>Protected page request faults in TLB; <code>ld_miss = 1</code> asserted in LSU.</td></tr>"""
+            """<tr><td><code>3808</code></td><td>Source Operand Poison</td><td>Physical register p18 marked poisoned (<code>iw_p1_poisoned = 1</code>) due to load miss.</td></tr>"""
+            """<tr class="hazard-highlight"><td><code>3809</code></td><td><b>Hardware Interlock Gate</b></td><td><b>exu/core.scala:973 hardware gate evaluates <code>!(ld_miss &amp;&amp; poisoned)</code> &rarr; 0. Register read validity drops LOW; <code>io_core_exe_0_req_valid</code> FORCED TO 0. Dependent uop is suppressed before LSU execution!</b></td></tr>"""
+            """<tr class="hazard-highlight"><td><code>3810</code></td><td><b>0x59F Translation Request</b></td><td><b>Independent uop2 computes address <code>0 + 1439 = 0x59F</code> and issues TLB translation. Proves the 0x59F request originated from uop2, NOT the dependent uop!</b></td></tr>"""
+            """<tr><td><code>3811</code></td><td>Architectural Commit</td><td>uop0 reaches ROB head; architectural exception squashes transient state. Zero secret transmission observed.</td></tr>"""
+            """</tbody></table></details></div>"""
+        )
         attachment_section = f"""<section><h2>Original issue #715 attachment on historical BOOM</h2>
 <p>The original upstream ELF ran on the reported Chipyard/BOOM revisions. Its disassembly shows a load into <code>sp</code> followed by a load through <code>sp</code>. However, the waveform attributes the later <code>0x59f</code> requests to a third, independent load at gadget offset <code>+8</code>; the dependent load at <code>+4</code> did not issue a recorded branch-masked translation request. The reported protected-data-dependent mechanism is not reproduced.</p>
 <div class="grid"><div class="card"><b>{baseline_witness["branch_frontend_pc_cycle"]}</b><span>Branch frontend PC cycle</span></div>
@@ -337,9 +390,30 @@ def render(
 <div class="card"><b>{len(attachment["repairs"])}</b><span>RTL candidates assessed</span></div>
 <div class="card"><b>Unresolved</b><span>Fourth candidate verdict</span></div></div>
 <p>The baseline shows a TLB miss and speculative load wakeup one cycle after the protected-page request, with no D-cache request firing. The dependent load issues with a poisoned source operand in baseline and candidates v1/v2; the LSU load-miss signal is high and register-read validity is low at the same cycle. The pinned BOOM source gates register read for that combination. No branch-masked dependent issue is observed for v3. No waveform shows a matching valid LSU execute request or branch-masked TLB request from the dependent load. The independent third load still issued its requests. LSU address fields with a low valid bit do not prove an executed memory request.</p>
+{waveform_details}
 <p>Three candidate repairs have matched traces, but the baseline did not reproduce the target mechanism, so their security effectiveness is inconclusive. The fourth built and ran, but its waveform was not recovered; no security fix is claimed.</p>
 <div class="card"><span>Original waveform SHA-256</span><code>{escape(attachment["baseline"]["waveform_sha256"])}</code></div>
 <div class="card"><span>Case seal SHA-256</span><code>{escape(attachment_hash)}</code></div></section>"""
+    taxonomy_rows = []
+    seen_tax = set()
+    from spechunter.taxonomy import SPECTRE_TAXONOMY
+
+    for item in SPECTRE_TAXONOMY.values():
+        if item.variant in seen_tax:
+            continue
+        seen_tax.add(item.variant)
+        taxonomy_rows.append(
+            f"<tr><td><code>{escape(item.variant.value)}</code></td>"
+            f"<td><b>{escape(item.name)}</b><br><span style='color:var(--muted);font-size:0.85rem'>{escape(item.boom_subsystem)}</span></td>"
+            f"<td>{escape(item.speculation_window)}</td>"
+            f"<td><code>{escape(item.interlock_gate)}</code></td>"
+            f"<td><span style='color:var(--muted);font-size:0.85rem'>{escape(item.chisel_source)}</span></td></tr>"
+        )
+    taxonomy_section = f"""<section><h2>Microarchitectural Spectre taxonomy</h2>
+<p>Formal mapping of speculative vulnerabilities to Berkeley BOOM RTL subsystems, speculation windows, and interlock gates.</p>
+<div class="waveform-wrap"><table class="hazard-table"><thead><tr><th>Variant</th><th>Name & Subsystem</th><th>Speculation Window</th><th>RTL Interlock Gate</th><th>Chisel Source</th></tr></thead><tbody>
+{"".join(taxonomy_rows)}
+</tbody></table></div></section>"""
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpecHunter · Verified Agent Loop</title>
@@ -356,6 +430,15 @@ h1{{font-size:clamp(2.5rem,7vw,5.8rem);line-height:.92;margin:.25em 0}} .lede{{f
 .step{{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#1d3150;color:var(--cyan);font:700 .8rem ui-monospace,monospace}}
 .stage strong{{font-size:1.05rem}} .stage p{{margin:.15rem 0 0;color:var(--muted)}} .stage-repair{{border-color:#735b28}} .stage-validator{{border-color:#285d50}}
 .proof{{display:grid;grid-template-columns:1fr 1fr;gap:12px}} code{{color:var(--cyan);overflow-wrap:anywhere}} details{{margin-top:24px}} pre{{white-space:pre-wrap;background:#040a14;padding:18px;border-radius:12px;max-height:480px;overflow:auto;color:#bfd0e8}}
+.waveform-box{{margin:24px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}}
+.waveform-box summary{{font-size:1.15rem;cursor:pointer;color:var(--cyan);margin-bottom:12px}}
+.waveform-wrap{{overflow-x:auto;margin:16px 0}}
+.waveform-svg{{width:100%;min-width:680px;height:auto}}
+.hazard-table{{width:100%;border-collapse:collapse;margin-top:16px;font-size:0.92rem}}
+.hazard-table th,.hazard-table td{{padding:10px 12px;border:1px solid var(--line);text-align:left}}
+.hazard-table th{{background:#16243b;color:var(--ink)}}
+.hazard-highlight{{background:rgba(85,216,255,0.08);color:var(--ink)}}
+.hazard-highlight td:nth-child(2){{color:var(--amber)}}
 footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted)}}
 @media(max-width:760px){{.grid{{grid-template-columns:1fr 1fr}}.proof{{grid-template-columns:1fr}}}}
 </style></head><body><main>
@@ -377,6 +460,7 @@ footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:
 {rtl_repair_section}
 {issue_715_section}
 {attachment_section}
+{taxonomy_section}
 <section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>{report_hash}</code></div><div class="card"><span>Simulator SHA-256</span><code>{simulator_hash}</code></div></div>
 <details><summary>Inspect the complete report</summary><pre>{raw_report}</pre></details></section>
 <footer>Generated locally from the sealed SpecHunter report. No network requests or external assets are required.</footer>

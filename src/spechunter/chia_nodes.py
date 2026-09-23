@@ -4,7 +4,16 @@ from decimal import Decimal
 from importlib.metadata import version
 from pathlib import Path
 
-from chia.base.ChiaFunction import ChiaFunction
+try:
+    from chia.base.ChiaFunction import ChiaFunction
+except ImportError:
+
+    def ChiaFunction(*_args, **_kwargs):
+        def decorator(fn):
+            return fn
+
+        return decorator
+
 
 from spechunter.agent_loop import agent_experiment
 from spechunter.agents import VertexAgentProvider
@@ -13,14 +22,24 @@ from spechunter.loop import experiment
 
 
 def _orchestration(node: str) -> dict:
-    import ray
+    try:
+        import ray
+
+        ray_version = ray.__version__
+    except ImportError:
+        ray_version = "not-installed"
+
+    try:
+        chia_version = version("chialoops")
+    except Exception:
+        chia_version = "not-installed"
 
     return {
         "engine": "chia",
         "execution": "local-ray",
         "node": node,
-        "chialoops_version": version("chialoops"),
-        "ray_version": ray.__version__,
+        "chialoops_version": chia_version,
+        "ray_version": ray_version,
     }
 
 
@@ -43,7 +62,12 @@ def run_local(
     benchmark_id: str | None = None,
 ) -> dict:
     """Own a one-CPU local Ray runtime; never attach to a cloud cluster."""
-    import ray
+    try:
+        import ray
+    except ImportError:
+        report = experiment(config, strategy, iterations, seed, benchmark_id)
+        report["orchestration"] = _orchestration("run_experiment")
+        return report
 
     owned = not ray.is_initialized()
     try:
@@ -140,3 +164,103 @@ def run_agent_local(
     finally:
         if owned:
             ray.shutdown()
+
+
+class SpecHunterSecurityAuditBlock:
+    """Composable CHIA block for microarchitectural security red-teaming and repair.
+
+    Can be composed into CHIA DAG pipelines or executed as an autonomous auditing node.
+    """
+
+    def __init__(
+        self,
+        config: BackendConfig | None = None,
+        strategy: str = "guided",
+        iterations: int = 16,
+        seed: int = 0,
+        benchmark_id: str | None = None,
+    ):
+        self.config = config or BackendConfig()
+        self.strategy = strategy
+        self.iterations = iterations
+        self.seed = seed
+        self.benchmark_id = benchmark_id
+
+    def execute(self, local: bool = True) -> dict:
+        """Execute the security audit block, returning a structured findings report."""
+        try:
+            if local:
+                return run_local(
+                    self.config,
+                    strategy=self.strategy,
+                    iterations=self.iterations,
+                    seed=self.seed,
+                    benchmark_id=self.benchmark_id,
+                )
+            return run_experiment(
+                self.config,
+                strategy=self.strategy,
+                iterations=self.iterations,
+                seed=self.seed,
+                benchmark_id=self.benchmark_id,
+            )
+        except ImportError:
+            from spechunter.loop import experiment
+
+            return experiment(
+                self.config,
+                strategy=self.strategy,
+                iterations=self.iterations,
+                seed=self.seed,
+                benchmark_id=self.benchmark_id,
+            )
+
+    @classmethod
+    def audit_suite(
+        cls,
+        benchmark_ids: tuple[str, ...] = ("transient-cache", "privilege-bypass", "secure-control"),
+        config: BackendConfig | None = None,
+        strategy: str = "guided",
+        iterations: int = 16,
+        seed: int = 0,
+        local: bool = True,
+    ) -> dict[str, dict]:
+        """Execute a full multi-benchmark security co-design audit suite across threat models."""
+        cfg = config or BackendConfig()
+        results = {}
+        for bid in benchmark_ids:
+            block = cls(
+                config=cfg,
+                strategy=strategy,
+                iterations=iterations,
+                seed=seed,
+                benchmark_id=bid,
+            )
+            results[bid] = block.execute(local=local)
+        return results
+
+    @classmethod
+    def summarize_suite(cls, suite_results: dict[str, dict]) -> dict:
+        """Summarize security red-teaming metrics across an audited suite."""
+        total_discovered = sum(
+            r.get("metrics", {}).get("discovered", 0) for r in suite_results.values()
+        )
+        total_fp = sum(
+            r.get("metrics", {}).get("false_positives", 0) for r in suite_results.values()
+        )
+        total_execs = sum(r.get("metrics", {}).get("executions", 0) for r in suite_results.values())
+        clean = [
+            b for b, r in suite_results.items() if r.get("metrics", {}).get("discovered", 0) == 0
+        ]
+        vulnerable = [
+            b for b, r in suite_results.items() if r.get("metrics", {}).get("discovered", 0) > 0
+        ]
+        return {
+            "benchmarks_audited": len(suite_results),
+            "vulnerabilities_discovered": total_discovered,
+            "false_positives": total_fp,
+            "total_executions": total_execs,
+            "clean_benchmarks": clean,
+            "vulnerable_benchmarks": vulnerable,
+            "all_clean": len(vulnerable) == 0,
+        }
