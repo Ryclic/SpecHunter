@@ -59,9 +59,23 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
      quickstart judge reproducibility guide, deliverable inventory, and cryptographic provenance manifest.
    - Verified by `tests/test_submission.py`, `tools/verify_all_artifacts.py`, and `spechunter verify`.
 
-Validation: 200 tests passed, 1 skipped, 4 deselected in `.venv/bin/pytest -q -m 'not chia'` (205 total tests).
+8. **Hardware Security Advisory Generator (`spechunter advisory`):**
+   - Implemented `src/spechunter/advisory.py` modeling CVE/HSA-grade security advisories (`HSA-2026-0001`).
+   - Details speculative memory translation and transient execution analysis in Berkeley BOOM (CWE-1037, CVSS 7.4).
+   - Generates publication-ready dark-mode HTML (`--html`), Markdown, and machine-readable JSON (`--json`).
+   - Includes microarchitectural root cause analysis in `generators/boom/src/main/scala/exu/lsu/lsu.scala`,
+     cycle-by-cycle hazard timeline (cycles 3804-3811), and 64-execution empirical regression scorecard.
+
+9. **PoC Exploit Disassembler & Exporter (`spechunter poc`):**
+   - Implemented `src/spechunter/poc.py` modeling canonical minimized attack gadgets:
+     `transient-cache` (Spectre-v1), `privilege-bypass` (Meltdown PMP), and `issue-715` (BOOM LSU gating).
+   - Disassembles machine code with microarchitectural pipeline phase annotations.
+   - Exports standalone RISC-V assembly files (`.s`) and JSON schemas via `--export`.
+
+Validation: 216 tests passed, 1 skipped, 6 deselected in `.venv/bin/pytest -q -m 'not chia'` (222 total passing with CHIA).
 Ruff lint and format pass cleanly (`0 errors`). All 8 cryptographic evidence streams,
 `docs/demo.html`, and `artifacts/demo.html` verified with embedded microarchitectural taxonomy. All seals 100% valid.
+
 
 ## Issue #715 isolated gadget diagnostic (PR #17 follow-up)
 

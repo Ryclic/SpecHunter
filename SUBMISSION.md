@@ -55,7 +55,7 @@ git checkout feat/hackathon-paper-and-submission
 
 ### Verification Output Summary
 - **Linting & Code Quality**: 85 files verified, 0 errors, 100% formatted.
-- **Unit Test Suite**: 200 passed, 1 skipped, 4 deselected in 55s.
+- **Unit Test Suite**: 216 passed, 1 skipped, 6 deselected (222 tests total passing).
 - **Cryptographic Seal Verification**: All 8 evidence streams verified 100%.
 - **Paper Deliverable**: `paper/spechunter_micro2026.pdf` verified (strictly 4 pages, publication-ready format).
 - **Interactive Presentation**: `docs/demo.html` verified (zero `<script>` tags, inline SVG waveform, formal microarchitectural taxonomy table).
@@ -86,7 +86,16 @@ uv run spechunter benchmark
 uv run spechunter benchmark --json
 uv run spechunter benchmark --svg artifacts/benchmark_comparison.svg
 
-# 6. View interactive HTML demonstration
+# 6. Generate Hardware Security Advisory (HSA-2026-0001) in Markdown, HTML, or JSON
+uv run spechunter advisory
+uv run spechunter advisory --html artifacts/advisory.html
+uv run spechunter advisory --json
+
+# 7. Disassemble and export minimized Proof-of-Concept exploit assembly gadgets
+uv run spechunter poc --name issue-715
+uv run spechunter poc --export artifacts/pocs
+
+# 8. View interactive HTML demonstration
 xdg-open docs/demo.html  # or open in any modern browser
 ```
 

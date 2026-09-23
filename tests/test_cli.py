@@ -330,3 +330,58 @@ def test_cli_audit_suite_live(capsys, monkeypatch):
     assert "transient-cache" in captured
     assert "privilege-bypass" in captured
     assert "secure-control" in captured
+
+
+def test_cli_advisory_markdown(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "advisory"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Hardware Security Advisory: HSA-2026-0001" in captured
+    assert "CWE-1037" in captured
+    assert "exu/lsu/lsu.scala" in captured
+
+
+def test_cli_advisory_json(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "advisory", "--json"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["advisory_id"] == "HSA-2026-0001"
+    assert data["cvss_score"] == 7.4
+
+
+def test_cli_advisory_html(capsys, monkeypatch, tmp_path):
+    out_html = tmp_path / "advisory.html"
+    monkeypatch.setattr(sys, "argv", ["spechunter", "advisory", "--html", str(out_html)])
+    assert main() == 0
+    assert out_html.is_file()
+    html_content = out_html.read_text(encoding="utf-8")
+    assert "<!DOCTYPE html>" in html_content
+    assert "HSA-2026-0001" in html_content
+
+
+def test_cli_poc_text(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "poc", "--name", "issue-715"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Proof-of-Concept: issue-715" in captured
+    assert "0x80028e08" in captured
+
+
+def test_cli_poc_json(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "poc", "--json"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert "transient-cache" in data
+    assert "issue-715" in data
+
+
+def test_cli_poc_export(capsys, monkeypatch, tmp_path):
+    out_dir = tmp_path / "poc_export"
+    monkeypatch.setattr(sys, "argv", ["spechunter", "poc", "--export", str(out_dir)])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Exported 6 PoC artifact files" in captured
+    assert (out_dir / "transient-cache.s").is_file()
+    assert (out_dir / "issue-715.s").is_file()

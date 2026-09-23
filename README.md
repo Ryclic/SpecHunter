@@ -111,6 +111,12 @@ uv run spechunter audit --suite --json  # Machine-readable suite summary & findi
 uv run spechunter benchmark        # Microarchitectural latency, throughput & memory profiler
 uv run spechunter benchmark --json # Machine-readable performance metrics export
 uv run spechunter benchmark --svg artifacts/benchmark_comparison.svg  # Dark-mode SVG chart export
+uv run spechunter advisory        # Hardware Security Advisory (HSA-2026-0001) in Markdown
+uv run spechunter advisory --html artifacts/advisory.html  # Dark-mode standalone HTML advisory
+uv run spechunter advisory --json  # Machine-readable security advisory JSON schema
+uv run spechunter poc             # Disassembled PoC exploit gadgets & microarchitectural phases
+uv run spechunter poc --name issue-715  # Specific BOOM issue #715 translation gadget disassembly
+uv run spechunter poc --export artifacts/pocs  # Export standalone RISC-V assembly (.s) & JSON
 
 uv run pytest
 ```

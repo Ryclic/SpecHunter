@@ -393,6 +393,69 @@ def _run_benchmark(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_advisory(args: argparse.Namespace) -> int:
+    from spechunter.advisory import (
+        get_advisory_data,
+        render_advisory_html,
+        render_advisory_json,
+        render_advisory_markdown,
+    )
+
+    data = get_advisory_data()
+    is_json = getattr(args, "json", False)
+    html_path = getattr(args, "html", None)
+    out_path = getattr(args, "output", None)
+
+    if html_path is not None:
+        html_str = render_advisory_html(data)
+        html_path.write_text(html_str, encoding="utf-8")
+        print(f"Hardware Security Advisory saved to HTML: {html_path}")
+
+    if is_json:
+        print(render_advisory_json(data))
+    elif out_path != Path("artifacts/run.json"):
+        md_str = render_advisory_markdown(data)
+        out_path.write_text(md_str, encoding="utf-8")
+        print(f"Hardware Security Advisory saved to Markdown: {out_path}")
+    else:
+        print(render_advisory_markdown(data))
+
+    return 0
+
+
+def _run_poc(args: argparse.Namespace) -> int:
+    from spechunter.poc import (
+        export_pocs,
+        list_pocs,
+        render_poc_json,
+        render_poc_text,
+    )
+
+    is_json = getattr(args, "json", False)
+    export_dir = getattr(args, "export", None)
+    poc_name = getattr(args, "name", None)
+
+    if export_dir is not None:
+        exported = export_pocs(export_dir)
+        print(f"Exported {len(exported)} PoC artifact files to: {export_dir}")
+        for path in exported:
+            print(f"  • {path.name}")
+        return 0
+
+    if is_json:
+        print(render_poc_json(poc_name))
+        return 0
+
+    if poc_name is not None:
+        print(render_poc_text(poc_name))
+    else:
+        for name in list_pocs():
+            print(render_poc_text(name))
+            print()
+
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -407,6 +470,8 @@ def main() -> int:
             "waveform",
             "taxonomy",
             "benchmark",
+            "advisory",
+            "poc",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
@@ -418,7 +483,7 @@ def main() -> int:
     parser.add_argument(
         "--json",
         action="store_true",
-        help="Format output as JSON (supported for audit, taxonomy, and benchmark)",
+        help="Format output as JSON (supported for audit, taxonomy, benchmark, advisory, poc)",
     )
     parser.add_argument(
         "--suite",
@@ -430,6 +495,24 @@ def main() -> int:
         type=Path,
         default=None,
         help="Generate SVG comparison chart (supported for benchmark command)",
+    )
+    parser.add_argument(
+        "--html",
+        type=Path,
+        default=None,
+        help="Generate HTML output (supported for advisory command)",
+    )
+    parser.add_argument(
+        "--name",
+        type=str,
+        default=None,
+        help="PoC gadget identifier (e.g. transient-cache, privilege-bypass, issue-715)",
+    )
+    parser.add_argument(
+        "--export",
+        type=Path,
+        default=None,
+        help="Directory to export standalone PoC assembly files (.s) and JSON specs",
     )
     parser.add_argument("--input", type=Path, help="Sealed experiment report for present")
     parser.add_argument("--seal", type=Path, help="Evidence seal for present")
@@ -493,6 +576,10 @@ def main() -> int:
             return _run_taxonomy(args)
         if args.command == "benchmark":
             return _run_benchmark(args)
+        if args.command == "advisory":
+            return _run_advisory(args)
+        if args.command == "poc":
+            return _run_poc(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")
