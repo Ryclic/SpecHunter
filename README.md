@@ -1,5 +1,13 @@
 # SpecHunter
 
+> **MICRO 2026 A³ Workshop — CHIA Hackathon Submission**
+> **Track:** *Discovery and resolution of architectural and microarchitectural bugs in widely-used open-source designs such as the BOOM core.*
+>
+> 📄 **4-Page Submission Paper:** [`paper/spechunter_micro2026.pdf`](paper/spechunter_micro2026.pdf) (LaTeX: [`paper/spechunter.tex`](paper/spechunter.tex))
+> 🖥️ **Interactive Sealed Evidence Demo:** [`docs/demo.html`](docs/demo.html)
+> 🚀 **Push-Button Reproducibility Kit:** `./tools/run_reproducibility_kit.sh`
+> 🧩 **Composable CHIA Block:** [`spechunter.chia_nodes.SpecHunterSecurityAuditBlock`](src/spechunter/chia_nodes.py) (See [`examples/run_chia_pipeline.py`](examples/run_chia_pipeline.py))
+
 An LLM-driven microarchitectural security system that attacks a real RISC-V BOOM RTL
 simulation, validates observations, minimizes a witness, selects a bounded repair, and
 returns to the attacker until the supported search is exhausted.

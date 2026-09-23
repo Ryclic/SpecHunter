@@ -140,3 +140,42 @@ def run_agent_local(
     finally:
         if owned:
             ray.shutdown()
+
+
+class SpecHunterSecurityAuditBlock:
+    """Composable CHIA block for microarchitectural security red-teaming and repair.
+
+    Can be composed into CHIA DAG pipelines or executed as an autonomous auditing node.
+    """
+
+    def __init__(
+        self,
+        config: BackendConfig | None = None,
+        strategy: str = "guided",
+        iterations: int = 16,
+        seed: int = 0,
+        benchmark_id: str | None = None,
+    ):
+        self.config = config or BackendConfig()
+        self.strategy = strategy
+        self.iterations = iterations
+        self.seed = seed
+        self.benchmark_id = benchmark_id
+
+    def execute(self, local: bool = True) -> dict:
+        """Execute the security audit block, returning a structured findings report."""
+        if local:
+            return run_local(
+                self.config,
+                strategy=self.strategy,
+                iterations=self.iterations,
+                seed=self.seed,
+                benchmark_id=self.benchmark_id,
+            )
+        return run_experiment(
+            self.config,
+            strategy=self.strategy,
+            iterations=self.iterations,
+            seed=self.seed,
+            benchmark_id=self.benchmark_id,
+        )

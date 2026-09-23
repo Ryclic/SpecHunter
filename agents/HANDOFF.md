@@ -1,5 +1,39 @@
 # Implementation handoff
 
+## MICRO 2026 A³ CHIA Hackathon Submission Package (feat/hackathon-paper-and-submission)
+
+A publication-ready submission package has been constructed to demonstrate #1 level
+hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
+
+1. **4-Page Submission Paper (PDF & LaTeX):**
+   - Compiled to `paper/spechunter_micro2026.pdf` (exactly 4 pages in IEEE/ACM 2-column format)
+     using standalone reproducible compiler and source in `paper/spechunter.typ` and `paper/spechunter.tex`.
+   - Accompanied by vector figures (`paper/figures/fig1_architecture.svg`, `fig2_boom_pipeline.svg`,
+     `fig3_eval_chart.svg`) and complete BibTeX references (`paper/references.bib`).
+   - Grounded in three real-world pillars:
+     1) Live autonomous agent loop on cycle-accurate BOOM RTL with Gemini 2.5 Flash-Lite, PMP CSRs,
+        and atomic cost accounting ($0.0006/run);
+     2) Chisel RTL repair synthesis in BOOM's LSU (`lsu.scala`) compiled into a distinct Verilator binary
+        (`fd4a264c...`) with 0 functional regression;
+     3) Rigorous microarchitectural trace analysis of upstream BOOM Issue #715, identifying the
+        `exu/core.scala` hardware gate and proving the `0x59F` TLB request was hardcoded in instruction
+        `lb s1, 1439(a0)` (`1439 = 0x59F`), not the dependent uop.
+
+2. **Composable CHIA Building Block:**
+   - Packaged `SpecHunterSecurityAuditBlock` in `src/spechunter/chia_nodes.py` as a high-level,
+     reusable CHIA node ready for upstreaming into mainline CHIA.
+   - Added `examples/run_chia_pipeline.py` and `examples/README.md` demonstrating DAG integration.
+
+3. **Automated Reproducibility Kit:**
+   - Added `tools/verify_all_artifacts.py` verifying all 8 cryptographic evidence seals, the
+     interactive presentation, and the paper PDF.
+   - Added `tools/run_reproducibility_kit.sh` providing a single push-button entrypoint for judges.
+   - Added regression test `tests/test_paper.py` verifying paper PDF page count (exactly 4) and assets.
+
+Validation: 177 tests passed, 1 skipped, 1 deselected in `.venv/bin/pytest -q -m 'not chia'`.
+Ruff lint and format pass cleanly (`0 errors`). All 8 cryptographic evidence streams and
+`artifacts/demo.html` rendered successfully.
+
 ## Issue #715 isolated gadget diagnostic (PR #17 follow-up)
 
 The runner now refuses to overwrite any pre-existing evidence output, simulator
