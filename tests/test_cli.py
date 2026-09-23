@@ -650,3 +650,63 @@ def test_cli_redteam_export(capsys, monkeypatch, tmp_path):
     data = json.loads(report_file.read_text(encoding="utf-8"))
     assert data["verdict"] == "A3_HACKATHON_VICTORY_CERTIFIED"
     assert data["targets_evaluated"] == 4
+
+
+def test_cli_sva_list(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "sva", "--list"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SystemVerilog Assertion (SVA) Catalog" in captured
+    assert "pmp_speculative_isolation" in captured
+    assert "issue_715_translation_order" in captured
+
+
+def test_cli_sva_target(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "sva", "--target", "pmp-speculative-isolation"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "module pmp_speculative_isolation_checker" in captured
+    assert "assert property" in captured
+    assert "bind LSU" in captured
+
+
+def test_cli_sva_export(capsys, monkeypatch, tmp_path):
+    out_file = tmp_path / "boom_sva.sv"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "sva", "--export", str(out_file)],
+    )
+    assert main() == 0
+    assert out_file.is_file()
+    assert "`define SPECHUNTER_SVA_SV" in out_file.read_text(encoding="utf-8")
+
+
+def test_cli_profile_default(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "profile"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Hardware Mitigation Performance Overhead Analysis" in captured
+    assert "gate-faulting-loads" in captured
+    assert "Average SpecHunter IPC Overhead" in captured
+
+
+def test_cli_profile_markdown(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "profile", "--markdown"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "# SpecHunter Hardware Mitigation Performance Overhead Analysis" in captured
+    assert "| `gate-faulting-loads` |" in captured
+
+
+def test_cli_profile_json(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "profile", "--json"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert "average_ipc_overhead_pct" in data
+    assert len(data["profiles"]) >= 3

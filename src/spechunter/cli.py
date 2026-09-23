@@ -807,6 +807,86 @@ def _run_redteam(args: argparse.Namespace) -> int:
     return 0 if report.verdict == "A3_HACKATHON_VICTORY_CERTIFIED" else 1
 
 
+def _run_sva(args: argparse.Namespace) -> int:
+    from spechunter.sva import SVAGenerator
+
+    gen = SVAGenerator()
+
+    if getattr(args, "list", False):
+        print("=== SpecHunter SystemVerilog Assertion (SVA) Catalog ===")
+        print(f"{'Property ID':<30} {'Module':<12} {'CWE':<10} Subsystem")
+        print("-" * 75)
+        for pid in gen.list_properties():
+            prop = gen.get_property(pid)
+            print(
+                f"{prop.property_id:<30} {prop.target_module:<12} {prop.cwe_id:<10} "
+                f"{prop.subsystem}"
+            )
+        return 0
+
+    if getattr(args, "export", None):
+        dest = args.export
+        gen.export_bind_file(dest)
+        print(f"Exported SVA bind file to: {dest}")
+        return 0
+
+    if args.json:
+        print(gen.to_json())
+        return 0
+
+    target = getattr(args, "target", None)
+    if target:
+        prop = gen.get_property(target)
+        print(prop.to_systemverilog())
+        return 0
+
+    # Default: display full bind file
+    print(gen.generate_bind_file())
+    return 0
+
+
+def _run_profile(args: argparse.Namespace) -> int:
+    from spechunter.profiler import HardwareProfiler
+
+    profiler = HardwareProfiler()
+    report = profiler.profile_all()
+
+    if getattr(args, "export", None):
+        dest = args.export
+        if str(dest).endswith(".json"):
+            dest.write_text(report.to_json() + "\n", encoding="utf-8")
+        elif str(dest).endswith(".md"):
+            dest.write_text(report.to_markdown() + "\n", encoding="utf-8")
+        else:
+            dest.write_text(report.to_json() + "\n", encoding="utf-8")
+        print(f"Exported hardware profiling report to: {dest}")
+        return 0
+
+    if args.json:
+        print(report.to_json())
+    elif getattr(args, "markdown", False):
+        print(report.to_markdown())
+    else:
+        print("=== SpecHunter Hardware Mitigation Performance Overhead Analysis ===")
+        print(
+            f"{'Patch Identifier':<28} {'IPC Loss':<10} {'Naive Loss':<12} {'Speedup':<10} Status"
+        )
+        print("-" * 75)
+        for p in report.profiles:
+            ipc_str = f"{p.ipc_overhead_pct:.2f}%"
+            naive_str = f"{p.naive_ipc_overhead_pct:.1f}%"
+            speed_str = f"{p.pareto_efficiency_ratio:.0f}x"
+            print(
+                f"{p.patch_id:<28} {ipc_str:<10} {naive_str:<12} "
+                f"{speed_str:<10} {p.security_isolation_pct:.0f}% Isolated"
+            )
+        print("-" * 75)
+        print(f"Average SpecHunter IPC Overhead: {report.average_ipc_overhead_pct:.2f}%")
+        print(f"Average Naive Mitigation Overhead: {report.average_naive_overhead_pct:.1f}%")
+        print(f"Mean Speedup vs Naive Baseline:  {report.overall_speedup_vs_naive:.1f}x")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -831,6 +911,8 @@ def main() -> int:
             "patch",
             "differential",
             "redteam",
+            "sva",
+            "profile",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
@@ -1012,6 +1094,10 @@ def main() -> int:
             return _run_differential(args)
         if args.command == "redteam":
             return _run_redteam(args)
+        if args.command == "sva":
+            return _run_sva(args)
+        if args.command == "profile":
+            return _run_profile(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")
