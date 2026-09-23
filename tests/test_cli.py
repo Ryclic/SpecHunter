@@ -124,3 +124,15 @@ def test_cli_verify_all(capsys, monkeypatch):
     assert "ALL ARTIFACTS AND SEALS 100% VERIFIED" in captured
     assert "Historical Issue #715 Attachment: VERIFIED" in captured
     assert "Submission Dossier (SUBMISSION.md): VERIFIED" in captured
+
+
+def test_cli_taxonomy(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "taxonomy"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Berkeley BOOM Microarchitectural Spectre Taxonomy" in captured
+    assert "spectre-v1-bcb" in captured
+    assert "spectre-v2-bti" in captured
+    assert "spectre-v4-ssb" in captured
+    assert "meltdown-rdcl" in captured
+    assert "Total Formal Taxonomy Variants: 6" in captured

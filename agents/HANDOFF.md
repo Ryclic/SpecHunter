@@ -25,25 +25,28 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
      hardware units (`ifu/bpu.scala`, `exu/core.scala`, `exu/lsu/lsu.scala`), speculation windows,
      and RTL interlock gates. Tested via `tests/test_taxonomy.py`.
 
-3. **CLI Subcommands (`spechunter audit`, `verify`, `waveform`):**
+3. **CLI Subcommands (`spechunter audit`, `verify`, `waveform`, `taxonomy`):**
    - Added `spechunter waveform` for terminal visualization of Berkeley BOOM Issue #715 hazard timing.
+   - Added `spechunter taxonomy` for terminal formal Spectre microarchitectural taxonomy mapping.
    - Added `spechunter verify` for push-button cryptographic artifact verification.
    - Added `spechunter audit` for invoking the composable CHIA security audit block directly.
-   - Comprehensive test suite in `tests/test_cli.py`.
+   - Comprehensive test suite in `tests/test_cli.py` (6 unit and integration tests).
 
 4. **Microarchitectural Waveform & Hazard Timing Explorer (`src/spechunter/presentation.py`):**
    - Embedded cycle-accurate SVG timing diagram (cycles 3804–3811) and microarchitectural hazard
      table into `artifacts/demo.html` and `docs/demo.html`, adhering strictly to zero-`<script>`
      design for maximum portability and security.
 
-5. **Composable CHIA Building Block:**
+5. **Composable CHIA Building Block & Multi-Benchmark Pipeline:**
    - Packaged `SpecHunterSecurityAuditBlock` in `src/spechunter/chia_nodes.py` as a high-level,
      reusable CHIA node ready for upstreaming into mainline CHIA.
-   - Added `examples/run_chia_pipeline.py` and `examples/README.md` demonstrating DAG integration.
+   - Added multi-benchmark pipeline in `examples/run_chia_pipeline.py` demonstrating co-design
+     audits across Spectre-v1, Meltdown, and Secure Baseline with Ray orchestration.
+   - Added `tests/test_chia.py` covering multi-benchmark audit block execution.
 
 6. **Automated Reproducibility Kit:**
    - Single push-button script: `tools/run_reproducibility_kit.sh`.
-   - Comprehensive validation: 185 unit tests passed, all 8 cryptographic evidence seals verified,
+   - Comprehensive validation: 186 unit tests passed, all 8 cryptographic evidence seals verified,
      4-page IEEE/ACM paper verified, interactive demo generated.
 
 7. **Complete HotCRP Submission Dossier (`SUBMISSION.md`):**
@@ -51,7 +54,7 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
      quickstart judge reproducibility guide, deliverable inventory, and cryptographic provenance manifest.
    - Verified by `tests/test_submission.py` and `tools/verify_all_artifacts.py`.
 
-Validation: 185 tests passed, 1 skipped, 2 deselected in `.venv/bin/pytest -q -m 'not chia'`.
+Validation: 186 tests passed, 1 skipped, 3 deselected in `.venv/bin/pytest -q -m 'not chia'`.
 Ruff lint and format pass cleanly (`0 errors`). All 8 cryptographic evidence streams and
 `artifacts/demo.html` rendered successfully. All seals 100% valid.
 

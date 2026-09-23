@@ -54,8 +54,8 @@ git checkout feat/hackathon-paper-and-submission
 ```
 
 ### Verification Output Summary
-- **Linting & Code Quality**: 83 files verified, 0 errors, 100% formatted.
-- **Unit Test Suite**: 184 passed, 1 skipped, 2 deselected in 38s.
+- **Linting & Code Quality**: 85 files verified, 0 errors, 100% formatted.
+- **Unit Test Suite**: 186 passed, 1 skipped, 3 deselected in 38s.
 - **Cryptographic Seal Verification**: All 8 evidence streams verified 100%.
 - **Paper Deliverable**: `paper/spechunter_micro2026.pdf` verified (strictly 4 pages, publication-ready format).
 - **Interactive Presentation**: `artifacts/demo.html` generated (zero `<script>` tags, inline SVG waveform).
@@ -71,10 +71,13 @@ uv run spechunter verify
 # 2. View cycle-accurate microarchitectural hazard timing diagram in terminal
 uv run spechunter waveform
 
-# 3. Execute composable CHIA security audit block on Spectre-v1 benchmark
+# 3. View formal Berkeley BOOM Spectre microarchitectural taxonomy
+uv run spechunter taxonomy
+
+# 4. Execute composable CHIA security audit block on Spectre-v1 benchmark
 uv run spechunter audit --benchmark transient-cache --iterations 4
 
-# 4. View interactive HTML demonstration
+# 5. View interactive HTML demonstration
 xdg-open docs/demo.html  # or open in any modern browser
 ```
 

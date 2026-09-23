@@ -189,11 +189,51 @@ def _run_audit(args: argparse.Namespace) -> int:
     return 2 if metrics.get("inconclusive_cases", 0) else 0
 
 
+def _run_taxonomy(args: argparse.Namespace) -> int:
+    from spechunter.taxonomy import SPECTRE_TAXONOMY
+
+    print("=== Berkeley BOOM Microarchitectural Spectre Taxonomy ===")
+    print(f"{'Variant':<20} | {'BOOM Subsystem':<35} | {'Interlock Gate':<38} | {'Chisel Source'}")
+    print("-" * 125)
+    seen = set()
+    for item in SPECTRE_TAXONOMY.values():
+        if item.variant in seen:
+            continue
+        seen.add(item.variant)
+        gate_summary = (
+            item.interlock_gate
+            if len(item.interlock_gate) <= 36
+            else item.interlock_gate[:33] + "..."
+        )
+        subsys_summary = (
+            item.boom_subsystem
+            if len(item.boom_subsystem) <= 33
+            else item.boom_subsystem[:30] + "..."
+        )
+        row = (
+            f"{item.variant.value:<20} | {subsys_summary:<35} | "
+            f"{gate_summary:<38} | {item.chisel_source}"
+        )
+        print(row)
+    print("-" * 125)
+    print(f"Total Formal Taxonomy Variants: {len(seen)}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
-        choices=["run", "compare", "present", "evaluate", "verify", "audit", "waveform"],
+        choices=[
+            "run",
+            "compare",
+            "present",
+            "evaluate",
+            "verify",
+            "audit",
+            "waveform",
+            "taxonomy",
+        ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
     parser.add_argument("--strategy", choices=["guided", "random", "llm"], default="guided")
@@ -259,6 +299,8 @@ def main() -> int:
             return _run_waveform()
         if args.command == "audit":
             return _run_audit(args)
+        if args.command == "taxonomy":
+            return _run_taxonomy(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")
