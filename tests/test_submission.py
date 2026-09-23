@@ -19,3 +19,4 @@ def test_submission_dossier_complete():
     assert "docs/demo.html" in content
     assert "spechunter taxonomy" in content
     assert "spechunter ablation" in content
+    assert "spechunter harness" in content

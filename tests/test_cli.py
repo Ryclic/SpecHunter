@@ -416,3 +416,40 @@ def test_cli_ablation_markdown(capsys, monkeypatch, tmp_path):
     content = out_file.read_text(encoding="utf-8")
     assert "# SpecHunter Ablation Study" in content
     assert "| Strategy | Discovery Rate (%) |" in content
+
+
+def test_cli_harness_terminal(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "harness"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Berkeley BOOM Upstream Security Test Harness" in captured
+    assert "transient-cache" in captured
+    assert "VULNERABILITY_CONFIRMED" in captured
+
+
+def test_cli_harness_verify_mitigations(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "harness", "--verify-mitigations"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "MITIGATED" in captured
+    assert "Confirmed Vulnerabilities: 0" in captured
+
+
+def test_cli_harness_junit_xml(capsys, monkeypatch, tmp_path):
+    junit_file = tmp_path / "ci_test.xml"
+    monkeypatch.setattr(sys, "argv", ["spechunter", "harness", "--junit-xml", str(junit_file)])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "JUnit XML exported to:" in captured
+    assert junit_file.is_file()
+    content = junit_file.read_text(encoding="utf-8")
+    assert '<testsuite name="SpecHunter.BOOM.SecuritySuite"' in content
+
+
+def test_cli_harness_json(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "harness", "--json"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["total_tests"] == 3
+    assert data["vulnerabilities_confirmed"] == 3

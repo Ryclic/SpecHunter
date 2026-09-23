@@ -120,6 +120,9 @@ uv run spechunter poc --export artifacts/pocs  # Export standalone RISC-V assemb
 uv run spechunter ablation           # Statistical ablation study across 4 search strategies
 uv run spechunter ablation --json    # Machine-readable ablation metrics & Wilson 95% CIs
 uv run spechunter ablation --markdown --output artifacts/ablation.md  # GitHub Markdown report
+uv run spechunter harness            # Upstream BOOM microarchitectural security test harness
+uv run spechunter harness --verify-mitigations  # Verify RTL gating mitigations pass cleanly
+uv run spechunter harness --junit-xml artifacts/boom_security_junit.xml  # Native CI export
 
 uv run pytest
 ```

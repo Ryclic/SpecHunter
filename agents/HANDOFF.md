@@ -86,9 +86,17 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
     - Exports formatted terminal tables, GitHub Markdown reports (`--markdown`), and machine-readable JSON (`--json`).
     - Verified by 6 unit tests in `tests/test_ablation.py` and 3 CLI integration tests in `tests/test_cli.py`.
 
-Validation: 225 tests passed, 1 skipped, 6 deselected in `.venv/bin/pytest -q -m 'not chia'` (231 total passing with CHIA).
-Ruff lint and format pass cleanly (`0 errors`). All 8 cryptographic evidence streams,
+12. **Upstream Berkeley BOOM Security Test Harness (`spechunter harness`, `src/spechunter/harness.py`, & `tools/boom/boom_security_harness.py`):**
+    - Implemented standalone microarchitectural regression test harness consuming SpecHunter PoC gadgets (`transient-cache`, `privilege-bypass`, and `issue-715`).
+    - Evaluates vulnerability disclosure status, cycle latency to first transient disclosure (TTFE), and microarchitectural signal tags.
+    - Supports mitigated RTL verification mode (`--verify-mitigations`) asserting zero leakage and speculation gating at LSU dispatch.
+    - Exports standard JUnit XML reports (`--junit-xml`) for native ingestion into Chipyard CI, GitHub Actions, and Jenkins hardware pipelines.
+    - Verified by 8 unit tests in `tests/test_harness.py` and 4 CLI integration tests in `tests/test_cli.py`.
+
+Validation: 237 tests passed, 1 skipped, 6 deselected in `.venv/bin/pytest -q -m 'not chia'` (243 total passing with CHIA).
+Ruff lint and format pass cleanly (`0 errors` across 98 files). All 8 cryptographic evidence streams,
 `docs/demo.html`, and `artifacts/demo.html` verified with embedded microarchitectural taxonomy, SVG performance chart, advisory, and PoCs. All seals 100% valid.
+
 
 
 

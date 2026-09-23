@@ -488,6 +488,39 @@ def _run_ablation(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_harness(args: argparse.Namespace) -> int:
+    from spechunter.harness import (
+        export_junit_xml,
+        render_harness_json,
+        render_harness_terminal,
+        run_harness,
+    )
+
+    pocs_arg = getattr(args, "pocs", "all")
+    poc_list = None if pocs_arg == "all" else [p.strip() for p in pocs_arg.split(",")]
+    verify_mit = getattr(args, "verify_mitigations", False)
+    junit_path = getattr(args, "junit_xml", None)
+    is_json = getattr(args, "json", False)
+    out_path = getattr(args, "output", None)
+
+    report = run_harness(poc_names=poc_list, verify_mitigations=verify_mit)
+
+    if junit_path is not None:
+        export_junit_xml(report, junit_path)
+        print(f"JUnit XML exported to: {junit_path}")
+
+    output_str = render_harness_json(report) if is_json else render_harness_terminal(report)
+
+    if out_path != Path("artifacts/run.json") and out_path is not None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(output_str, encoding="utf-8")
+        print(f"Harness report saved to: {out_path}")
+    else:
+        print(output_str)
+
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -505,6 +538,7 @@ def main() -> int:
             "advisory",
             "poc",
             "ablation",
+            "harness",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
@@ -518,13 +552,30 @@ def main() -> int:
         action="store_true",
         help=(
             "Format output as JSON "
-            "(supported for audit, taxonomy, benchmark, advisory, poc, ablation)"
+            "(supported for audit, taxonomy, benchmark, advisory, poc, ablation, harness)"
         ),
     )
     parser.add_argument(
         "--markdown",
         action="store_true",
         help="Format output as Markdown (supported for ablation)",
+    )
+    parser.add_argument(
+        "--junit-xml",
+        type=Path,
+        default=None,
+        help="Path to export standard JUnit XML test report (supported for harness)",
+    )
+    parser.add_argument(
+        "--verify-mitigations",
+        action="store_true",
+        help="Evaluate mitigated RTL variants in security harness (expects clean verdicts)",
+    )
+    parser.add_argument(
+        "--pocs",
+        type=str,
+        default="all",
+        help="Comma-separated PoC identifiers for harness command (default: all)",
     )
     parser.add_argument(
         "--suite",
@@ -623,6 +674,8 @@ def main() -> int:
             return _run_poc(args)
         if args.command == "ablation":
             return _run_ablation(args)
+        if args.command == "harness":
+            return _run_harness(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")

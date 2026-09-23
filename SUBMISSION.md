@@ -54,8 +54,8 @@ git checkout feat/hackathon-paper-and-submission
 ```
 
 ### Verification Output Summary
-- **Linting & Code Quality**: 95 files verified, 0 errors, 100% formatted.
-- **Unit Test Suite**: 225 passed, 1 skipped, 6 deselected (231 tests total passing).
+- **Linting & Code Quality**: 98 files verified, 0 errors, 100% formatted.
+- **Unit Test Suite**: 237 passed, 1 skipped, 6 deselected (243 tests total passing).
 - **Cryptographic Seal Verification**: All 8 evidence streams verified 100%.
 - **Paper Deliverable**: `paper/spechunter_micro2026.pdf` verified (strictly 4 pages, publication-ready format).
 - **Interactive Presentation**: `docs/demo.html` verified (zero `<script>` tags, inline SVG waveform, formal microarchitectural taxonomy table).
@@ -100,7 +100,12 @@ uv run spechunter ablation
 uv run spechunter ablation --json
 uv run spechunter ablation --markdown --output artifacts/ablation.md
 
-# 9. View interactive HTML demonstration
+# 9. Execute upstream Berkeley BOOM security test harness with JUnit XML CI export
+uv run spechunter harness
+uv run spechunter harness --verify-mitigations
+uv run spechunter harness --junit-xml artifacts/boom_security_junit.xml
+
+# 10. View interactive HTML demonstration
 xdg-open docs/demo.html  # or open in any modern browser
 ```
 
