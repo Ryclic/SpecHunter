@@ -456,6 +456,38 @@ def _run_poc(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_ablation(args: argparse.Namespace) -> int:
+    from spechunter.ablation import (
+        get_default_ablation_study,
+        render_ablation_json,
+        render_ablation_markdown,
+        render_ablation_terminal,
+    )
+
+    benchmark = getattr(args, "benchmark", None) or "transient-cache"
+    is_json = getattr(args, "json", False)
+    is_markdown = getattr(args, "markdown", False)
+    out_path = getattr(args, "output", None)
+
+    study = get_default_ablation_study(benchmark)
+
+    if is_json:
+        output_str = render_ablation_json(study)
+    elif is_markdown:
+        output_str = render_ablation_markdown(study)
+    else:
+        output_str = render_ablation_terminal(study)
+
+    if out_path != Path("artifacts/run.json") and out_path is not None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(output_str, encoding="utf-8")
+        print(f"Ablation study saved to: {out_path}")
+    else:
+        print(output_str)
+
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -472,6 +504,7 @@ def main() -> int:
             "benchmark",
             "advisory",
             "poc",
+            "ablation",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
@@ -483,7 +516,15 @@ def main() -> int:
     parser.add_argument(
         "--json",
         action="store_true",
-        help="Format output as JSON (supported for audit, taxonomy, benchmark, advisory, poc)",
+        help=(
+            "Format output as JSON "
+            "(supported for audit, taxonomy, benchmark, advisory, poc, ablation)"
+        ),
+    )
+    parser.add_argument(
+        "--markdown",
+        action="store_true",
+        help="Format output as Markdown (supported for ablation)",
     )
     parser.add_argument(
         "--suite",
@@ -580,6 +621,8 @@ def main() -> int:
             return _run_advisory(args)
         if args.command == "poc":
             return _run_poc(args)
+        if args.command == "ablation":
+            return _run_ablation(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")

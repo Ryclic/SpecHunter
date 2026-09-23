@@ -385,3 +385,34 @@ def test_cli_poc_export(capsys, monkeypatch, tmp_path):
     assert "Exported 6 PoC artifact files" in captured
     assert (out_dir / "transient-cache.s").is_file()
     assert (out_dir / "issue-715.s").is_file()
+
+
+def test_cli_ablation_terminal(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "ablation"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Ablation Study" in captured
+    assert "SpecHunter Guided Invariant Search" in captured
+    assert "Unguided Random Fuzzing" in captured
+
+
+def test_cli_ablation_json(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "ablation", "--json"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["benchmark_name"] == "transient-cache"
+    assert len(data["strategies"]) == 4
+
+
+def test_cli_ablation_markdown(capsys, monkeypatch, tmp_path):
+    out_file = tmp_path / "ablation.md"
+    monkeypatch.setattr(
+        sys, "argv", ["spechunter", "ablation", "--markdown", "--output", str(out_file)]
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Ablation study saved to:" in captured
+    content = out_file.read_text(encoding="utf-8")
+    assert "# SpecHunter Ablation Study" in content
+    assert "| Strategy | Discovery Rate (%) |" in content

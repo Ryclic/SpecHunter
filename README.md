@@ -117,6 +117,9 @@ uv run spechunter advisory --json  # Machine-readable security advisory JSON sch
 uv run spechunter poc             # Disassembled PoC exploit gadgets & microarchitectural phases
 uv run spechunter poc --name issue-715  # Specific BOOM issue #715 translation gadget disassembly
 uv run spechunter poc --export artifacts/pocs  # Export standalone RISC-V assembly (.s) & JSON
+uv run spechunter ablation           # Statistical ablation study across 4 search strategies
+uv run spechunter ablation --json    # Machine-readable ablation metrics & Wilson 95% CIs
+uv run spechunter ablation --markdown --output artifacts/ablation.md  # GitHub Markdown report
 
 uv run pytest
 ```
