@@ -386,7 +386,8 @@ def _run_benchmark(args: argparse.Namespace) -> int:
     )
     trials = args.trials if args.trials != 100 else 3
     is_json = getattr(args, "json", False)
-    res = mod.run_benchmarks(trials=trials, output_path=out_path, quiet=is_json)
+    svg_path = getattr(args, "svg", None)
+    res = mod.run_benchmarks(trials=trials, output_path=out_path, svg_path=svg_path, quiet=is_json)
     if is_json:
         print(json.dumps(res, indent=2))
     return 0
@@ -423,6 +424,12 @@ def main() -> int:
         "--suite",
         action="store_true",
         help="Audit all taxonomy benchmarks in sequence as a suite (for audit command)",
+    )
+    parser.add_argument(
+        "--svg",
+        type=Path,
+        default=None,
+        help="Generate SVG comparison chart (supported for benchmark command)",
     )
     parser.add_argument("--input", type=Path, help="Sealed experiment report for present")
     parser.add_argument("--seal", type=Path, help="Evidence seal for present")

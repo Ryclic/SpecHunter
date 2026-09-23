@@ -55,7 +55,7 @@ git checkout feat/hackathon-paper-and-submission
 
 ### Verification Output Summary
 - **Linting & Code Quality**: 85 files verified, 0 errors, 100% formatted.
-- **Unit Test Suite**: 197 passed, 1 skipped, 4 deselected in 54s.
+- **Unit Test Suite**: 200 passed, 1 skipped, 4 deselected in 55s.
 - **Cryptographic Seal Verification**: All 8 evidence streams verified 100%.
 - **Paper Deliverable**: `paper/spechunter_micro2026.pdf` verified (strictly 4 pages, publication-ready format).
 - **Interactive Presentation**: `docs/demo.html` verified (zero `<script>` tags, inline SVG waveform, formal microarchitectural taxonomy table).
@@ -84,6 +84,7 @@ uv run spechunter audit --suite --json
 # 5. Benchmark search latency, throughput, and memory footprint
 uv run spechunter benchmark
 uv run spechunter benchmark --json
+uv run spechunter benchmark --svg artifacts/benchmark_comparison.svg
 
 # 6. View interactive HTML demonstration
 xdg-open docs/demo.html  # or open in any modern browser

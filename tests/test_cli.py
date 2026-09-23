@@ -216,6 +216,31 @@ def test_cli_benchmark_json(capsys, monkeypatch, tmp_path):
     assert data["search_strategies"]["guided"]["discovery_rate_pct"] == 100.0
 
 
+def test_cli_benchmark_svg(capsys, monkeypatch, tmp_path):
+    out_file = tmp_path / "bench.json"
+    out_svg = tmp_path / "bench.svg"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "spechunter",
+            "benchmark",
+            "--trials",
+            "2",
+            "--output",
+            str(out_file),
+            "--svg",
+            str(out_svg),
+        ],
+    )
+    assert main() == 0
+    assert out_svg.is_file()
+    svg_text = out_svg.read_text(encoding="utf-8")
+    assert "<svg" in svg_text
+    assert "SpecHunter Microarchitectural Search Performance" in svg_text
+    assert "Guided Search" in svg_text
+
+
 def test_cli_audit_suite_fast(capsys, monkeypatch):
     class FakeSuiteBlock:
         @classmethod

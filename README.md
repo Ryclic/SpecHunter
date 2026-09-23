@@ -110,6 +110,7 @@ uv run spechunter audit --suite    # Multi-benchmark audit across all threat mod
 uv run spechunter audit --suite --json  # Machine-readable suite summary & findings
 uv run spechunter benchmark        # Microarchitectural latency, throughput & memory profiler
 uv run spechunter benchmark --json # Machine-readable performance metrics export
+uv run spechunter benchmark --svg artifacts/benchmark_comparison.svg  # Dark-mode SVG chart export
 
 uv run pytest
 ```

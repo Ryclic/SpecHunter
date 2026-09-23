@@ -28,6 +28,9 @@ jobs:
       - run: uv sync --locked --group dev
       - run: uv run ruff check . && uv run ruff format --check .
       - run: uv run pytest -q
+      - run: uv run spechunter verify
+      - run: uv run spechunter taxonomy --json
+      - run: uv run spechunter benchmark --trials 2 --json
       - run: uv run spechunter compare --backend rtl --iterations 16 --output artifacts/comparison.json
       - run: uv build
       - uses: actions/upload-artifact@v4
@@ -50,3 +53,4 @@ jobs:
           python-version: '3.12'
       - run: uv sync --locked --group dev --extra chia
       - run: timeout 90 uv run --extra chia pytest -q tests/test_chia.py
+      - run: uv run --extra chia spechunter audit --suite --json
