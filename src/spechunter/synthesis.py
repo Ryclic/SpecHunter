@@ -38,6 +38,7 @@ class WindowWidening(StrEnum):
 # Semantic aliases
 TransmitterPrimitive = TransmitterType
 WideningStrategy = WindowWidening
+AttackModel = ThreatModel
 
 
 @dataclass(frozen=True)
@@ -84,7 +85,9 @@ class MicroarchitecturalSynthesizer:
     def __init__(self, seed: int = 42):
         self._rng = random.Random(seed)
 
-    def synthesize(self, config: SynthesisConfig) -> SynthesizedArtifact:
+    def synthesize(self, config: SynthesisConfig | ThreatModel) -> SynthesizedArtifact:
+        if isinstance(config, ThreatModel):
+            config = SynthesisConfig(threat_model=config)
         if config.threat_model == ThreatModel.SPECTRE_BCB:
             return self._synthesize_spectre_bcb(config)
         elif config.threat_model == ThreatModel.MELTDOWN_RDCL:

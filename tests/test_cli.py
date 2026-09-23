@@ -710,3 +710,54 @@ def test_cli_profile_json(capsys, monkeypatch):
     data = json.loads(captured)
     assert "average_ipc_overhead_pct" in data
     assert len(data["profiles"]) >= 3
+
+
+def test_cli_taint_default(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "taint"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Speculative Information Flow Tracking (IFT)" in captured
+    assert "FAILED (LEAKAGE DETECTED)" in captured
+    assert "Mutual Information Leakage" in captured
+
+
+def test_cli_taint_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "taint", "--mitigated"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "PASSED (TAINT CONFINED)" in captured
+    assert "Mutual Information Leakage:   0.00 bits" in captured
+    assert "NON_INTERFERENT" in captured
+
+
+def test_cli_taint_markdown(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "taint", "--markdown"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "# SpecHunter Information Flow Tracking & Non-Interference Analysis" in captured
+
+
+def test_cli_taint_json(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "taint", "--json"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert "mutual_information_leakage_bits" in data
+    assert "execution_steps" in data
+
+
+def test_cli_testbench_default(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "testbench"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "package boom.tests" in captured
+    assert "BoomSecurityRegressionSuite" in captured
+    assert "ChiselScalatestTester" in captured
+
+
+def test_cli_testbench_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "BoomSecurityTest.scala"
+    monkeypatch.setattr(sys, "argv", ["spechunter", "testbench", "--export", str(out)])
+    assert main() == 0
+    assert out.is_file()
+    assert "package boom.tests" in out.read_text(encoding="utf-8")

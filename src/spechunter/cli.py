@@ -887,6 +887,112 @@ def _run_profile(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_taint(args: argparse.Namespace) -> int:
+    from spechunter.domain import BENCHMARKS
+    from spechunter.synthesis import MicroarchitecturalSynthesizer, ThreatModel
+    from spechunter.taint import InformationFlowTracker
+
+    target = getattr(args, "target", None) or "transient-cache"
+    bench = next((b for b in BENCHMARKS if b.id == target), None)
+    if bench is None:
+        bench = BENCHMARKS[1]  # transient-cache fallback
+
+    model_map = {
+        "transient-cache": ThreatModel.SPECTRE_BCB,
+        "privilege-bypass": ThreatModel.MELTDOWN_RDCL,
+        "issue-715": ThreatModel.BOOM_ISSUE_715,
+    }
+    model = model_map.get(target, ThreatModel.SPECTRE_BCB)
+    synth = MicroarchitecturalSynthesizer()
+    gadget = synth.synthesize(model)
+    prog = gadget.program
+
+    mitigated = getattr(args, "mitigated", False)
+    tracker = InformationFlowTracker()
+    report = tracker.analyze(prog, bench, mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        dest = args.export
+        if str(dest).endswith(".json"):
+            dest.write_text(report.to_json() + "\n", encoding="utf-8")
+        elif str(dest).endswith(".md"):
+            dest.write_text(report.to_markdown() + "\n", encoding="utf-8")
+        else:
+            dest.write_text(report.to_json() + "\n", encoding="utf-8")
+        print(f"Exported taint analysis report to: {dest}")
+        return 0
+
+    if args.json:
+        print(report.to_json())
+    elif getattr(args, "markdown", False):
+        print(report.to_markdown())
+    else:
+        status = (
+            "PASSED (TAINT CONFINED)"
+            if report.non_interference_satisfied
+            else "FAILED (LEAKAGE DETECTED)"
+        )
+        print("=== SpecHunter Speculative Information Flow Tracking (IFT) ===")
+        print(f"Target Benchmark:             {report.benchmark_id}")
+        print(f"Hardware Mitigation Active:   {report.mitigated}")
+        print(f"Security Verdict:             {status}")
+        print(f"Mutual Information Leakage:   {report.mutual_information_leakage_bits:.2f} bits")
+        print(f"Residual Security Entropy:    {report.residual_entropy_bits:.2f} bits")
+        print(f"Leakage Classification:       {report.leakage_classification}")
+        if report.leakage_cycle is not None:
+            print(f"First Leakage Cycle:          Cycle {report.leakage_cycle}")
+        print("-" * 75)
+        print(
+            f"{'Cycle':<8} {'Instruction':<16} {'Stage':<16} "
+            f"{'Privilege':<12} {'Leak (bits)':<12} State"
+        )
+        print("-" * 75)
+        for s in report.execution_steps:
+            regs = ",".join(s.tainted_registers) if s.tainted_registers else "-"
+            print(
+                f"{s.cycle:<8} {s.op:<16} {s.pipeline_stage:<16} {s.active_privilege:<12} "
+                f"{s.leakage_bits_this_cycle:<12.2f} Regs: {regs}"
+            )
+    return 0 if report.non_interference_satisfied or not mitigated else 1
+
+
+def _run_testbench(args: argparse.Namespace) -> int:
+    from spechunter.chisel_testbench import ChiselTestbenchSynthesizer
+    from spechunter.domain import BENCHMARKS
+    from spechunter.synthesis import MicroarchitecturalSynthesizer, ThreatModel
+
+    synth = MicroarchitecturalSynthesizer()
+    tb_synth = ChiselTestbenchSynthesizer()
+
+    test_cases = []
+    targets = [
+        ("transient-cache", ThreatModel.SPECTRE_BCB),
+        ("privilege-bypass", ThreatModel.MELTDOWN_RDCL),
+    ]
+    for target_id, model in targets:
+        bench = next((b for b in BENCHMARKS if b.id == target_id), BENCHMARKS[0])
+        gadget = synth.synthesize(model)
+        prog = gadget.program
+        tc = tb_synth.synthesize_test_case(prog, bench)
+        test_cases.append(tc)
+
+    if getattr(args, "export", None):
+        dest = args.export
+        tb_synth.export_suite(dest, test_cases)
+        print(f"Exported ChiselTest suite to: {dest}")
+        return 0
+
+    target = getattr(args, "target", None)
+    if target:
+        tc = next((c for c in test_cases if c.benchmark_id == target), None)
+        if tc:
+            print(tc.scala_code)
+            return 0
+
+    print(tb_synth.generate_suite_file(test_cases))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -913,6 +1019,8 @@ def main() -> int:
             "redteam",
             "sva",
             "profile",
+            "taint",
+            "testbench",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
@@ -1012,6 +1120,11 @@ def main() -> int:
         action="store_true",
         help="Display unified diff format (supported for patch command)",
     )
+    parser.add_argument(
+        "--mitigated",
+        action="store_true",
+        help="Simulate with hardware security mitigation active (supported for taint command)",
+    )
     parser.add_argument("--input", type=Path, help="Sealed experiment report for present")
     parser.add_argument("--seal", type=Path, help="Evidence seal for present")
     parser.add_argument("--corpus", type=Path, help="Optional sealed BOOM attack corpus")
@@ -1098,6 +1211,10 @@ def main() -> int:
             return _run_sva(args)
         if args.command == "profile":
             return _run_profile(args)
+        if args.command == "taint":
+            return _run_taint(args)
+        if args.command == "testbench":
+            return _run_testbench(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")
