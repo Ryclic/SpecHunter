@@ -1321,6 +1321,65 @@ def _run_rollback(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_mmu(args: argparse.Namespace) -> int:
+    from spechunter.mmu import SpeculativeMMUOracle
+
+    target_id = getattr(args, "target", None) or "issue-715"
+    mitigated = getattr(args, "mitigated", False)
+
+    oracle = SpeculativeMMUOracle(target_benchmark=target_id)
+    report = oracle.audit(mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        oracle.export_report(args.export, report)
+        print(f"Exported speculative MMU report to: {args.export}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    status_str = "Mitigated Core (G-PTW)" if mitigated else "Baseline Core (Vulnerable)"
+    print("=== SpecHunter Speculative MMU & Page Table Walker Oracle ===")
+    print(f"Target Benchmark:             {report.target_benchmark}")
+    print(f"Hardware Mitigation Status:   {status_str}")
+    print(f"Virtual Address:              {report.virtual_address_hex}")
+    print(f"Physical Address:             {report.physical_address_hex}")
+    print(f"PTW Walk Cycles:              {report.ptw_walk_cycles} cycles")
+    print(f"Leaked Cache Line Fills:      {report.cache_lines_allocated_by_ptw} lines")
+    ptw_str = (
+        "GATED (Suppressed)"
+        if not report.speculative_ptw_dispatched
+        else "LEAKED (External Bus Walk)"
+    )
+    ad_str = (
+        "PRESERVED (Commit Gate)"
+        if not report.speculative_ad_bit_updated
+        else "LEAKED (Transient Write)"
+    )
+    order_str = (
+        "ENFORCED (Strict Order)"
+        if report.translation_order_invariant_held
+        else "VIOLATED (Premature Race)"
+    )
+    print(f"Speculative PTW Memory Gate:  {ptw_str}")
+    print(f"Architectural A/D Gate:       {ad_str}")
+    print(f"Translation Ordering (#715):  {order_str}")
+    print(f"Formal MMU Verdict:           {report.verdict}")
+    print("-" * 75)
+    if report.detected_vulnerabilities:
+        print("Detected Microarchitectural Virtual Memory Vulnerabilities:")
+        for v in report.detected_vulnerabilities:
+            print(f"  [!] {v}")
+    else:
+        print("Virtual Memory Speculation Certified Strictly Isolated (0 Leaks)")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1355,6 +1414,7 @@ def main() -> int:
             "mcts",
             "contract",
             "rollback",
+            "mmu",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
@@ -1569,6 +1629,8 @@ def main() -> int:
             return _run_contract(args)
         if args.command == "rollback":
             return _run_rollback(args)
+        if args.command == "mmu":
+            return _run_mmu(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")

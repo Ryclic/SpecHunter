@@ -1067,3 +1067,56 @@ def test_cli_rollback_export(capsys, monkeypatch, tmp_path):
     assert main() == 0
     assert out.is_file()
     assert "VERIFIED_CLEAN_ATOMIC_ROLLBACK" in out.read_text(encoding="utf-8")
+
+
+def test_cli_mmu_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "mmu", "--target", "issue-715"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Speculative MMU & Page Table Walker Oracle" in captured
+    assert "Baseline Core (Vulnerable)" in captured
+    assert "LEAKED (External Bus Walk)" in captured
+    assert "VIOLATED (Premature Race)" in captured
+
+
+def test_cli_mmu_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "mmu", "--target", "issue-715", "--mitigated"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Mitigated Core (G-PTW)" in captured
+    assert "GATED (Suppressed)" in captured
+    assert "ENFORCED (Strict Order)" in captured
+    assert "VERIFIED_ISOLATED_GATED_TRANSLATION" in captured
+
+
+def test_cli_mmu_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "mmu", "--target", "issue-715", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["target_benchmark"] == "issue-715"
+    assert data["speculative_ptw_side_channel_detected"]
+
+
+def test_cli_mmu_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "mmu.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "mmu", "--target", "issue-715", "--mitigated", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "VERIFIED_ISOLATED_GATED_TRANSLATION" in out.read_text(encoding="utf-8")
