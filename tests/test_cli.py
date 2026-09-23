@@ -1289,7 +1289,7 @@ def test_cli_matrix_default(capsys, monkeypatch):
     assert "HARDWARE SECURITY CERTIFICATE" in captured
     assert "HSA-CERT-2026-CHIA-001" in captured
     assert "SILICON_SECURITY_CO_DESIGN_CERTIFIED" in captured
-    assert "Subsystems Formally Audited:      8" in captured
+    assert "Subsystems Formally Audited:      9" in captured
 
 
 def test_cli_matrix_json(capsys, monkeypatch):
@@ -1302,7 +1302,7 @@ def test_cli_matrix_json(capsys, monkeypatch):
     captured = capsys.readouterr().out
     data = json.loads(captured)
     assert data["certification_id"] == "HSA-CERT-2026-CHIA-001"
-    assert data["total_subsystems_audited"] == 8
+    assert data["total_subsystems_audited"] == 9
     assert data["average_mitigated_isolation"] == 100.0
 
 
@@ -1379,3 +1379,54 @@ def test_cli_pmp_export(capsys, monkeypatch, tmp_path):
     assert main() == 0
     assert out.is_file()
     assert "VERIFIED_PMP_HARDWARE_ENFORCEMENT" in out.read_text(encoding="utf-8")
+
+
+def test_cli_ras_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "ras"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SPECULATIVE RETURN ADDRESS STACK (RAS) & RETBLEED ORACLE" in captured
+    assert "BASELINE UNMITIGATED RAS" in captured
+    assert "VULNERABLE_SPECULATIVE_RETURN_HIJACK" in captured
+
+
+def test_cli_ras_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "ras", "--mitigated"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "CO-DESIGNED SPEC-GATED RAS [ACTIVE]" in captured
+    assert "VERIFIED_RAS_SPECULATIVE_ISOLATION" in captured
+    assert "100.0%" in captured
+
+
+def test_cli_ras_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "ras", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["ras_isolation_score"] == 0.125
+    assert data["security_verdict"] == "VULNERABLE_SPECULATIVE_RETURN_HIJACK"
+
+
+def test_cli_ras_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "ras.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "ras", "--mitigated", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "VERIFIED_RAS_SPECULATIVE_ISOLATION" in out.read_text(encoding="utf-8")

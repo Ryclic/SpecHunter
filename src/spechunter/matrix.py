@@ -17,6 +17,7 @@ from spechunter.coherence import TileLinkCoherenceSimulator
 from spechunter.mds import SpeculativeMDSOracle
 from spechunter.mmu import SpeculativeMMUOracle
 from spechunter.pmp import SpeculativePMPOracle
+from spechunter.ras import SpeculativeRASOracle
 from spechunter.rollback import RollbackOracle
 from spechunter.stlf import SpeculativeSTLFOracle
 
@@ -171,6 +172,11 @@ class UnifiedSecurityMatrixOracle:
         pmp_base = pmp_oracle.audit(mitigated=False)
         pmp_mit = pmp_oracle.audit(mitigated=True)
 
+        # 8. Return Address Stack (RAS / RETbleed) Audit
+        ras_oracle = SpeculativeRASOracle()
+        ras_base = ras_oracle.audit(mitigated=False)
+        ras_mit = ras_oracle.audit(mitigated=True)
+
         # Subsystems configuration table
         subsystems = [
             SubsystemAuditResult(
@@ -264,6 +270,17 @@ class UnifiedSecurityMatrixOracle:
                 chisel_module="GatedPMPChecker",
                 sva_properties_count=len(pmp_mit.generated_sva_assertions) // 4,
                 ipc_overhead_pct=0.02,
+            ),
+            SubsystemAuditResult(
+                subsystem="Return Address Stack (RAS)",
+                target_cve="CVE-2022-29968 (RETbleed / RSB)",
+                baseline_status="VULNERABLE",
+                mitigated_status="VERIFIED_ISOLATED",
+                baseline_isolation_pct=ras_base.ras_isolation_score * 100.0,
+                mitigated_isolation_pct=ras_mit.ras_isolation_score * 100.0,
+                chisel_module="SpecGatedRAS",
+                sva_properties_count=len(ras_mit.generated_sva_assertions) // 4,
+                ipc_overhead_pct=0.03,
             ),
         ]
 

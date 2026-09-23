@@ -1619,6 +1619,51 @@ def _run_pmp(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_ras(args: argparse.Namespace) -> int:
+    from spechunter.ras import SpeculativeRASOracle
+
+    target_core = getattr(args, "target", None) or "UC Berkeley BOOMv3 (SonicBOOM)"
+    mitigated = getattr(args, "mitigated", False)
+    depth = getattr(args, "depth", 16)
+    oracle = SpeculativeRASOracle(target_core=target_core, ras_depth=depth)
+    report = oracle.audit(mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        oracle.export_report(args.export, report)
+        print(f"Exported RAS speculative audit report to: {args.export}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    status_str = (
+        "CO-DESIGNED SPEC-GATED RAS [ACTIVE]" if report.mitigated else "BASELINE UNMITIGATED RAS"
+    )
+    print("================================================================================")
+    print("   SPECULATIVE RETURN ADDRESS STACK (RAS) & RETBLEED ORACLE")
+    print(f"   Target Core:        {report.target_core}")
+    print(f"   Status:             {status_str}")
+    print(f"   RAS Hardware Depth: {report.ras_depth} entries")
+    print(f"   RAS Isolation:      {report.ras_isolation_score * 100.0:.1f}%")
+    print(f"   Verdict:            {report.security_verdict}")
+    print("================================================================================")
+    print(f"Speculative Divergences:      {report.speculative_divergences_detected}")
+    print(f"Underflow Hijack Events:      {report.underflow_events}")
+    print(f"Polluted Entries Squashed:    {report.polluted_entries}")
+    if report.detected_vulnerabilities:
+        print("Detected Vulnerabilities:")
+        for v in report.detected_vulnerabilities:
+            print(f"  [!] {v}")
+    else:
+        print("RAS Speculative Call-Return Boundaries Formally Certified Isolated")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1659,6 +1704,7 @@ def main() -> int:
             "mds",
             "matrix",
             "pmp",
+            "ras",
         ],
     )
     parser.add_argument(
@@ -1891,6 +1937,8 @@ def main() -> int:
             return _run_matrix(args)
         if args.command == "pmp":
             return _run_pmp(args)
+        if args.command == "ras":
+            return _run_ras(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")

@@ -10,8 +10,8 @@ def test_matrix_generation():
     oracle = UnifiedSecurityMatrixOracle()
     report = oracle.generate_matrix()
 
-    assert report.total_subsystems_audited == 8
-    assert report.vulnerabilities_neutralized == 8
+    assert report.total_subsystems_audited == 9
+    assert report.vulnerabilities_neutralized == 9
     assert report.average_mitigated_isolation == 100.0
     assert report.average_baseline_isolation < 30.0
     assert report.aggregate_ipc_overhead_pct < 0.10
@@ -29,6 +29,7 @@ def test_matrix_generation():
     assert "TileLink Multi-Core Coherence" in subsystem_names
     assert "Load-Store Unit D-Cache Interlock" in subsystem_names
     assert "Physical Memory Protection (PMP)" in subsystem_names
+    assert "Return Address Stack (RAS)" in subsystem_names
 
 
 def test_matrix_serialization(tmp_path: Path):
@@ -38,8 +39,8 @@ def test_matrix_serialization(tmp_path: Path):
     json_str = report.to_json()
     data = json.loads(json_str)
     assert data["certification_id"] == "HSA-CERT-2026-CHIA-001"
-    assert data["total_subsystems_audited"] == 8
-    assert len(data["subsystems"]) == 8
+    assert data["total_subsystems_audited"] == 9
+    assert len(data["subsystems"]) == 9
 
     md_str = report.to_markdown()
     assert "Grand Unified Microarchitectural Co-Design Verification Matrix" in md_str
