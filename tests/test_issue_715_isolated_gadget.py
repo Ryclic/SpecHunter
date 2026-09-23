@@ -88,6 +88,36 @@ def test_diagnostic_refuses_simulator_without_waveform_support(monkeypatch):
     RUNNER.require_waveform_support(Path("/simulator"))
 
 
+@pytest.mark.parametrize(
+    ("suffix", "trace"),
+    [
+        (".log", False),
+        (".loadmem.hex", False),
+        (".vcd", True),
+        (".witness.json", True),
+    ],
+)
+def test_runner_refuses_to_overwrite_any_existing_artifact(tmp_path, suffix, trace):
+    output = tmp_path / "diagnostic.json"
+    existing = output.with_suffix(suffix)
+    existing.write_text("preserve me")
+
+    with pytest.raises(RuntimeError, match="artifact path already exists"):
+        RUNNER.require_fresh_artifact_paths(output, trace=trace)
+
+    assert existing.read_text() == "preserve me"
+
+
+def test_runner_checks_exact_evidence_path_with_non_json_suffix(tmp_path):
+    output = tmp_path / "diagnostic.record"
+    output.write_text("preserve me")
+
+    with pytest.raises(RuntimeError, match="artifact path already exists"):
+        RUNNER.require_fresh_artifact_paths(output, trace=False)
+
+    assert output.read_text() == "preserve me"
+
+
 def test_diagnostic_witness_is_scanned_and_bound_to_raw_waveform(tmp_path):
     evidence = Path(__file__).parents[1] / "docs/evidence"
     waveform = evidence / "boom-issue-715-attachment-baseline-seed-1789717734-2026-09-17.vcd.gz"

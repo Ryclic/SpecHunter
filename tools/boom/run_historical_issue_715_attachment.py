@@ -64,6 +64,18 @@ def require_waveform_support(simulator: Path) -> None:
         raise RuntimeError("diagnostic requires a trace-enabled simulator supporting -v VCD")
 
 
+def require_fresh_artifact_paths(output: Path, *, trace: bool) -> None:
+    """Prevent a run from mixing with or overwriting evidence from an earlier run."""
+    paths = [output, output.with_suffix(".log"), output.with_suffix(".loadmem.hex")]
+    if trace:
+        paths.extend([output.with_suffix(".vcd"), output.with_suffix(".witness.json")])
+    existing = [str(path) for path in paths if path.exists()]
+    if existing:
+        raise RuntimeError(
+            "diagnostic artifact path already exists; choose a fresh output: " + ", ".join(existing)
+        )
+
+
 def write_diagnostic_witness(waveform: Path, destination: Path) -> str:
     script = Path(__file__).with_name("scan_issue_715_vcd.py")
     spec = importlib.util.spec_from_file_location("issue_715_vcd", script)
@@ -137,8 +149,7 @@ def main() -> int:
         raise RuntimeError("historical simulator does not match its build manifest")
     if candidate_manifest_sha256:
         require_waveform_support(simulators[0])
-        if output.with_suffix(".vcd").exists() or output.with_suffix(".witness.json").exists():
-            raise RuntimeError("diagnostic artifact path already exists; choose a fresh output")
+    require_fresh_artifact_paths(output, trace=trace)
     dramsim = chipyard / "generators/testchipip/src/main/resources/dramsim2_ini"
     output.parent.mkdir(parents=True, exist_ok=True)
     loadmem = output.with_suffix(".loadmem.hex")

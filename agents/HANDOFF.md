@@ -2,6 +2,11 @@
 
 ## Issue #715 isolated gadget diagnostic (PR #17 follow-up)
 
+The runner now refuses to overwrite any pre-existing evidence output, simulator
+log, converted load-memory image, waveform, or waveform witness. This prevents
+a retried cloud command from mixing artifacts from separate executions. Focused
+validation passes with 19 tests plus Ruff and `git diff --check`.
+
 The diagnostic runner now classifies nonzero simulator exits as
 `simulation-error` and records their log and any partial waveform without
 requiring a witness from an incomplete execution. Successful diagnostic runs
