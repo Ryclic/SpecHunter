@@ -1433,6 +1433,52 @@ def _run_bpu(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_stlf(args: argparse.Namespace) -> int:
+    from spechunter.stlf import SpeculativeSTLFOracle
+
+    target_id = getattr(args, "target", None) or "spectre-v4"
+    mitigated = getattr(args, "mitigated", False)
+
+    oracle = SpeculativeSTLFOracle(target_benchmark=target_id)
+    report = oracle.audit(mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        oracle.export_report(args.export, report)
+        print(f"Exported speculative STLF report to: {args.export}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    status_str = "Mitigated Core (Phys-Gated)" if mitigated else "Baseline Core (12-bit Aliased)"
+    print("=== SpecHunter Store-to-Load Forwarding & SSB Oracle ===")
+    print(f"Target Benchmark:             {report.target_benchmark}")
+    print(f"Hardware Mitigation Status:   {status_str}")
+    print(f"STQ Capacity:                 {report.stq_entries} entries")
+    print(f"Disambiguation Mode:          {report.disambiguation_mode}")
+    print(f"STLF Isolation Score:         {report.stlf_isolation_score * 100.0:.1f}%")
+    sfa_str = (
+        "ISOLATED (Full PA Match)"
+        if not report.false_forwarding_detected
+        else "COLLISION DETECTED (Vulnerable)"
+    )
+    print(f"STLF Forwarding Security:     {sfa_str}")
+    print(f"Formal STLF Verdict:          {report.verdict}")
+    print("-" * 75)
+    if report.detected_vulnerabilities:
+        print("Detected Microarchitectural Store-to-Load Forwarding Vulnerabilities:")
+        for v in report.detected_vulnerabilities:
+            print(f"  [!] {v}")
+    else:
+        print("Store-to-Load Forwarding Certified Strictly Isolated (0 Leaks)")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1469,6 +1515,7 @@ def main() -> int:
             "rollback",
             "mmu",
             "bpu",
+            "stlf",
         ],
     )
     parser.add_argument(
@@ -1693,6 +1740,8 @@ def main() -> int:
             return _run_mmu(args)
         if args.command == "bpu":
             return _run_bpu(args)
+        if args.command == "stlf":
+            return _run_stlf(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")

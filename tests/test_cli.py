@@ -1172,3 +1172,55 @@ def test_cli_bpu_export(capsys, monkeypatch, tmp_path):
     assert main() == 0
     assert out.is_file()
     assert "VERIFIED_BPU_PRIVILEGE_DOMAIN_ISOLATION" in out.read_text(encoding="utf-8")
+
+
+def test_cli_stlf_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "stlf", "--target", "spectre-v4"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Store-to-Load Forwarding & SSB Oracle" in captured
+    assert "Baseline Core (12-bit Aliased)" in captured
+    assert "COLLISION DETECTED (Vulnerable)" in captured
+    assert "VULNERABLE_SPECULATIVE_STORE_FORWARDING" in captured
+
+
+def test_cli_stlf_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "stlf", "--target", "spectre-v4", "--mitigated"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Mitigated Core (Phys-Gated)" in captured
+    assert "ISOLATED (Full PA Match)" in captured
+    assert "VERIFIED_ISOLATED_STORE_FORWARDING" in captured
+
+
+def test_cli_stlf_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "stlf", "--target", "spectre-v4", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["target_benchmark"] == "spectre-v4"
+    assert data["false_forwarding_detected"]
+
+
+def test_cli_stlf_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "stlf.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "stlf", "--target", "spectre-v4", "--mitigated", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "VERIFIED_ISOLATED_STORE_FORWARDING" in out.read_text(encoding="utf-8")
