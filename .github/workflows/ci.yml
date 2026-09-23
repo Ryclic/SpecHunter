@@ -31,6 +31,8 @@ jobs:
       - run: uv run spechunter verify
       - run: uv run spechunter taxonomy --json
       - run: uv run spechunter benchmark --trials 2 --json
+      - run: uv run spechunter ablation --json
+      - run: uv run spechunter harness --verify-mitigations --junit-xml artifacts/boom_security_junit.xml
       - run: uv run spechunter compare --backend rtl --iterations 16 --output artifacts/comparison.json
       - run: uv build
       - uses: actions/upload-artifact@v4
