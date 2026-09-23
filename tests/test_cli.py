@@ -1,3 +1,4 @@
+import json
 import sys
 
 import pytest
@@ -138,3 +139,42 @@ def test_cli_taxonomy(capsys, monkeypatch):
     assert "spectre-v4-ssb" in captured
     assert "meltdown-rdcl" in captured
     assert "Total Formal Taxonomy Variants: 6" in captured
+
+
+def test_cli_taxonomy_json(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "taxonomy", "--json"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert isinstance(data, list)
+    assert len(data) == 6
+    variants = [d["variant"] for d in data]
+    assert "spectre-v1-bcb" in variants
+    assert "spectre-v4-ssb" in variants
+    assert "meltdown-rdcl" in variants
+
+
+@pytest.mark.chia
+def test_cli_audit_json(capsys, monkeypatch):
+    pytest.importorskip("chia")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "spechunter",
+            "audit",
+            "--benchmark",
+            "secure-control",
+            "--iterations",
+            "2",
+            "--json",
+        ],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    json_start = captured.find("{")
+    assert json_start != -1
+    data = json.loads(captured[json_start:])
+    assert data["target_benchmark"] == "secure-control"
+    assert data["verdict"] == "CLEAN"
+    assert data["metrics"]["discovered"] == 0

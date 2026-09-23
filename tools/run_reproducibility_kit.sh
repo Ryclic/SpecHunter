@@ -33,8 +33,12 @@ PYTHONPATH=src .venv/bin/python -m spechunter.cli present \
   --issue-715-attachment-seal docs/evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json \
   --output artifacts/demo.html
 
-# 4. Summary
-echo "[4/4] Reproducibility verification complete!"
+# 4. HotCRP Submission Packaging
+echo "[4/5] Packaging all deliverables and evidence for HotCRP submission..."
+PYTHONPATH=src .venv/bin/python tools/package_submission.py
+
+# 5. Summary
+echo "[5/5] Reproducibility verification complete!"
 echo "-----------------------------------------------------------------"
 echo "Deliverables Ready for Submission:"
 echo "  1. 4-Page Paper PDF:      paper/spechunter_micro2026.pdf"
@@ -42,4 +46,5 @@ echo "  2. Paper LaTeX Source:    paper/spechunter.tex"
 echo "  3. Interactive Demo:      artifacts/demo.html (also at docs/demo.html)"
 echo "  4. Composable CHIA Block: spechunter.chia_nodes.SpecHunterSecurityAuditBlock"
 echo "  5. Cryptographic Seals:   docs/evidence/*"
+echo "  6. HotCRP Bundles:        artifacts/spechunter_micro2026_submission.tar.gz (.zip)"
 echo "================================================================="

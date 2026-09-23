@@ -27,34 +27,36 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
 
 3. **CLI Subcommands (`spechunter audit`, `verify`, `waveform`, `taxonomy`):**
    - Added `spechunter waveform` for terminal visualization of Berkeley BOOM Issue #715 hazard timing.
-   - Added `spechunter taxonomy` for terminal formal Spectre microarchitectural taxonomy mapping.
+   - Added `spechunter taxonomy` (with `--json` flag) for formal Spectre taxonomy mapping.
    - Added `spechunter verify` for push-button cryptographic artifact verification.
-   - Added `spechunter audit` for invoking the composable CHIA security audit block directly.
-   - Comprehensive test suite in `tests/test_cli.py` (6 unit and integration tests).
+   - Added `spechunter audit` (with `--json` flag) for invoking the composable CHIA security audit block directly.
+   - Comprehensive test suite in `tests/test_cli.py` (8 unit and integration tests).
 
 4. **Microarchitectural Waveform & Hazard Timing Explorer (`src/spechunter/presentation.py`):**
-   - Embedded cycle-accurate SVG timing diagram (cycles 3804–3811) and microarchitectural hazard
-     table into `artifacts/demo.html` and `docs/demo.html`, adhering strictly to zero-`<script>`
-     design for maximum portability and security.
+   - Embedded cycle-accurate SVG timing diagram (cycles 3804–3811), formal taxonomy table, and
+     microarchitectural hazard table into `artifacts/demo.html` and `docs/demo.html`, adhering strictly
+     to zero-`<script>` design for maximum portability and security.
 
 5. **Composable CHIA Building Block & Multi-Benchmark Pipeline:**
    - Packaged `SpecHunterSecurityAuditBlock` in `src/spechunter/chia_nodes.py` as a high-level,
-     reusable CHIA node ready for upstreaming into mainline CHIA.
+     reusable CHIA node with `audit_suite` and `summarize_suite` methods.
    - Added multi-benchmark pipeline in `examples/run_chia_pipeline.py` demonstrating co-design
-     audits across Spectre-v1, Meltdown, and Secure Baseline with Ray orchestration.
-   - Added `tests/test_chia.py` covering multi-benchmark audit block execution.
+     audits across Spectre-v1, Meltdown, and Secure Baseline with Ray orchestration and summary metrics.
+   - Added `tests/test_chia.py` covering multi-benchmark audit block and suite execution.
 
-6. **Automated Reproducibility Kit:**
-   - Single push-button script: `tools/run_reproducibility_kit.sh`.
-   - Comprehensive validation: 186 unit tests passed, all 8 cryptographic evidence seals verified,
-     4-page IEEE/ACM paper verified, interactive demo generated.
+6. **Automated Reproducibility Kit & HotCRP Packager:**
+   - Single push-button script: `tools/run_reproducibility_kit.sh` (5 automated stages).
+   - Packaging automation: `tools/package_submission.py` generates `.tar.gz` and `.zip` archives with SHA-256 manifests.
+   - Unit tests in `tests/test_package.py` verify bundle generation and digest integrity.
+   - Comprehensive validation: 188 unit tests passed, all 8 cryptographic evidence seals verified,
+     4-page IEEE/ACM paper verified, interactive demo generated, HotCRP archive bundled.
 
 7. **Complete HotCRP Submission Dossier (`SUBMISSION.md`):**
    - Formatted for direct HotCRP submission, containing Author-Identified Highlights, paper abstract,
      quickstart judge reproducibility guide, deliverable inventory, and cryptographic provenance manifest.
    - Verified by `tests/test_submission.py`, `tools/verify_all_artifacts.py`, and `spechunter verify`.
 
-Validation: 186 tests passed, 1 skipped, 3 deselected in `.venv/bin/pytest -q -m 'not chia'`.
+Validation: 188 tests passed, 1 skipped, 4 deselected in `.venv/bin/pytest -q -m 'not chia'` (192 total tests).
 Ruff lint and format pass cleanly (`0 errors`). All 8 cryptographic evidence streams,
 `docs/demo.html`, and `artifacts/demo.html` verified with embedded microarchitectural taxonomy. All seals 100% valid.
 

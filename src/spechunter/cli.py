@@ -193,6 +193,30 @@ def _run_audit(args: argparse.Namespace) -> int:
     metrics = result.get("metrics", {})
     taxonomy = SPECTRE_TAXONOMY.get(bid)
 
+    verdict = "CLEAN" if metrics.get("discovered", 0) == 0 else "VIOLATION_CONFIRMED"
+
+    if getattr(args, "json", False):
+        output_data = {
+            "target_benchmark": bid,
+            "taxonomy": (
+                {
+                    "name": taxonomy.name,
+                    "boom_subsystem": taxonomy.boom_subsystem,
+                    "interlock_gate": taxonomy.interlock_gate,
+                    "chisel_source": taxonomy.chisel_source,
+                }
+                if taxonomy
+                else None
+            ),
+            "strategy": args.strategy,
+            "iterations": args.iterations,
+            "metrics": metrics,
+            "verdict": verdict,
+            "orchestration": result.get("orchestration", {}),
+        }
+        print(json.dumps(output_data, indent=2))
+        return 2 if metrics.get("inconclusive_cases", 0) else 0
+
     print("=== SpecHunter CHIA Security Audit Block ===")
     print(f"Target Benchmark:   {bid}")
     if taxonomy:
@@ -207,13 +231,33 @@ def _run_audit(args: argparse.Namespace) -> int:
     print(f"  • False Positives:            {metrics.get('false_positives', 0)}")
     print(f"  • Simulation Executions:      {metrics.get('executions', 0)}")
     print(f"  • Inconclusive Executions:    {metrics.get('inconclusive_cases', 0)}")
-    verdict = "CLEAN" if metrics.get("discovered", 0) == 0 else "VIOLATION_CONFIRMED"
     print(f"Security Verdict:   {verdict}")
     return 2 if metrics.get("inconclusive_cases", 0) else 0
 
 
 def _run_taxonomy(args: argparse.Namespace) -> int:
     from spechunter.taxonomy import SPECTRE_TAXONOMY
+
+    if getattr(args, "json", False):
+        seen = set()
+        tax_list = []
+        for item in SPECTRE_TAXONOMY.values():
+            if item.variant in seen:
+                continue
+            seen.add(item.variant)
+            tax_list.append(
+                {
+                    "variant": item.variant.value,
+                    "name": item.name,
+                    "boom_subsystem": item.boom_subsystem,
+                    "speculation_window": item.speculation_window,
+                    "interlock_gate": item.interlock_gate,
+                    "chisel_source": item.chisel_source,
+                    "transmission_channel": item.transmission_channel,
+                }
+            )
+        print(json.dumps(tax_list, indent=2))
+        return 0
 
     print("=== Berkeley BOOM Microarchitectural Spectre Taxonomy ===")
     print(f"{'Variant':<20} | {'BOOM Subsystem':<35} | {'Interlock Gate':<38} | {'Chisel Source'}")
@@ -264,6 +308,11 @@ def main() -> int:
     parser.add_argument("--trials", type=int, default=100)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output", type=Path, default=Path("artifacts/run.json"))
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Format output as machine-readable JSON (supported for audit and taxonomy)",
+    )
     parser.add_argument("--input", type=Path, help="Sealed experiment report for present")
     parser.add_argument("--seal", type=Path, help="Evidence seal for present")
     parser.add_argument("--corpus", type=Path, help="Optional sealed BOOM attack corpus")

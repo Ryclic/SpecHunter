@@ -73,11 +73,12 @@ uv run spechunter verify
 # 2. View cycle-accurate microarchitectural hazard timing diagram in terminal
 uv run spechunter waveform
 
-# 3. View formal Berkeley BOOM Spectre microarchitectural taxonomy
+# 3. View formal Berkeley BOOM Spectre microarchitectural taxonomy (table or machine-readable JSON)
 uv run spechunter taxonomy
+uv run spechunter taxonomy --json
 
 # 4. Execute composable CHIA security audit block on Spectre-v1 benchmark
-uv run spechunter audit --benchmark transient-cache --iterations 4
+uv run spechunter audit --benchmark transient-cache --iterations 4 --json
 
 # 5. View interactive HTML demonstration
 xdg-open docs/demo.html  # or open in any modern browser
@@ -97,6 +98,7 @@ xdg-open docs/demo.html  # or open in any modern browser
 | **Composable CHIA Node** | [`src/spechunter/chia_nodes.py`](src/spechunter/chia_nodes.py) | `SpecHunterSecurityAuditBlock` on Ray runtime |
 | **Reproducibility Kit** | [`tools/run_reproducibility_kit.sh`](tools/run_reproducibility_kit.sh) | Single-command automated verification |
 | **Artifact Verifier** | [`tools/verify_all_artifacts.py`](tools/verify_all_artifacts.py) | Cryptographic seal checker |
+| **Submission Packager** | [`tools/package_submission.py`](tools/package_submission.py) | Automated `.tar.gz` and `.zip` archive builder |
 | **Cryptographic Evidence** | [`docs/evidence/*.json`](docs/evidence/) | 8 SHA-256 bound evidence streams |
 
 ---
