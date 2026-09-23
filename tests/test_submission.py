@@ -17,3 +17,4 @@ def test_submission_dossier_complete():
     assert "tools/run_reproducibility_kit.sh" in content
     assert "paper/spechunter_micro2026.pdf" in content
     assert "docs/demo.html" in content
+    assert "spechunter taxonomy" in content
