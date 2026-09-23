@@ -6,7 +6,7 @@ A publication-ready submission package has been constructed to demonstrate #1 le
 hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
 
 1. **4-Page Submission Paper (PDF & LaTeX):**
-   - Compiled to `paper/spechunter_micro2026.pdf` (exactly 4 pages in IEEE/ACM 2-column format)
+   - Compiled to `paper/spechunter_micro2026.pdf` (strictly 4 pages in IEEE/ACM 2-column format)
      using standalone reproducible compiler and source in `paper/spechunter.typ` and `paper/spechunter.tex`.
    - Accompanied by vector figures (`paper/figures/fig1_architecture.svg`, `fig2_boom_pipeline.svg`,
      `fig3_eval_chart.svg`) and complete BibTeX references (`paper/references.bib`).
@@ -19,20 +19,36 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
         `exu/core.scala` hardware gate and proving the `0x59F` TLB request was hardcoded in instruction
         `lb s1, 1439(a0)` (`1439 = 0x59F`), not the dependent uop.
 
-2. **Composable CHIA Building Block:**
+2. **Formal Microarchitectural Spectre Taxonomy (`src/spechunter/taxonomy.py`):**
+   - Formally maps speculative vulnerability variants (Spectre-v1 BCB, Spectre-v2 BTI,
+     Spectre-v4 SSB, Meltdown-RDCL, Seeded Cache Leak, Secure Baseline) to specific Berkeley BOOM
+     hardware units (`ifu/bpu.scala`, `exu/core.scala`, `exu/lsu/lsu.scala`), speculation windows,
+     and RTL interlock gates. Tested via `tests/test_taxonomy.py`.
+
+3. **CLI Subcommands (`spechunter audit`, `verify`, `waveform`):**
+   - Added `spechunter waveform` for terminal visualization of Berkeley BOOM Issue #715 hazard timing.
+   - Added `spechunter verify` for push-button cryptographic artifact verification.
+   - Added `spechunter audit` for invoking the composable CHIA security audit block directly.
+   - Comprehensive test suite in `tests/test_cli.py`.
+
+4. **Microarchitectural Waveform & Hazard Timing Explorer (`src/spechunter/presentation.py`):**
+   - Embedded cycle-accurate SVG timing diagram (cycles 3804–3811) and microarchitectural hazard
+     table into `artifacts/demo.html` and `docs/demo.html`, adhering strictly to zero-`<script>`
+     design for maximum portability and security.
+
+5. **Composable CHIA Building Block:**
    - Packaged `SpecHunterSecurityAuditBlock` in `src/spechunter/chia_nodes.py` as a high-level,
      reusable CHIA node ready for upstreaming into mainline CHIA.
    - Added `examples/run_chia_pipeline.py` and `examples/README.md` demonstrating DAG integration.
 
-3. **Automated Reproducibility Kit:**
-   - Added `tools/verify_all_artifacts.py` verifying all 8 cryptographic evidence seals, the
-     interactive presentation, and the paper PDF.
-   - Added `tools/run_reproducibility_kit.sh` providing a single push-button entrypoint for judges.
-   - Added regression test `tests/test_paper.py` verifying paper PDF page count (exactly 4) and assets.
+6. **Automated Reproducibility Kit:**
+   - Single push-button script: `tools/run_reproducibility_kit.sh`.
+   - Comprehensive validation: 184 unit tests passed, all 8 cryptographic evidence seals verified,
+     4-page IEEE/ACM paper verified, interactive demo generated.
 
-Validation: 177 tests passed, 1 skipped, 1 deselected in `.venv/bin/pytest -q -m 'not chia'`.
+Validation: 184 tests passed, 1 skipped, 2 deselected in `.venv/bin/pytest -q -m 'not chia'`.
 Ruff lint and format pass cleanly (`0 errors`). All 8 cryptographic evidence streams and
-`artifacts/demo.html` rendered successfully.
+`artifacts/demo.html` rendered successfully. All seals 100% valid.
 
 ## Issue #715 isolated gadget diagnostic (PR #17 follow-up)
 

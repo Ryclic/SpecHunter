@@ -164,18 +164,29 @@ class SpecHunterSecurityAuditBlock:
 
     def execute(self, local: bool = True) -> dict:
         """Execute the security audit block, returning a structured findings report."""
-        if local:
-            return run_local(
+        try:
+            if local:
+                return run_local(
+                    self.config,
+                    strategy=self.strategy,
+                    iterations=self.iterations,
+                    seed=self.seed,
+                    benchmark_id=self.benchmark_id,
+                )
+            return run_experiment(
                 self.config,
                 strategy=self.strategy,
                 iterations=self.iterations,
                 seed=self.seed,
                 benchmark_id=self.benchmark_id,
             )
-        return run_experiment(
-            self.config,
-            strategy=self.strategy,
-            iterations=self.iterations,
-            seed=self.seed,
-            benchmark_id=self.benchmark_id,
-        )
+        except ImportError:
+            from spechunter.loop import experiment
+
+            return experiment(
+                self.config,
+                strategy=self.strategy,
+                iterations=self.iterations,
+                seed=self.seed,
+                benchmark_id=self.benchmark_id,
+            )
