@@ -1289,7 +1289,7 @@ def test_cli_matrix_default(capsys, monkeypatch):
     assert "HARDWARE SECURITY CERTIFICATE" in captured
     assert "HSA-CERT-2026-CHIA-001" in captured
     assert "SILICON_SECURITY_CO_DESIGN_CERTIFIED" in captured
-    assert "Subsystems Formally Audited:      9" in captured
+    assert "Subsystems Formally Audited:      10" in captured
 
 
 def test_cli_matrix_json(capsys, monkeypatch):
@@ -1302,7 +1302,7 @@ def test_cli_matrix_json(capsys, monkeypatch):
     captured = capsys.readouterr().out
     data = json.loads(captured)
     assert data["certification_id"] == "HSA-CERT-2026-CHIA-001"
-    assert data["total_subsystems_audited"] == 9
+    assert data["total_subsystems_audited"] == 10
     assert data["average_mitigated_isolation"] == 100.0
 
 
@@ -1430,3 +1430,54 @@ def test_cli_ras_export(capsys, monkeypatch, tmp_path):
     assert main() == 0
     assert out.is_file()
     assert "VERIFIED_RAS_SPECULATIVE_ISOLATION" in out.read_text(encoding="utf-8")
+
+
+def test_cli_fpu_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "fpu"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SPECULATIVE FLOATING-POINT (FPU) & CONSTANT-TIME TIMING ORACLE" in captured
+    assert "BASELINE UNMITIGATED FPU" in captured
+    assert "VULNERABLE_SPECULATIVE_FPU_TIMING_CHANNEL" in captured
+
+
+def test_cli_fpu_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "fpu", "--mitigated"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "CO-DESIGNED CONST-TIME FPU GATE [ACTIVE]" in captured
+    assert "VERIFIED_FPU_CONSTANT_TIME_ISOLATION" in captured
+    assert "100.0%" in captured
+
+
+def test_cli_fpu_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "fpu", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["fpu_isolation_score"] == 0.2
+    assert data["security_verdict"] == "VULNERABLE_SPECULATIVE_FPU_TIMING_CHANNEL"
+
+
+def test_cli_fpu_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "fpu.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "fpu", "--mitigated", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "VERIFIED_FPU_CONSTANT_TIME_ISOLATION" in out.read_text(encoding="utf-8")

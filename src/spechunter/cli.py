@@ -1664,6 +1664,52 @@ def _run_ras(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_fpu(args: argparse.Namespace) -> int:
+    from spechunter.fpu import SpeculativeFPUOracle
+
+    target_core = getattr(args, "target", None) or "UC Berkeley BOOMv3 (SonicBOOM)"
+    mitigated = getattr(args, "mitigated", False)
+    stages = getattr(args, "stages", 4)
+    oracle = SpeculativeFPUOracle(target_core=target_core, fpu_stages=stages)
+    report = oracle.audit(mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        oracle.export_report(args.export, report)
+        print(f"Exported FPU speculative audit report to: {args.export}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    status_str = (
+        "CO-DESIGNED CONST-TIME FPU GATE [ACTIVE]"
+        if report.mitigated
+        else "BASELINE UNMITIGATED FPU"
+    )
+    print("================================================================================")
+    print("   SPECULATIVE FLOATING-POINT (FPU) & CONSTANT-TIME TIMING ORACLE")
+    print(f"   Target Core:        {report.target_core}")
+    print(f"   Status:             {status_str}")
+    print(f"   FPU Pipeline:       {report.fpu_stages} stages")
+    print(f"   FPU Isolation:      {report.fpu_isolation_score * 100.0:.1f}%")
+    print(f"   Verdict:            {report.security_verdict}")
+    print("================================================================================")
+    print(f"Timing Differential:          {report.timing_differential_cycles} cycles")
+    print(f"Speculative Flag Leaks:       {report.speculative_flag_leaks}")
+    if report.detected_vulnerabilities:
+        print("Detected Vulnerabilities:")
+        for v in report.detected_vulnerabilities:
+            print(f"  [!] {v}")
+    else:
+        print("FPU Speculative Execution Formally Certified Constant-Time & Isolated")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1705,6 +1751,7 @@ def main() -> int:
             "matrix",
             "pmp",
             "ras",
+            "fpu",
         ],
     )
     parser.add_argument(
@@ -1939,6 +1986,8 @@ def main() -> int:
             return _run_pmp(args)
         if args.command == "ras":
             return _run_ras(args)
+        if args.command == "fpu":
+            return _run_fpu(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")

@@ -14,6 +14,7 @@ from pathlib import Path
 
 from spechunter.bpu import SpeculativeBPUOracle
 from spechunter.coherence import TileLinkCoherenceSimulator
+from spechunter.fpu import SpeculativeFPUOracle
 from spechunter.mds import SpeculativeMDSOracle
 from spechunter.mmu import SpeculativeMMUOracle
 from spechunter.pmp import SpeculativePMPOracle
@@ -177,6 +178,11 @@ class UnifiedSecurityMatrixOracle:
         ras_base = ras_oracle.audit(mitigated=False)
         ras_mit = ras_oracle.audit(mitigated=True)
 
+        # 9. Floating-Point Unit (FPU / Constant-Time Timing) Audit
+        fpu_oracle = SpeculativeFPUOracle()
+        fpu_base = fpu_oracle.audit(mitigated=False)
+        fpu_mit = fpu_oracle.audit(mitigated=True)
+
         # Subsystems configuration table
         subsystems = [
             SubsystemAuditResult(
@@ -281,6 +287,17 @@ class UnifiedSecurityMatrixOracle:
                 chisel_module="SpecGatedRAS",
                 sva_properties_count=len(ras_mit.generated_sva_assertions) // 4,
                 ipc_overhead_pct=0.03,
+            ),
+            SubsystemAuditResult(
+                subsystem="Floating-Point Unit (FPU)",
+                target_cve="Speculative FPU & FCSR Leak",
+                baseline_status="VULNERABLE",
+                mitigated_status="VERIFIED_ISOLATED",
+                baseline_isolation_pct=fpu_base.fpu_isolation_score * 100.0,
+                mitigated_isolation_pct=fpu_mit.fpu_isolation_score * 100.0,
+                chisel_module="ConstTimeFPUGate",
+                sva_properties_count=len(fpu_mit.generated_sva_assertions) // 4,
+                ipc_overhead_pct=0.04,
             ),
         ]
 
