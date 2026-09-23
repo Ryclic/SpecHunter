@@ -93,7 +93,7 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
     - Exports standard JUnit XML reports (`--junit-xml`) for native ingestion into Chipyard CI, GitHub Actions, and Jenkins hardware pipelines.
     - Verified by 8 unit tests in `tests/test_harness.py` and 4 CLI integration tests in `tests/test_cli.py`.
 13. **Core Loop Technologies & Autonomous Closed Loop Provider (`src/spechunter/synthesis.py`, `search.py`, `minimizer.py`, `autonomous_agent.py`)**:
-    - **Microarchitectural Synthesizer (`synthesis.py`)**: Generates parameterized RV64 attack gadgets for Spectre-v1 (BCB), Meltdown (RDCL), BOOM Issue #715 speculative translation hazard, and Spectre-v4 (SSB) with cycle-accurate pipeline stage phase annotations.
+    - **Microarchitectural Synthesizer (`synthesis.py`)**: Generates parameterized RV64 attack gadgets for Spectre-v1 (BCB), Meltdown (RDCL), BOOM Issue #715 speculative translation hazard, and Spectre-v4 (SSB) with cycle-accurate pipeline stage phase annotations. Supports dynamic transient window widening (`MEM_POINTER_CHASE`, `BRANCH_MISPREDICT_DEPTH`, `DIV_MUL_DEPENDENCY`) and covert channel transmitter primitives (`CACHE_TAG_PRIME_PROBE`, `FLUSH_RELOAD`, `TIMING_ALU`).
     - **Guided Search Engine (`search.py`)**: Feedback-directed beam search using microarchitectural disclosure distance metric ($S = \sum w_i \cdot \text{signal}_i$). Dynamically detects transient loads, cache line allocation, and premature fences to direct mutation toward invariant violation.
     - **Hierarchical Delta Debugger (`minimizer.py`)**: Multi-stage counterexample reducer combining coarse chunk partitioning ($n/2 \to 1$) and 1-minimal sequential pruning to extract minimal exploit primitives while preserving positive controls.
     - **Autonomous Offline Agent Provider (`autonomous_agent.py`)**: Implements the 4-agent closed loop (Recon $\to$ Attack $\to$ Validate $\to$ Repair $\to$ Exhaustion) offline without cloud API keys or token consumption. Discovers all 3 target vulnerabilities, synthesizes verified RTL repairs (`gate-faulting-loads`, `remove-seeded-cache-leak`), produces novel attack challenges to achieve full attacker exhaustion verification, and exhibits zero false positives on negative controls.
@@ -104,9 +104,9 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
     - **Autonomous Red-Team Campaign Engine (`redteam.py`)**: Unified co-design orchestrator integrating synthesis $\to$ guided search $\to$ hierarchical delta debugging $\to$ differential verification $\to$ Chisel patch synthesis $\to$ attacker exhaustion verification into a push-button campaign (`spechunter redteam`). Emits structured Markdown scorecards and machine-readable JSON dossiers certifying 100% attacker exhaustion and zero false positives.
     - **CLI Subcommands**: Added `spechunter patch`, `spechunter differential`, and `spechunter redteam` with full export capabilities.
 
-Validation: 290 passed, 1 skipped in `.venv/bin/pytest -q` (100% pass across all unit and integration tests).
+Validation: 294 passed, 1 skipped in `.venv/bin/pytest -q` (100% pass across all unit and integration tests).
 Ruff lint and format pass cleanly (`0 errors` across 112 files). All 68 cryptographic evidence seals,
-`docs/demo.html`, and `artifacts/demo.html` verified with embedded microarchitectural taxonomy, SVG performance chart, advisory, and PoCs. All seals 100% valid. Reproducibility kit (Stages 1-5) passes completely.
+`docs/demo.html`, and `artifacts/demo.html` verified with embedded microarchitectural taxonomy, SVG performance chart, advisory, and PoCs. All seals 100% valid. Reproducibility kit (Stages 1-5) passes completely. Remote GitHub Actions CI passes 100% Green across all 3 matrix jobs (Ray CHIA, Python 3.12, Python 3.13).
 
 
 

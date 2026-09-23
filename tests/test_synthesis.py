@@ -94,3 +94,55 @@ def test_artifact_serialization():
     json_str = art.to_json()
     parsed = json.loads(json_str)
     assert parsed["threat_model"] == "spectre_bcb"
+
+
+def test_synthesize_widening_pointer_chase():
+    from spechunter.synthesis import WideningStrategy
+
+    synth = MicroarchitecturalSynthesizer()
+    cfg = SynthesisConfig(
+        threat_model=ThreatModel.SPECTRE_BCB,
+        window_widening=WideningStrategy.MEM_POINTER_CHASE,
+    )
+    art = synth.synthesize(cfg)
+    assert "LLC pointer chasing" in art.assembly_source
+    assert any("L2/LLC" == p["stage"] for p in art.pipeline_phases)
+
+
+def test_synthesize_widening_branch_depth():
+    from spechunter.synthesis import WideningStrategy
+
+    synth = MicroarchitecturalSynthesizer()
+    cfg = SynthesisConfig(
+        threat_model=ThreatModel.SPECTRE_BCB,
+        window_widening=WideningStrategy.BRANCH_MISPREDICT_DEPTH,
+    )
+    art = synth.synthesize(cfg)
+    assert "branch history register" in art.assembly_source
+    assert any("Cascading Branch" in p["signal"] for p in art.pipeline_phases)
+
+
+def test_synthesize_transmitter_timing_alu():
+    from spechunter.synthesis import TransmitterPrimitive
+
+    synth = MicroarchitecturalSynthesizer()
+    cfg = SynthesisConfig(
+        threat_model=ThreatModel.SPECTRE_BCB,
+        transmitter=TransmitterPrimitive.TIMING_ALU,
+    )
+    art = synth.synthesize(cfg)
+    assert "ALU execution port contention" in art.assembly_source
+    assert any("ALU Port" == p["stage"] for p in art.pipeline_phases)
+
+
+def test_synthesize_transmitter_flush_reload():
+    from spechunter.synthesis import TransmitterPrimitive
+
+    synth = MicroarchitecturalSynthesizer()
+    cfg = SynthesisConfig(
+        threat_model=ThreatModel.SPECTRE_BCB,
+        transmitter=TransmitterPrimitive.FLUSH_RELOAD,
+    )
+    art = synth.synthesize(cfg)
+    assert "Flush+Reload cache transmitter" in art.assembly_source
+    assert any("Flush+Reload" in p["signal"] for p in art.pipeline_phases)

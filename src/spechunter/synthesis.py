@@ -35,6 +35,11 @@ class WindowWidening(StrEnum):
     BRANCH_MISPREDICT_DEPTH = "branch_mispredict_depth"
 
 
+# Semantic aliases
+TransmitterPrimitive = TransmitterType
+WideningStrategy = WindowWidening
+
+
 @dataclass(frozen=True)
 class SynthesisConfig:
     threat_model: ThreatModel
@@ -163,25 +168,99 @@ class MicroarchitecturalSynthesizer:
             f"  # Training branch predictor with in-bounds condition\n"
             f"  addi {lp_cnt}, {lp_cnt}, -1\n"
             f"  bnez {lp_cnt}, .Ltrain_loop\n"
-            f"  # Delay branch condition resolution\n"
-            f"  div {del_reg}, s7, s8\n"
-            f"  mul {del_reg}, {del_reg}, s8\n"
-            f"  beqz {del_reg}, .Lspeculative_path\n"
+        )
+
+        if config.window_widening == WideningStrategy.MEM_POINTER_CHASE:
+            widening_asm = (
+                f"  # Delay branch resolution via LLC pointer chasing\n"
+                f"  ld {del_reg}, 0({del_reg})\n"
+                f"  ld {del_reg}, 0({del_reg})\n"
+                f"  beqz {del_reg}, .Lspeculative_path\n"
+            )
+            widening_phase = {
+                "cycle": 104,
+                "stage": "L2/LLC",
+                "signal": "LLC Miss Pointer Chase Stall",
+            }
+        elif config.window_widening == WideningStrategy.BRANCH_MISPREDICT_DEPTH:
+            widening_asm = (
+                f"  # Multi-level branch history register (BHR) training\n"
+                f"  bnez {lp_cnt}, .Linner_shadow\n"
+                f".Linner_shadow:\n"
+                f"  bnez {del_reg}, .Lspeculative_path\n"
+            )
+            widening_phase = {
+                "cycle": 104,
+                "stage": "BPU",
+                "signal": "Cascading Branch Mispredict Shadow",
+            }
+        else:
+            widening_asm = (
+                f"  # Delay branch condition resolution\n"
+                f"  div {del_reg}, s7, s8\n"
+                f"  mul {del_reg}, {del_reg}, s8\n"
+                f"  beqz {del_reg}, .Lspeculative_path\n"
+            )
+            widening_phase = {
+                "cycle": 104,
+                "stage": "Integer ALU",
+                "signal": "DIV/MUL Serial Execution Delay",
+            }
+
+        stride_shift = max(6, (config.cache_line_stride - 1).bit_length())
+        if config.transmitter == TransmitterPrimitive.TIMING_ALU:
+            transmitter_asm = (
+                f"  # Transmit secret via ALU execution port contention\n"
+                f"  sll {del_reg}, {sec_val}, 4\n"
+                f"  rem {del_reg}, {del_reg}, s8\n"
+                f"  ret\n"
+            )
+            transmitter_phase = {
+                "cycle": 108,
+                "stage": "ALU Port",
+                "signal": "Execution Port Contention Modulated",
+            }
+        elif config.transmitter == TransmitterPrimitive.FLUSH_RELOAD:
+            transmitter_asm = (
+                f"  # Flush+Reload cache transmitter\n"
+                f"  slli {sec_val}, {sec_val}, {stride_shift}\n"
+                f"  add {pr_base}, {pr_base}, {sec_val}\n"
+                f"  lbu zero, 0({pr_base})\n"
+                f"  ret\n"
+            )
+            transmitter_phase = {
+                "cycle": 108,
+                "stage": "D-Cache",
+                "signal": "Flush+Reload Cache Line Reload",
+            }
+        else:
+            transmitter_asm = (
+                f"  # Prime+Probe cache tag transmitter\n"
+                f"  slli {sec_val}, {sec_val}, {stride_shift}\n"
+                f"  add {pr_base}, {pr_base}, {sec_val}\n"
+                f"  lbu zero, 0({pr_base})\n"
+                f"  ret\n"
+            )
+            transmitter_phase = {
+                "cycle": 108,
+                "stage": "D-Cache Tag",
+                "signal": "Probe Line Fill Tag Allocated",
+            }
+
+        assembly += (
+            f"{widening_asm}"
             f"  ret\n"
             f".Lspeculative_path:\n"
             f"  ld {sec_val}, 0({sec_addr})\n"
             f"  andi {sec_val}, {sec_val}, 1\n"
-            f"  slli {sec_val}, {sec_val}, 6\n"
-            f"  add {pr_base}, {pr_base}, {sec_val}\n"
-            f"  lbu zero, 0({pr_base})\n"
-            f"  ret\n"
+            f"{transmitter_asm}"
         )
 
         phases = [
             {"cycle": 100, "stage": "BPU", "signal": "BHT Bi-Mode Predict Taken"},
-            {"cycle": 104, "stage": "Integer ALU", "signal": "DIV/MUL Serial Execution Delay"},
+            widening_phase,
             {"cycle": 107, "stage": "LSU Issue", "signal": "Speculative Load Dispatch"},
-            {"cycle": 108, "stage": "D-Cache", "signal": "Probe Line Fill Tag Allocated"},
+            transmitter_phase,
             {"cycle": 112, "stage": "ROB Squash", "signal": "Mispredict Recovery and Flush"},
             {"cycle": 120, "stage": "Observer", "signal": "Probe Timing Differential Delta T > 40"},
         ]
