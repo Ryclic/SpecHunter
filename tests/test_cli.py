@@ -127,6 +127,7 @@ def test_cli_verify_all(capsys, monkeypatch):
     assert "Submission Dossier (SUBMISSION.md): VERIFIED" in captured
     assert "Interactive Demo (docs/demo.html, zero scripts, taxonomy): VERIFIED" in captured
     assert "Paper Sources (LaTeX & Typst): VERIFIED" in captured
+    assert "Packaging & Profiling Tools: VERIFIED" in captured
 
 
 def test_cli_taxonomy(capsys, monkeypatch):
@@ -178,3 +179,20 @@ def test_cli_audit_json(capsys, monkeypatch):
     assert data["target_benchmark"] == "secure-control"
     assert data["verdict"] == "CLEAN"
     assert data["metrics"]["discovered"] == 0
+
+
+def test_cli_benchmark(capsys, monkeypatch, tmp_path):
+    out_file = tmp_path / "bench.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "benchmark", "--trials", "2", "--output", str(out_file)],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Microarchitectural Security Performance Benchmark" in captured
+    assert "Guided" in captured
+    assert "Random" in captured
+    assert out_file.is_file()
+    data = json.loads(out_file.read_text(encoding="utf-8"))
+    assert "search_strategies" in data

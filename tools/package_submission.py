@@ -20,6 +20,7 @@ DELIVERABLES = [
     ("docs/demo.html", "demo.html"),
     ("SUBMISSION.md", "SUBMISSION.md"),
     ("README.md", "README.md"),
+    ("tools/benchmark_performance.py", "tools/benchmark_performance.py"),
 ]
 
 

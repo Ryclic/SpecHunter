@@ -80,7 +80,10 @@ uv run spechunter taxonomy --json
 # 4. Execute composable CHIA security audit block on Spectre-v1 benchmark
 uv run spechunter audit --benchmark transient-cache --iterations 4 --json
 
-# 5. View interactive HTML demonstration
+# 5. Benchmark search latency, throughput, and memory footprint
+uv run spechunter benchmark
+
+# 6. View interactive HTML demonstration
 xdg-open docs/demo.html  # or open in any modern browser
 ```
 
@@ -96,6 +99,7 @@ xdg-open docs/demo.html  # or open in any modern browser
 | **Interactive Demo** | [`docs/demo.html`](docs/demo.html) | Standalone HTML5 viewer, zero `<script>` tags, inline SVG |
 | **Formal Taxonomy** | [`src/spechunter/taxonomy.py`](src/spechunter/taxonomy.py) | Full mapping of Spectre variants to BOOM Chisel RTL |
 | **Composable CHIA Node** | [`src/spechunter/chia_nodes.py`](src/spechunter/chia_nodes.py) | `SpecHunterSecurityAuditBlock` on Ray runtime |
+| **Performance Profiler** | [`tools/benchmark_performance.py`](tools/benchmark_performance.py) | Search throughput, latency, and RSS memory benchmark |
 | **Reproducibility Kit** | [`tools/run_reproducibility_kit.sh`](tools/run_reproducibility_kit.sh) | Single-command automated verification |
 | **Artifact Verifier** | [`tools/verify_all_artifacts.py`](tools/verify_all_artifacts.py) | Cryptographic seal checker |
 | **Submission Packager** | [`tools/package_submission.py`](tools/package_submission.py) | Automated `.tar.gz` and `.zip` archive builder |

@@ -160,6 +160,14 @@ def _run_verify() -> int:
         errors.append("Missing paper sources")
         print("[-] Paper Sources: MISSING")
 
+    pkg_path = Path("tools/package_submission.py")
+    bench_path = Path("tools/benchmark_performance.py")
+    if pkg_path.exists() and bench_path.exists():
+        print("[✓] Packaging & Profiling Tools: VERIFIED")
+    else:
+        errors.append("Missing packaging or profiling tools")
+        print("[-] Packaging & Profiling Tools: MISSING")
+
     if errors:
         print("\nVerification Failures:")
         for err in errors:
@@ -287,6 +295,31 @@ def _run_taxonomy(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_benchmark(args: argparse.Namespace) -> int:
+    import importlib.util
+
+    repo_root = Path(__file__).resolve().parents[2]
+    bench_path = repo_root / "tools/benchmark_performance.py"
+    if not bench_path.is_file():
+        print(f"[-] Benchmark tool not found at {bench_path}")
+        return 1
+
+    spec = importlib.util.spec_from_file_location("benchmark_performance", bench_path)
+    if spec is None or spec.loader is None:
+        return 1
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    out_path = (
+        args.output
+        if args.output != Path("artifacts/run.json")
+        else Path("artifacts/performance_benchmark.json")
+    )
+    trials = args.trials if args.trials != 100 else 3
+    mod.run_benchmarks(trials=trials, output_path=out_path)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -300,6 +333,7 @@ def main() -> int:
             "audit",
             "waveform",
             "taxonomy",
+            "benchmark",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
@@ -373,6 +407,8 @@ def main() -> int:
             return _run_audit(args)
         if args.command == "taxonomy":
             return _run_taxonomy(args)
+        if args.command == "benchmark":
+            return _run_benchmark(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")

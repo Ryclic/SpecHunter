@@ -25,12 +25,13 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
      hardware units (`ifu/bpu.scala`, `exu/core.scala`, `exu/lsu/lsu.scala`), speculation windows,
      and RTL interlock gates. Tested via `tests/test_taxonomy.py`.
 
-3. **CLI Subcommands (`spechunter audit`, `verify`, `waveform`, `taxonomy`):**
+3. **CLI Subcommands (`spechunter audit`, `verify`, `waveform`, `taxonomy`, `benchmark`):**
    - Added `spechunter waveform` for terminal visualization of Berkeley BOOM Issue #715 hazard timing.
    - Added `spechunter taxonomy` (with `--json` flag) for formal Spectre taxonomy mapping.
    - Added `spechunter verify` for push-button cryptographic artifact verification.
    - Added `spechunter audit` (with `--json` flag) for invoking the composable CHIA security audit block directly.
-   - Comprehensive test suite in `tests/test_cli.py` (8 unit and integration tests).
+   - Added `spechunter benchmark` for profiling microarchitectural search latency, throughput, and memory RSS footprint.
+   - Comprehensive test suite in `tests/test_cli.py` (9 unit and integration tests).
 
 4. **Microarchitectural Waveform & Hazard Timing Explorer (`src/spechunter/presentation.py`):**
    - Embedded cycle-accurate SVG timing diagram (cycles 3804–3811), formal taxonomy table, and
@@ -44,11 +45,12 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
      audits across Spectre-v1, Meltdown, and Secure Baseline with Ray orchestration and summary metrics.
    - Added `tests/test_chia.py` covering multi-benchmark audit block and suite execution.
 
-6. **Automated Reproducibility Kit & HotCRP Packager:**
+6. **Automated Reproducibility Kit, Profiler & HotCRP Packager:**
    - Single push-button script: `tools/run_reproducibility_kit.sh` (5 automated stages).
+   - Profiling automation: `tools/benchmark_performance.py` profiling guided vs random search throughput (89,000+ sims/sec) and RSS footprint.
    - Packaging automation: `tools/package_submission.py` generates `.tar.gz` and `.zip` archives with SHA-256 manifests.
-   - Unit tests in `tests/test_package.py` verify bundle generation and digest integrity.
-   - Comprehensive validation: 188 unit tests passed, all 8 cryptographic evidence seals verified,
+   - Unit tests in `tests/test_performance.py` and `tests/test_package.py` verify profiling, bundle generation, and digest integrity.
+   - Comprehensive validation: 192 unit tests passed, all 8 cryptographic evidence seals verified,
      4-page IEEE/ACM paper verified, interactive demo generated, HotCRP archive bundled.
 
 7. **Complete HotCRP Submission Dossier (`SUBMISSION.md`):**
@@ -56,7 +58,7 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
      quickstart judge reproducibility guide, deliverable inventory, and cryptographic provenance manifest.
    - Verified by `tests/test_submission.py`, `tools/verify_all_artifacts.py`, and `spechunter verify`.
 
-Validation: 188 tests passed, 1 skipped, 4 deselected in `.venv/bin/pytest -q -m 'not chia'` (192 total tests).
+Validation: 192 tests passed, 1 skipped, 4 deselected in `.venv/bin/pytest -q -m 'not chia'` (196 total tests).
 Ruff lint and format pass cleanly (`0 errors`). All 8 cryptographic evidence streams,
 `docs/demo.html`, and `artifacts/demo.html` verified with embedded microarchitectural taxonomy. All seals 100% valid.
 

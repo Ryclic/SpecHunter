@@ -97,6 +97,14 @@ def main() -> int:
     else:
         errors.append("Missing paper/spechunter.tex or paper/spechunter.typ")
 
+    # 7. Verify Packaging and Profiling Tooling
+    pkg_path = Path("tools/package_submission.py")
+    bench_path = Path("tools/benchmark_performance.py")
+    if pkg_path.exists() and bench_path.exists():
+        print("✓ Packaging and profiling tooling verified.")
+    else:
+        errors.append("Missing tools/package_submission.py or tools/benchmark_performance.py")
+
     if errors:
         print("\nVerification FAILURES:")
         for err in errors:
