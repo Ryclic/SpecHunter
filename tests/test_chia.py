@@ -42,3 +42,26 @@ def test_chia_security_audit_block_benchmarks():
     report_sec = block_sec.execute(local=True)
     assert report_sec["metrics"]["discovered"] == 0
     assert report_sec["metrics"]["false_positives"] == 0
+
+
+@pytest.mark.chia
+def test_chia_security_audit_suite():
+    pytest.importorskip("chia")
+    from spechunter.chia_nodes import SpecHunterSecurityAuditBlock
+
+    suite = SpecHunterSecurityAuditBlock.audit_suite(
+        benchmark_ids=("transient-cache", "secure-control"),
+        iterations=2,
+        local=True,
+    )
+    assert len(suite) == 2
+    assert suite["transient-cache"]["metrics"]["discovered"] == 1
+    assert suite["secure-control"]["metrics"]["discovered"] == 0
+
+    summary = SpecHunterSecurityAuditBlock.summarize_suite(suite)
+    assert summary["benchmarks_audited"] == 2
+    assert summary["vulnerabilities_discovered"] == 1
+    assert summary["false_positives"] == 0
+    assert summary["clean_benchmarks"] == ["secure-control"]
+    assert summary["vulnerable_benchmarks"] == ["transient-cache"]
+    assert summary["all_clean"] is False

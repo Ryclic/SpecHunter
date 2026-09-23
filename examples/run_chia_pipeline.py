@@ -34,8 +34,18 @@ def main():
         ("Meltdown (Privilege Bypass)", "privilege-bypass"),
         ("Secure Baseline (Control)", "secure-control"),
     ]
+    reports = {}
     for label, bid in targets:
-        audit_target(label, bid)
+        reports[bid] = audit_target(label, bid)
+
+    summary = SpecHunterSecurityAuditBlock.summarize_suite(reports)
+    print("\n--- CHIA Pipeline Audit Summary ---")
+    print(f"  Benchmarks Audited:         {summary['benchmarks_audited']}")
+    print(f"  Vulnerabilities Discovered: {summary['vulnerabilities_discovered']}")
+    print(f"  False Positives:            {summary['false_positives']}")
+    print(f"  Total Simulations:          {summary['total_executions']}")
+    print(f"  Clean Benchmarks:           {', '.join(summary['clean_benchmarks'])}")
+    print(f"  Vulnerable Benchmarks:      {', '.join(summary['vulnerable_benchmarks'])}")
     print("\n✓ Full CHIA security pipeline audit completed successfully!")
 
 

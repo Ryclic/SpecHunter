@@ -214,3 +214,53 @@ class SpecHunterSecurityAuditBlock:
                 seed=self.seed,
                 benchmark_id=self.benchmark_id,
             )
+
+    @classmethod
+    def audit_suite(
+        cls,
+        benchmark_ids: tuple[str, ...] = ("transient-cache", "privilege-bypass", "secure-control"),
+        config: BackendConfig | None = None,
+        strategy: str = "guided",
+        iterations: int = 16,
+        seed: int = 0,
+        local: bool = True,
+    ) -> dict[str, dict]:
+        """Execute a full multi-benchmark security co-design audit suite across threat models."""
+        cfg = config or BackendConfig()
+        results = {}
+        for bid in benchmark_ids:
+            block = cls(
+                config=cfg,
+                strategy=strategy,
+                iterations=iterations,
+                seed=seed,
+                benchmark_id=bid,
+            )
+            results[bid] = block.execute(local=local)
+        return results
+
+    @classmethod
+    def summarize_suite(cls, suite_results: dict[str, dict]) -> dict:
+        """Summarize security red-teaming metrics across an audited suite."""
+        total_discovered = sum(
+            r.get("metrics", {}).get("discovered", 0) for r in suite_results.values()
+        )
+        total_fp = sum(
+            r.get("metrics", {}).get("false_positives", 0) for r in suite_results.values()
+        )
+        total_execs = sum(r.get("metrics", {}).get("executions", 0) for r in suite_results.values())
+        clean = [
+            b for b, r in suite_results.items() if r.get("metrics", {}).get("discovered", 0) == 0
+        ]
+        vulnerable = [
+            b for b, r in suite_results.items() if r.get("metrics", {}).get("discovered", 0) > 0
+        ]
+        return {
+            "benchmarks_audited": len(suite_results),
+            "vulnerabilities_discovered": total_discovered,
+            "false_positives": total_fp,
+            "total_executions": total_execs,
+            "clean_benchmarks": clean,
+            "vulnerable_benchmarks": vulnerable,
+            "all_clean": len(vulnerable) == 0,
+        }
