@@ -1276,3 +1276,55 @@ def test_cli_mds_export(capsys, monkeypatch, tmp_path):
     assert main() == 0
     assert out.is_file()
     assert "VERIFIED_MDS_ISOLATION" in out.read_text(encoding="utf-8")
+
+
+def test_cli_matrix_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "matrix"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "HARDWARE SECURITY CERTIFICATE" in captured
+    assert "HSA-CERT-2026-CHIA-001" in captured
+    assert "SILICON_SECURITY_CO_DESIGN_CERTIFIED" in captured
+    assert "Subsystems Formally Audited:      7" in captured
+
+
+def test_cli_matrix_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "matrix", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["certification_id"] == "HSA-CERT-2026-CHIA-001"
+    assert data["total_subsystems_audited"] == 7
+    assert data["average_mitigated_isolation"] == 100.0
+
+
+def test_cli_matrix_markdown(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "matrix", "--markdown"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "# SpecHunter Grand Unified Microarchitectural Co-Design Verification Matrix" in captured
+    assert "SILICON_SECURITY_CO_DESIGN_CERTIFIED" in captured
+
+
+def test_cli_matrix_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "matrix.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "matrix", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "SILICON_SECURITY_CO_DESIGN_CERTIFIED" in out.read_text(encoding="utf-8")
