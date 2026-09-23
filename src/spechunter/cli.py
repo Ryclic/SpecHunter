@@ -1272,6 +1272,55 @@ def _run_contract(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_rollback(args: argparse.Namespace) -> int:
+    from spechunter.rollback import RollbackOracle
+
+    target_id = getattr(args, "target", None) or "transient-cache"
+    mitigated = getattr(args, "mitigated", False)
+
+    oracle = RollbackOracle(target_benchmark=target_id)
+    report = oracle.audit(mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        oracle.export_report(args.export, report)
+        print(f"Exported speculative rollback report to: {args.export}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    status_str = "Mitigated Core (Repaired)" if mitigated else "Baseline Core (Unmitigated)"
+    print("=== SpecHunter Speculative Rollback & Shadow State Recovery Oracle ===")
+    print(f"Target Benchmark:             {report.target_benchmark}")
+    print(f"Hardware Status:              {status_str}")
+    print(f"Rollback Integrity Score:     {report.rollback_integrity_score * 100.0:.1f}%")
+    print(f"Squash Execution Cycle:       Cycle {report.squash_cycle}")
+    uops_str = f"{report.pre_squash_inflight_uops} -> {report.post_squash_inflight_uops}"
+    print(f"In-Flight UOps Purged:        {uops_str}")
+    rat_str = (
+        "PROVEN (Restored)" if report.atomic_rat_restoration_proven else "FAIL (Stale Aliasing)"
+    )
+    prf_str = "PROVEN (Zeroized)" if report.prf_residuals_zeroized else "FAIL (Secret Retained)"
+    stq_str = "PROVEN (Purged)" if report.uncommitted_stores_purged else "FAIL (Drained to Buffer)"
+    print(f"Atomic RAT Restoration:       {rat_str}")
+    print(f"PRF Residual Zeroization:     {prf_str}")
+    print(f"Speculative STQ Cancellation: {stq_str}")
+    print(f"Rollback Audit Verdict:       {report.verdict}")
+    print("-" * 75)
+    if report.residual_vulnerabilities_detected:
+        print("Detected Microarchitectural Residual Vulnerabilities:")
+        for v in report.residual_vulnerabilities_detected:
+            print(f"  [!] {v}")
+    else:
+        print("Microarchitectural Shadow State Certified Cleanly Purged (0 Leaks)")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1305,6 +1354,7 @@ def main() -> int:
             "fuzz",
             "mcts",
             "contract",
+            "rollback",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
@@ -1517,6 +1567,8 @@ def main() -> int:
             return _run_mcts(args)
         if args.command == "contract":
             return _run_contract(args)
+        if args.command == "rollback":
+            return _run_rollback(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")

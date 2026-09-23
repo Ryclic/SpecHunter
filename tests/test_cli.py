@@ -1016,3 +1016,54 @@ def test_cli_contract_export(capsys, monkeypatch, tmp_path):
     assert main() == 0
     assert out.is_file()
     assert "(set-logic QF_BV)" in out.read_text(encoding="utf-8")
+
+
+def test_cli_rollback_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "rollback", "--target", "transient-cache"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Speculative Rollback & Shadow State Recovery Oracle" in captured
+    assert "Baseline Core (Unmitigated)" in captured
+    assert "FAIL (Stale Aliasing)" in captured
+
+
+def test_cli_rollback_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "rollback", "--target", "transient-cache", "--mitigated"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Mitigated Core (Repaired)" in captured
+    assert "PROVEN (Restored)" in captured
+    assert "Rollback Integrity Score:     100.0%" in captured
+
+
+def test_cli_rollback_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "rollback", "--target", "privilege-bypass", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["target_benchmark"] == "privilege-bypass"
+    assert "rollback_integrity_score" in data
+
+
+def test_cli_rollback_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "rollback.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "rollback", "--target", "issue-715", "--mitigated", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "VERIFIED_CLEAN_ATOMIC_ROLLBACK" in out.read_text(encoding="utf-8")
