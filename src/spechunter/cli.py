@@ -1043,6 +1043,48 @@ def _run_testbench(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_coherence(args: argparse.Namespace) -> int:
+    from spechunter.coherence import TileLinkCoherenceSimulator
+
+    mitigated = getattr(args, "mitigated", False)
+    sim = TileLinkCoherenceSimulator(num_cores=2)
+    report = sim.simulate_attack(mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        dest = args.export
+        sim.export_report(dest, report)
+        print(f"Exported TileLink coherence security report to: {dest}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    print("=== SpecHunter Multi-Core TileLink Coherence Snoop Security Analysis ===")
+    print(f"System Cores:                 {report.system_cores} (Dual-Core BOOM TileLink-C)")
+    print(f"Target Cache Line:            {hex(report.secret_address)}")
+    print(f"Hardware Mitigation Active:   {report.mitigated}")
+    print(f"Security Verdict:             {report.security_verdict}")
+    print(f"Cross-Core Leakage:           {report.cross_core_leakage_bits:.2f} bits")
+    print(f"Victim Core Latency Delta:    {report.victim_latency_delta_cycles} cycles")
+    print("-" * 75)
+    print(f"{'Core':<10} {'Initial Coherence State':<26} {'Post-Transient Final State':<26}")
+    print("-" * 75)
+    for cid in sorted(report.core_initial_states.keys()):
+        print(
+            f"Core {cid:<5} {report.core_initial_states[cid]:<26} "
+            f"{report.core_final_states[cid]:<26}"
+        )
+    print("-" * 75)
+    print("Vulnerability & Mitigation Assessment:")
+    print(f"  {report.vulnerability_description}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1071,6 +1113,7 @@ def main() -> int:
             "profile",
             "taint",
             "testbench",
+            "coherence",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
@@ -1267,6 +1310,8 @@ def main() -> int:
             return _run_taint(args)
         if args.command == "testbench":
             return _run_testbench(args)
+        if args.command == "coherence":
+            return _run_coherence(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")

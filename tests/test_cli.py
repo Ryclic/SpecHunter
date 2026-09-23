@@ -808,3 +808,46 @@ def test_cli_waveform_export_json(capsys, monkeypatch, tmp_path):
     data = json.loads(out.read_text(encoding="utf-8"))
     assert data["benchmark_id"] == "privilege-bypass"
     assert "hazards" in data
+
+
+def test_cli_coherence_default(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "coherence"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Multi-Core TileLink Coherence Snoop Security Analysis" in captured
+    assert "CROSS_CORE_COHERENCE_EXPOSURE" in captured
+    assert "1.00 bits" in captured
+
+
+def test_cli_coherence_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "coherence", "--mitigated"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "NON_INTERFERENT_ISOLATED" in captured
+    assert "0.00 bits" in captured
+
+
+def test_cli_coherence_markdown(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "coherence", "--markdown"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "# SpecHunter Multi-Core TileLink Coherence Snoop Security Report" in captured
+    assert "TileLink-C Protocol Transaction Log" in captured
+
+
+def test_cli_coherence_json(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "coherence", "--json"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["system_cores"] == 2
+    assert "transactions" in data
+
+
+def test_cli_coherence_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "coherence_report.json"
+    monkeypatch.setattr(sys, "argv", ["spechunter", "coherence", "--export", str(out)])
+    assert main() == 0
+    assert out.is_file()
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert data["security_verdict"] == "CROSS_CORE_COHERENCE_EXPOSURE"
