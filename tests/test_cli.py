@@ -124,6 +124,8 @@ def test_cli_verify_all(capsys, monkeypatch):
     assert "ALL ARTIFACTS AND SEALS 100% VERIFIED" in captured
     assert "Historical Issue #715 Attachment: VERIFIED" in captured
     assert "Submission Dossier (SUBMISSION.md): VERIFIED" in captured
+    assert "Interactive Demo (docs/demo.html, zero scripts, taxonomy): VERIFIED" in captured
+    assert "Paper Sources (LaTeX & Typst): VERIFIED" in captured
 
 
 def test_cli_taxonomy(capsys, monkeypatch):

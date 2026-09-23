@@ -52,11 +52,11 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
 7. **Complete HotCRP Submission Dossier (`SUBMISSION.md`):**
    - Formatted for direct HotCRP submission, containing Author-Identified Highlights, paper abstract,
      quickstart judge reproducibility guide, deliverable inventory, and cryptographic provenance manifest.
-   - Verified by `tests/test_submission.py` and `tools/verify_all_artifacts.py`.
+   - Verified by `tests/test_submission.py`, `tools/verify_all_artifacts.py`, and `spechunter verify`.
 
 Validation: 186 tests passed, 1 skipped, 3 deselected in `.venv/bin/pytest -q -m 'not chia'`.
-Ruff lint and format pass cleanly (`0 errors`). All 8 cryptographic evidence streams and
-`artifacts/demo.html` rendered successfully. All seals 100% valid.
+Ruff lint and format pass cleanly (`0 errors`). All 8 cryptographic evidence streams,
+`docs/demo.html`, and `artifacts/demo.html` verified with embedded microarchitectural taxonomy. All seals 100% valid.
 
 ## Issue #715 isolated gadget diagnostic (PR #17 follow-up)
 

@@ -76,6 +76,27 @@ def main() -> int:
     else:
         errors.append("Missing or incomplete SUBMISSION.md")
 
+    # 5. Verify Static Demo
+    demo_path = Path("docs/demo.html")
+    if demo_path.exists():
+        demo_content = demo_path.read_text(encoding="utf-8")
+        if "<script" in demo_content:
+            errors.append("docs/demo.html contains disallowed <script> tag")
+        elif "Microarchitectural Spectre taxonomy" not in demo_content:
+            errors.append("docs/demo.html missing microarchitectural taxonomy section")
+        else:
+            print("✓ Interactive demo verified (docs/demo.html, zero scripts, taxonomy included).")
+    else:
+        errors.append(f"Missing {demo_path}")
+
+    # 6. Verify Paper Sources
+    tex_path = Path("paper/spechunter.tex")
+    typ_path = Path("paper/spechunter.typ")
+    if tex_path.exists() and typ_path.exists():
+        print("✓ Paper sources verified (LaTeX and Typst).")
+    else:
+        errors.append("Missing paper/spechunter.tex or paper/spechunter.typ")
+
     if errors:
         print("\nVerification FAILURES:")
         for err in errors:

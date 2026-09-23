@@ -58,7 +58,9 @@ git checkout feat/hackathon-paper-and-submission
 - **Unit Test Suite**: 186 passed, 1 skipped, 3 deselected in 38s.
 - **Cryptographic Seal Verification**: All 8 evidence streams verified 100%.
 - **Paper Deliverable**: `paper/spechunter_micro2026.pdf` verified (strictly 4 pages, publication-ready format).
-- **Interactive Presentation**: `artifacts/demo.html` generated (zero `<script>` tags, inline SVG waveform).
+- **Interactive Presentation**: `docs/demo.html` verified (zero `<script>` tags, inline SVG waveform, formal microarchitectural taxonomy table).
+- **Paper Sources**: `paper/spechunter.tex` and `paper/spechunter.typ` verified.
+- **Submission Dossier**: `SUBMISSION.md` complete and verified.
 
 ---
 

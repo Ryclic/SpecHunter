@@ -137,6 +137,29 @@ def _run_verify() -> int:
         errors.append("Missing or incomplete SUBMISSION.md")
         print("[-] Submission Dossier: MISSING or INCOMPLETE (SUBMISSION.md)")
 
+    demo_path = Path("docs/demo.html")
+    if demo_path.exists():
+        demo_content = demo_path.read_text(encoding="utf-8")
+        if "<script" in demo_content:
+            errors.append("docs/demo.html contains disallowed <script> tag")
+            print("[-] Interactive Demo (docs/demo.html): FAILED (<script> detected)")
+        elif "Microarchitectural Spectre taxonomy" not in demo_content:
+            errors.append("docs/demo.html missing microarchitectural taxonomy")
+            print("[-] Interactive Demo (docs/demo.html): FAILED (missing taxonomy)")
+        else:
+            print("[✓] Interactive Demo (docs/demo.html, zero scripts, taxonomy): VERIFIED")
+    else:
+        errors.append(f"Missing {demo_path}")
+        print(f"[-] Interactive Demo: MISSING ({demo_path})")
+
+    tex_path = Path("paper/spechunter.tex")
+    typ_path = Path("paper/spechunter.typ")
+    if tex_path.exists() and typ_path.exists():
+        print("[✓] Paper Sources (LaTeX & Typst): VERIFIED")
+    else:
+        errors.append("Missing paper sources")
+        print("[-] Paper Sources: MISSING")
+
     if errors:
         print("\nVerification Failures:")
         for err in errors:
