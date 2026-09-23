@@ -932,3 +932,87 @@ def test_cli_fuzz_json(capsys, monkeypatch):
     data = json.loads(captured)
     assert data["target_benchmark"] == "privilege-bypass"
     assert data["iterations"] == 20
+
+
+def test_cli_mcts_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "mcts", "--target", "transient-cache", "--iterations", "15"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Monte Carlo Tree Search (MCTS) Program Synthesizer" in captured
+    assert "MCTS Iterations Used:" in captured
+
+
+def test_cli_mcts_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "mcts", "--target", "transient-cache", "--iterations", "10", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert "simulations_evaluated" in data
+    assert "action_frequencies" in data
+
+
+def test_cli_mcts_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "mcts_res.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "spechunter",
+            "mcts",
+            "--target",
+            "transient-cache",
+            "--iterations",
+            "10",
+            "--export",
+            str(out),
+        ],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "simulations_evaluated" in out.read_text(encoding="utf-8")
+
+
+def test_cli_contract_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "contract", "--target", "transient-cache"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Speculation Contract & Dual-Rail Miter Equivalence Prover" in captured
+    assert "PROVEN (PASS - Zero Regression)" in captured
+    assert "PROVEN (PASS - Zero Leakage)" in captured
+
+
+def test_cli_contract_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "contract", "--target", "privilege-bypass", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["benchmark_id"] == "privilege-bypass"
+    assert data["functional_equivalence_proven"]
+
+
+def test_cli_contract_export(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "miter.smt2"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "contract", "--target", "issue-715", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "(set-logic QF_BV)" in out.read_text(encoding="utf-8")
