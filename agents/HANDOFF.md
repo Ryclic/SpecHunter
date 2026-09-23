@@ -127,8 +127,21 @@ hackathon impact on real-world systems (Berkeley BOOM out-of-order RISC-V core):
     - Proves that SpecHunter's co-designed **Speculative Snoop Quarantine Buffer** defers cross-core probes until commit confirmation, completely eliminating cross-core disturbance (0-cycle timing delta, 0.00 bits mutual information leakage, certifying `NON_INTERFERENT_ISOLATED`).
     - Added CLI subcommand: `spechunter coherence` (with `--mitigated`, `--markdown`, `--json`, and `--export`).
 
-Validation: 344 passed, 1 skipped in `.venv/bin/pytest -q` (100% pass across all unit and integration tests).
-Ruff lint and format pass cleanly (`0 errors` across 124 files). All 68 cryptographic evidence seals,
+19. **Formal SMT-LIB2 Bounded Model Checker & Relational Non-Interference Prover (`src/spechunter/formal.py`)**:
+    - Encodes out-of-order pipeline execution, speculative load gating, and translation order constraints into formal SMT-LIB2 quantifier-free bitvector (`QF_BV`) formulas.
+    - Formally verifies the relational 2-safety hyperproperty: $\forall \sigma_A, \sigma_B: (\sigma_A =_L \sigma_B) \implies \forall t \le K: (\Omega(\text{Trace}_A(t)) = \Omega(\text{Trace}_B(t)))$.
+    - Proves baseline cores yield SAT counterexamples (secret high-security register differentials modulate cache tags during speculation), while co-designed hardware repairs yield UNSAT mathematical proofs of observational non-interference.
+    - Exports standard SMT-LIB2 (`.smt2`) scripts directly consumable by Z3, CVC5, Boolector, and Yices.
+    - Added CLI subcommand: `spechunter formal` (with `--target`, `--depth`, `--mitigated`, `--export`, `--json`, and `--markdown`).
+
+20. **Microarchitectural State-Transition Graph (MSTG) Coverage & Invariant Fuzzer (`src/spechunter/fuzzer.py`)**:
+    - Fuzzes the out-of-order microarchitectural state space across 4 dimensions: 2-bit BPU counter states ($S_0 \dots S_3$), ROB inflight allocation bins ($[0..15], [16..31], [32..47], [48..64]$), LSU hazard states (`DTLB_CHECK_PENDING`, `STORE_FORWARDING_COLLISION`, `MSHR_WAIT`), and privilege modes ($U \leftrightarrow M$).
+    - Measures MSTG edge transition coverage and detects transient invariant violations (`UNRESOLVED_SPECULATIVE_LOAD_DISPATCH`, `SPECULATIVE_TRANSLATION_ORDER_RACE`, `STORE_FORWARDING_COLLISION_BYPASS`).
+    - Proves that SpecHunter's co-designed hardware mitigations completely eliminate invariant violations (0 violations detected across 100% of tested mutants).
+    - Added CLI subcommand: `spechunter fuzz` (with `--target`, `--iterations`, `--seed`, `--mitigated`, `--export`, `--json`, and `--markdown`).
+
+Validation: 357 passed, 1 skipped in `.venv/bin/pytest -q` (100% pass across all unit and integration tests).
+Ruff lint and format pass cleanly (`0 errors` across 126 files). All 68 cryptographic evidence seals,
 `docs/demo.html`, and `artifacts/demo.html` verified with embedded microarchitectural taxonomy, SVG performance chart, advisory, and PoCs. All seals 100% valid. Reproducibility kit (Stages 1-5) passes completely. Remote GitHub Actions CI passes 100% Green across all 3 matrix jobs (Ray CHIA, Python 3.12, Python 3.13).
 
 

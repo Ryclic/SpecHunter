@@ -851,3 +851,84 @@ def test_cli_coherence_export(capsys, monkeypatch, tmp_path):
     assert out.is_file()
     data = json.loads(out.read_text(encoding="utf-8"))
     assert data["security_verdict"] == "CROSS_CORE_COHERENCE_EXPOSURE"
+
+
+def test_cli_formal_default(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["spechunter", "formal", "--target", "transient-cache"])
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Formal SMT-LIB2 Relational Non-Interference Prover" in captured
+    assert "COUNTEREXAMPLE_FOUND" in captured
+    assert "Cycle" in captured
+
+
+def test_cli_formal_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "formal", "--target", "transient-cache", "--mitigated"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "PROVEN_SECURE" in captured
+
+
+def test_cli_formal_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "formal", "--target", "privilege-bypass", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["benchmark_id"] == "privilege-bypass"
+    assert "total_clauses" in data
+
+
+def test_cli_formal_export_smt2(capsys, monkeypatch, tmp_path):
+    out = tmp_path / "proof.smt2"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "formal", "--target", "transient-cache", "--export", str(out)],
+    )
+    assert main() == 0
+    assert out.is_file()
+    assert "(set-logic QF_BV)" in out.read_text(encoding="utf-8")
+
+
+def test_cli_fuzz_default(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "fuzz", "--target", "transient-cache", "--iterations", "30"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter Microarchitectural State-Transition Graph (MSTG) Fuzzer" in captured
+    assert "MSTG Edge Coverage:" in captured
+
+
+def test_cli_fuzz_mitigated(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "fuzz", "--target", "transient-cache", "--iterations", "30", "--mitigated"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "Invariant Violations:         0" in captured
+
+
+def test_cli_fuzz_json(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "fuzz", "--target", "privilege-bypass", "--iterations", "20", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    data = json.loads(captured)
+    assert data["target_benchmark"] == "privilege-bypass"
+    assert data["iterations"] == 20

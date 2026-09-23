@@ -1085,6 +1085,105 @@ def _run_coherence(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_formal(args: argparse.Namespace) -> int:
+    from spechunter.formal import FormalVerificationEngine
+
+    target = getattr(args, "target", None) or "transient-cache"
+    depth = getattr(args, "depth", 8)
+    mitigated = getattr(args, "mitigated", False)
+
+    engine = FormalVerificationEngine(unroll_depth=depth)
+    report = engine.verify_benchmark(target, mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        dest = Path(args.export)
+        if dest.suffix == ".smt2":
+            engine.export_smt2(dest, report.smt2_source)
+            print(f"Exported SMT-LIB2 formula to: {dest}")
+        elif dest.suffix == ".md":
+            dest.write_text(report.to_markdown(), encoding="utf-8")
+            print(f"Exported formal proof report to: {dest}")
+        else:
+            dest.write_text(report.to_json() + "\n", encoding="utf-8")
+            print(f"Exported formal proof JSON to: {dest}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    print("=== SpecHunter Formal SMT-LIB2 Relational Non-Interference Prover ===")
+    print(f"Target Benchmark:             {report.benchmark_id}")
+    print(f"SMT-LIB2 Logic:               {report.smt_logic} (Quantifier-Free Bitvectors)")
+    print(f"Bounded Model Depth:          {report.unroll_depth} cycles")
+    print(f"Hardware Mitigation Active:   {report.mitigated}")
+    print(f"Formal Verification Verdict:  {report.verdict.value}")
+    comp_str = f"{report.total_variables} vars, {report.total_clauses} clauses"
+    print(f"Formula Complexity:           {comp_str}")
+    if report.counterexample_cycle is not None:
+        print(f"Counterexample Cycle:         Cycle {report.counterexample_cycle}")
+        diff_str = f"A={hex(report.secret_a_val or 0)}, B={hex(report.secret_b_val or 0)}"
+        print(f"Secret Differential Input:    {diff_str}")
+    print("-" * 75)
+    print(f"{'Cycle':<8} {'PC':<14} {'Speculative':<14} {'Fault Pending':<16} {'Leak Divergence'}")
+    print("-" * 75)
+    for s in report.symbolic_steps:
+        spec = "YES" if s.is_speculative else "NO"
+        fault = "YES" if s.fault_pending else "NO"
+        div = "YES (LEAK)" if s.observable_leakage else "NO"
+        print(f"{s.cycle:<8} {s.pc:<14} {spec:<14} {fault:<16} {div}")
+    return 0
+
+
+def _run_fuzz(args: argparse.Namespace) -> int:
+    from spechunter.fuzzer import MicroarchitecturalFuzzer
+
+    target = getattr(args, "target", None) or "transient-cache"
+    iterations = getattr(args, "iterations", 100)
+    seed = getattr(args, "seed", 42)
+    mitigated = getattr(args, "mitigated", False)
+
+    fuzzer = MicroarchitecturalFuzzer(target_benchmark=target, seed=seed)
+    report = fuzzer.run_campaign(iterations=iterations, mitigated=mitigated)
+
+    if getattr(args, "export", None):
+        fuzzer.export_report(args.export, report)
+        print(f"Exported microarchitectural fuzzing report to: {args.export}")
+        return 0
+
+    if getattr(args, "json", False):
+        print(report.to_json())
+        return 0
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+        return 0
+
+    cov_str = f"{report.mstg_coverage_pct:.1f}% ({report.total_edges_covered} transitions)"
+    print("=== SpecHunter Microarchitectural State-Transition Graph (MSTG) Fuzzer ===")
+    print(f"Target Benchmark:             {report.target_benchmark}")
+    print(f"Fuzzing Iterations:           {report.iterations}")
+    print(f"Hardware Mitigation Active:   {report.mitigated}")
+    print(f"MSTG States Discovered:       {report.total_states_discovered} / 48")
+    print(f"MSTG Edge Coverage:           {cov_str}")
+    print(f"Invariant Violations:         {len(report.violations)}")
+    print("-" * 75)
+    print("Most Frequent Microarchitectural State Clusters:")
+    for state_key, count in sorted(report.state_histogram.items(), key=lambda x: -x[1])[:5]:
+        print(f"  {state_key:<45} : {count} occurrences")
+    if report.violations:
+        print("-" * 75)
+        print("Discovered Invariant Violations:")
+        for v in report.violations[:3]:
+            trans = f"({v.src_state} -> {v.dst_state})"
+            print(f"  [Iter {v.iteration:03d}] {v.violation_type} on {v.trigger_opcode} {trans}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1114,6 +1213,8 @@ def main() -> int:
             "taint",
             "testbench",
             "coherence",
+            "formal",
+            "fuzz",
         ],
     )
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
@@ -1218,6 +1319,12 @@ def main() -> int:
         action="store_true",
         help="Simulate with hardware security mitigation active (supported for taint command)",
     )
+    parser.add_argument(
+        "--depth",
+        type=int,
+        default=8,
+        help="Bounded Model Checking unroll depth (supported for formal command)",
+    )
     parser.add_argument("--input", type=Path, help="Sealed experiment report for present")
     parser.add_argument("--seal", type=Path, help="Evidence seal for present")
     parser.add_argument("--corpus", type=Path, help="Optional sealed BOOM attack corpus")
@@ -1312,6 +1419,10 @@ def main() -> int:
             return _run_testbench(args)
         if args.command == "coherence":
             return _run_coherence(args)
+        if args.command == "formal":
+            return _run_formal(args)
+        if args.command == "fuzz":
+            return _run_fuzz(args)
         if args.command == "present":
             if args.input is None or args.seal is None:
                 raise ValueError("present requires --input and --seal")
