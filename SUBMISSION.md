@@ -55,7 +55,7 @@ git checkout feat/hackathon-paper-and-submission
 
 ### Verification Output Summary
 - **Linting & Code Quality**: 85 files verified, 0 errors, 100% formatted.
-- **Unit Test Suite**: 186 passed, 1 skipped, 3 deselected in 38s.
+- **Unit Test Suite**: 194 passed, 1 skipped, 4 deselected in 52s.
 - **Cryptographic Seal Verification**: All 8 evidence streams verified 100%.
 - **Paper Deliverable**: `paper/spechunter_micro2026.pdf` verified (strictly 4 pages, publication-ready format).
 - **Interactive Presentation**: `docs/demo.html` verified (zero `<script>` tags, inline SVG waveform, formal microarchitectural taxonomy table).
@@ -77,8 +77,9 @@ uv run spechunter waveform
 uv run spechunter taxonomy
 uv run spechunter taxonomy --json
 
-# 4. Execute composable CHIA security audit block on Spectre-v1 benchmark
+# 4. Execute composable CHIA security audit block (single benchmark or multi-benchmark suite)
 uv run spechunter audit --benchmark transient-cache --iterations 4 --json
+uv run spechunter audit --suite --json
 
 # 5. Benchmark search latency, throughput, and memory footprint
 uv run spechunter benchmark

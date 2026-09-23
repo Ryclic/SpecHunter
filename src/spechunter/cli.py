@@ -182,7 +182,6 @@ def _run_audit(args: argparse.Namespace) -> int:
     from spechunter.chia_nodes import SpecHunterSecurityAuditBlock
     from spechunter.taxonomy import SPECTRE_TAXONOMY
 
-    bid = args.benchmark or "transient-cache"
     timeout = args.timeout if args.timeout is not None else (900 if args.backend == "boom" else 30)
     config = BackendConfig(
         args.backend,
@@ -190,6 +189,76 @@ def _run_audit(args: argparse.Namespace) -> int:
         timeout,
         args.target_revision,
     )
+
+    if getattr(args, "suite", False):
+        suite_benchmarks = ("transient-cache", "privilege-bypass", "secure-control")
+        results = SpecHunterSecurityAuditBlock.audit_suite(
+            benchmark_ids=suite_benchmarks,
+            config=config,
+            strategy=args.strategy,
+            iterations=args.iterations,
+            seed=args.seed,
+            local=True,
+        )
+        summary = SpecHunterSecurityAuditBlock.summarize_suite(results)
+
+        if getattr(args, "json", False):
+            output_data = {
+                "strategy": args.strategy,
+                "iterations": args.iterations,
+                "suite": {
+                    bid: {
+                        "taxonomy": (
+                            {
+                                "name": SPECTRE_TAXONOMY[bid].name,
+                                "boom_subsystem": SPECTRE_TAXONOMY[bid].boom_subsystem,
+                                "interlock_gate": SPECTRE_TAXONOMY[bid].interlock_gate,
+                                "chisel_source": SPECTRE_TAXONOMY[bid].chisel_source,
+                            }
+                            if bid in SPECTRE_TAXONOMY
+                            else None
+                        ),
+                        "metrics": res.get("metrics", {}),
+                        "verdict": (
+                            "CLEAN"
+                            if res.get("metrics", {}).get("discovered", 0) == 0
+                            else "VIOLATION_CONFIRMED"
+                        ),
+                    }
+                    for bid, res in results.items()
+                },
+                "summary": summary,
+            }
+            print(json.dumps(output_data, indent=2))
+            return 0
+
+        print("=== SpecHunter CHIA Multi-Benchmark Security Audit Suite ===")
+        print(f"Auditing Strategy:  {args.strategy}")
+        print(f"Search Iterations:  {args.iterations}")
+        hdr = (
+            f"{'Benchmark':<18} {'Variant Name':<22} {'BOOM Subsystem':<20} "
+            f"{'Discovered':<12} {'Verdict'}"
+        )
+        print(hdr)
+        print("-" * 88)
+        for bid in suite_benchmarks:
+            res = results[bid]
+            metrics = res.get("metrics", {})
+            disc = metrics.get("discovered", 0)
+            tax = SPECTRE_TAXONOMY.get(bid)
+            vname = tax.name if tax else bid
+            subsys = tax.boom_subsystem if tax else "n/a"
+            vtext = "CLEAN" if disc == 0 else "VIOLATION_CONFIRMED"
+            print(f"{bid:<18} {vname:<22} {subsys:<20} {disc:<12} {vtext}")
+        print("-" * 88)
+        print(
+            f"Suite Summary: {summary['benchmarks_audited']} benchmarks audited | "
+            f"{summary['vulnerabilities_discovered']} vulnerabilities discovered | "
+            f"{len(summary['clean_benchmarks'])} clean baseline(s)"
+        )
+        return 0
+
+    bid = args.benchmark or "transient-cache"
     block = SpecHunterSecurityAuditBlock(
         config=config,
         strategy=args.strategy,
@@ -346,6 +415,11 @@ def main() -> int:
         "--json",
         action="store_true",
         help="Format output as machine-readable JSON (supported for audit and taxonomy)",
+    )
+    parser.add_argument(
+        "--suite",
+        action="store_true",
+        help="Audit all taxonomy benchmarks in sequence as a suite (for audit command)",
     )
     parser.add_argument("--input", type=Path, help="Sealed experiment report for present")
     parser.add_argument("--seal", type=Path, help="Evidence seal for present")

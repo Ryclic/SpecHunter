@@ -106,6 +106,8 @@ uv run spechunter waveform         # Terminal cycle-accurate hazard timing explo
 uv run spechunter taxonomy         # Formal Spectre microarchitectural taxonomy table
 uv run spechunter taxonomy --json  # Machine-readable JSON taxonomy export
 uv run spechunter audit --benchmark transient-cache --iterations 4 --json
+uv run spechunter audit --suite    # Multi-benchmark audit across all threat models
+uv run spechunter audit --suite --json  # Machine-readable suite summary & findings
 uv run spechunter benchmark        # Microarchitectural latency, throughput & memory profiler
 
 uv run pytest

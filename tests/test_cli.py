@@ -196,3 +196,94 @@ def test_cli_benchmark(capsys, monkeypatch, tmp_path):
     assert out_file.is_file()
     data = json.loads(out_file.read_text(encoding="utf-8"))
     assert "search_strategies" in data
+
+
+def test_cli_audit_suite_fast(capsys, monkeypatch):
+    class FakeSuiteBlock:
+        @classmethod
+        def audit_suite(cls, **kwargs):
+            return {
+                "transient-cache": {"metrics": {"discovered": 1, "executions": 10}},
+                "privilege-bypass": {"metrics": {"discovered": 1, "executions": 8}},
+                "secure-control": {"metrics": {"discovered": 0, "executions": 4}},
+            }
+
+        @classmethod
+        def summarize_suite(cls, suite_results):
+            return {
+                "benchmarks_audited": 3,
+                "vulnerabilities_discovered": 2,
+                "clean_benchmarks": ["secure-control"],
+                "vulnerable_benchmarks": ["transient-cache", "privilege-bypass"],
+                "all_clean": False,
+            }
+
+    monkeypatch.setattr("spechunter.chia_nodes.SpecHunterSecurityAuditBlock", FakeSuiteBlock)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "audit", "--suite", "--iterations", "2"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter CHIA Multi-Benchmark Security Audit Suite" in captured
+    assert "transient-cache" in captured
+    assert "privilege-bypass" in captured
+    assert "secure-control" in captured
+    assert "VIOLATION_CONFIRMED" in captured
+    assert "CLEAN" in captured
+    assert "Suite Summary: 3 benchmarks audited | 2 vulnerabilities discovered" in captured
+
+
+def test_cli_audit_suite_fast_json(capsys, monkeypatch):
+    class FakeSuiteBlock:
+        @classmethod
+        def audit_suite(cls, **kwargs):
+            return {
+                "transient-cache": {"metrics": {"discovered": 1, "executions": 10}},
+                "secure-control": {"metrics": {"discovered": 0, "executions": 4}},
+            }
+
+        @classmethod
+        def summarize_suite(cls, suite_results):
+            return {
+                "benchmarks_audited": 2,
+                "vulnerabilities_discovered": 1,
+                "clean_benchmarks": ["secure-control"],
+                "vulnerable_benchmarks": ["transient-cache"],
+                "all_clean": False,
+            }
+
+    monkeypatch.setattr("spechunter.chia_nodes.SpecHunterSecurityAuditBlock", FakeSuiteBlock)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "audit", "--suite", "--iterations", "2", "--json"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    json_start = captured.find("{")
+    assert json_start != -1
+    data = json.loads(captured[json_start:])
+    assert "suite" in data
+    assert "summary" in data
+    assert data["summary"]["benchmarks_audited"] == 2
+    assert data["summary"]["vulnerabilities_discovered"] == 1
+    assert data["suite"]["transient-cache"]["verdict"] == "VIOLATION_CONFIRMED"
+    assert data["suite"]["secure-control"]["verdict"] == "CLEAN"
+
+
+@pytest.mark.chia
+def test_cli_audit_suite_live(capsys, monkeypatch):
+    pytest.importorskip("chia")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["spechunter", "audit", "--suite", "--iterations", "2"],
+    )
+    assert main() == 0
+    captured = capsys.readouterr().out
+    assert "SpecHunter CHIA Multi-Benchmark Security Audit Suite" in captured
+    assert "transient-cache" in captured
+    assert "privilege-bypass" in captured
+    assert "secure-control" in captured
