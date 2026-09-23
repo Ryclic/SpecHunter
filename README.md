@@ -99,6 +99,12 @@ uv run spechunter run
 uv run spechunter compare --iterations 32 --seed 42 --output artifacts/comparison.json
 uv run spechunter evaluate --trials 1000 --iterations 16 \
   --output artifacts/fixture-evaluation.json
+
+# Interactive engineering and verification subcommands
+uv run spechunter verify     # Cryptographic verification of all 8 seals & paper
+uv run spechunter waveform   # Terminal cycle-accurate hazard timing explorer
+uv run spechunter audit --benchmark transient-cache --iterations 4
+
 uv run pytest
 ```
 
