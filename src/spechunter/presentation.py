@@ -356,15 +356,6 @@ h1{{font-size:clamp(2.5rem,7vw,5.8rem);line-height:.92;margin:.25em 0}} .lede{{f
 .step{{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#1d3150;color:var(--cyan);font:700 .8rem ui-monospace,monospace}}
 .stage strong{{font-size:1.05rem}} .stage p{{margin:.15rem 0 0;color:var(--muted)}} .stage-repair{{border-color:#735b28}} .stage-validator{{border-color:#285d50}}
 .proof{{display:grid;grid-template-columns:1fr 1fr;gap:12px}} code{{color:var(--cyan);overflow-wrap:anywhere}} details{{margin-top:24px}} pre{{white-space:pre-wrap;background:#040a14;padding:18px;border-radius:12px;max-height:480px;overflow:auto;color:#bfd0e8}}
-.waveform-box{{margin:24px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}}
-.waveform-box summary{{font-size:1.15rem;cursor:pointer;color:var(--cyan);margin-bottom:12px}}
-.waveform-wrap{{overflow-x:auto;margin:16px 0}}
-.waveform-svg{{width:100%;min-width:680px;height:auto}}
-.hazard-table{{width:100%;border-collapse:collapse;margin-top:16px;font-size:0.92rem}}
-.hazard-table th,.hazard-table td{{padding:10px 12px;border:1px solid var(--line);text-align:left}}
-.hazard-table th{{background:#16243b;color:var(--ink)}}
-.hazard-highlight{{background:rgba(85,216,255,0.08);color:var(--ink)}}
-.hazard-highlight td:nth-child(2){{color:var(--amber)}}
 footer{{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted)}}
 @media(max-width:760px){{.grid{{grid-template-columns:1fr 1fr}}.proof{{grid-template-columns:1fr}}}}
 </style></head><body><main>

@@ -26,3 +26,9 @@ def test_readme_does_not_repeat_unsealed_claims():
     content = (ROOT / "README.md").read_text(encoding="utf-8")
     for claim in UNSEALED_CLAIMS:
         assert claim not in content, claim
+
+
+def test_demo_does_not_repeat_unsealed_claims():
+    content = (ROOT / "docs/demo.html").read_text(encoding="utf-8")
+    for claim in UNSEALED_CLAIMS:
+        assert claim not in content, claim

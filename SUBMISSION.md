@@ -61,18 +61,12 @@ Each row says what kind of target it was measured on, and we don't mix results a
 - The guided-vs-random comparison uses three small deterministic fixtures and one deterministic
   guided run.
 - Repairs come from a closed, reviewed list, so the agent chooses a repair rather than writing RTL.
-- Seals bind the source files used at the time of each run. Several runners were hardened
-  afterward (see `agents/HANDOFF.md`), so their current digests differ from those runs. In
-  particular, `src/spechunter/chia_nodes.py` was extended on 2026-09-23, after the CHIA run was
-  sealed. The fixture evaluation seal (2026-09-19) still matches the current
-  `evaluation.py`, `loop.py`, and `domain.py`.
-- Modules added on 2026-09-23 (`ablation`, `matrix`, `profiler`, `advisory`, `fpu`, `vector`,
-  `ras`, `pmp`, `mds`, `stlf`, `bpu`, `mmu`, `coherence`, `rollback`, `taint`, `formal`,
-  `contract`, `fuzzer`, `mcts`, `sva`, `synthesis`, `search`, `redteam`, `differential`,
-  `chisel_repair`, `chisel_testbench`, `poc`, `harness`, `taxonomy`, `waveform`,
-  `autonomous_agent`, `minimizer`) are **not part of the evaluated loop and are not evidence**.
-  Several of them (for example `ablation`, `matrix`, `profiler`, `fpu`, `formal`) return fixed
-  illustrative values rather than measurements. The paper does not use them.
+- Seals bind the source files used at the time of each run. Several BOOM runners were hardened
+  afterward (see `agents/HANDOFF.md`), so those digests describe the historical run rather than
+  the current file. The CHIA seal matches the current `chia_nodes.py`, and the 2026-09-19 fixture
+  seal matches the current `evaluation.py`, `loop.py`, and `domain.py`.
+- A 2026-09-23 batch of modules that returned fixed illustrative values (e.g. ablation, matrix,
+  profiler, advisory) was removed before submission. No sealed evidence used them.
 
 ## Reproduce
 

@@ -153,14 +153,12 @@ The guided baseline knows the benchmark templates; its results do not establish 
 performance. Mitigation verification selects the secure fixture variant; it does not
 apply or verify a BOOM RTL patch. Candidate assembly requires a trusted runtime harness.
 
-## Not evidence
+## Removed in review
 
-Modules and CLI subcommands added on 2026-09-23 (`ablation`, `matrix`, `profiler`, `advisory`,
-`poc`, `harness`, `taxonomy`, `waveform`, `benchmark`, and the per-subsystem "oracles" such as
-`fpu`, `vector`, `ras`, `pmp`, `mds`, `stlf`, `bpu`, `mmu`, `coherence`, `rollback`, `taint`,
-`formal`, `contract`) are not part of the evaluated loop. Several return fixed illustrative
-values instead of measurements. The paper, `SUBMISSION.md`, and the sealed evidence don't use
-them. See [`SUBMISSION.md`](SUBMISSION.md#limitations-stated-up-front).
+A 2026-09-23 batch of modules (`ablation`, `matrix`, `profiler`, `advisory`, per-subsystem
+"oracles", and others) returned fixed illustrative values instead of measurements. They were
+removed before submission; they remain in git history (e.g. commit `44c3fe5`). No
+sealed evidence depended on them.
 
 See [development](docs/DEVELOPMENT.md), [BOOM integration](docs/BOOM.md),
 [cloud policy](docs/CLOUD.md), and [remaining research work](docs/ROADMAP.md).
