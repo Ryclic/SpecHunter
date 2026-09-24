@@ -16,3 +16,13 @@ artifacts/
 *.sqlite*
 .tools/
 tools/bin/
+
+# LaTeX build outputs
+paper/main.pdf
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.fdb_latexmk
+paper/*.fls
