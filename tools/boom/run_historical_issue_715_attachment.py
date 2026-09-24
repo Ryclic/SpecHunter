@@ -11,6 +11,18 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+TRACE_BOUND_MARKER = b"*** FAILED *** via trace_count (timeout, seed 1789717734) after 10000 cycles"
+
+
+def reached_trace_bound(returncode: int | None, stdout: bytes, stderr: bytes) -> bool:
+    """Return whether a trace run stopped only at its pinned 10,000-cycle bound.
+
+    The attachment has no HTIF symbols, so it can never exit cleanly; the preserved
+    baseline also ends with this exact marker, and the simulator then exits with code 2.
+    Any other exit status or message is an error.
+    """
+    return returncode == 2 and TRACE_BOUND_MARKER in stdout + stderr
+
 
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -199,6 +211,8 @@ def main() -> int:
     except subprocess.TimeoutExpired as exc:
         timed_out = True
         stdout, stderr, returncode = exc.stdout or b"", exc.stderr or b"", None
+    bounded = trace and not timed_out and reached_trace_bound(returncode, stdout, stderr)
+    completed = returncode == 0 or bounded
     log = output.with_suffix(".log")
     log.parent.mkdir(parents=True, exist_ok=True)
     log.write_bytes(stdout + b"\n--- STDERR ---\n" + stderr)
@@ -213,7 +227,7 @@ def main() -> int:
             "execution-timeout"
             if timed_out
             else "simulation-error"
-            if returncode != 0
+            if not completed
             else "diagnostic-executed-signal-verdict-pending"
             if candidate_manifest_sha256
             else "executed-signal-verdict-pending"
@@ -239,12 +253,13 @@ def main() -> int:
     }
     if candidate_manifest_sha256:
         waveform = output.with_suffix(".vcd")
-        if returncode == 0 and (not waveform.is_file() or waveform.stat().st_size == 0):
+        evidence["termination"] = "max-cycles-bound" if bounded else "exit"
+        if completed and (not waveform.is_file() or waveform.stat().st_size == 0):
             raise RuntimeError("diagnostic simulator did not produce a waveform")
         if waveform.is_file() and waveform.stat().st_size:
             evidence["waveform_sha256"] = digest(waveform)
             evidence["waveform_path"] = str(waveform)
-            if returncode == 0:
+            if completed:
                 witness_path = output.with_suffix(".witness.json")
                 evidence["witness_sha256"] = write_diagnostic_witness(waveform, witness_path)
                 evidence["witness_path"] = str(witness_path)

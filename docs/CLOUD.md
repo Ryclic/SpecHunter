@@ -114,3 +114,11 @@ been reviewed. Keep all paid integrations disabled until those checks are comple
 
 No billing access is necessary to run the local fixtures. CI consumes GitHub Actions
 capacity, which is separate from GCP credits; jobs have timeouts and cancel stale runs.
+
+On 2026-09-24, one `e2-standard-8` worker in us-central1-a (about 30 minutes) built the
+historical trace simulator and ran the prepared issue #715 isolated-gadget diagnostic. A
+second `e2-standard-4` worker in us-east1-b (about 20 minutes; the regional SSD and global CPU
+quotas blocked a second `e2-standard-8` in us-central1) began a current-pin build for a live
+agent run that was not carried out. Both used the standard constraints (no service account or
+scopes, six-hour deletion cap) and were explicitly deleted, and the instance and disk listings
+were empty afterward.
