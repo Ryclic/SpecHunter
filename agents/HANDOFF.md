@@ -1,5 +1,20 @@
 # Implementation handoff
 
+## Issue #715 isolated-gadget diagnostic executed (2026-09-24)
+
+The prepared diagnostic (candidate SHA-256 `9e08e91e…`) ran once on a fresh historical
+`SmallBoomConfig` trace build (simulator `bfc941bf…`) at seed 1789717734 with a 10,000-cycle
+bound. The first attempt revealed a runner defect: the attachment always ends at the pinned
+cycle bound (exact `trace_count` timeout marker, exit status 2, as in the preserved baseline),
+but the runner classified that as `simulation-error` and skipped the waveform scan. The runner
+now accepts only that exact marker, seed, bound, and status as a completed bounded run, with a
+regression test. The rerun produced evidence `1a7017af…`, log `77bcafaa…`, witness `a106b2d3…`,
+and compressed waveform `0bfeff59…` (raw VCD `f5b99b8e…`). These are kept outside the repository
+and have not been reviewed, sealed, or interpreted, so no security conclusion is drawn from
+them. Both workers (`e2-standard-8` us-central1-a, about 30 min; `e2-standard-4` us-east1-b,
+about 20 min) were deleted, and the instance and disk listings are empty.
+
+
 ## Submission integrity correction (2026-09-24, `fix/submission-integrity`)
 
 A review against the sealed evidence found that the 2026-09-23 "submission package" overstated
