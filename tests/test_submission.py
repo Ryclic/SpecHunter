@@ -18,3 +18,5 @@ def test_submission_dossier_complete():
     assert "paper/spechunter_micro2026.pdf" in content
     assert "docs/demo.html" in content
     assert "spechunter taxonomy" in content
+    assert "spechunter ablation" in content
+    assert "spechunter harness" in content

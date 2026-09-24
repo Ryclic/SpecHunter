@@ -106,7 +106,23 @@ uv run spechunter waveform         # Terminal cycle-accurate hazard timing explo
 uv run spechunter taxonomy         # Formal Spectre microarchitectural taxonomy table
 uv run spechunter taxonomy --json  # Machine-readable JSON taxonomy export
 uv run spechunter audit --benchmark transient-cache --iterations 4 --json
+uv run spechunter audit --suite    # Multi-benchmark audit across all threat models
+uv run spechunter audit --suite --json  # Machine-readable suite summary & findings
 uv run spechunter benchmark        # Microarchitectural latency, throughput & memory profiler
+uv run spechunter benchmark --json # Machine-readable performance metrics export
+uv run spechunter benchmark --svg artifacts/benchmark_comparison.svg  # Dark-mode SVG chart export
+uv run spechunter advisory        # Hardware Security Advisory (HSA-2026-0001) in Markdown
+uv run spechunter advisory --html artifacts/advisory.html  # Dark-mode standalone HTML advisory
+uv run spechunter advisory --json  # Machine-readable security advisory JSON schema
+uv run spechunter poc             # Disassembled PoC exploit gadgets & microarchitectural phases
+uv run spechunter poc --name issue-715  # Specific BOOM issue #715 translation gadget disassembly
+uv run spechunter poc --export artifacts/pocs  # Export standalone RISC-V assembly (.s) & JSON
+uv run spechunter ablation           # Statistical ablation study across 4 search strategies
+uv run spechunter ablation --json    # Machine-readable ablation metrics & Wilson 95% CIs
+uv run spechunter ablation --markdown --output artifacts/ablation.md  # GitHub Markdown report
+uv run spechunter harness            # Upstream BOOM microarchitectural security test harness
+uv run spechunter harness --verify-mitigations  # Verify RTL gating mitigations pass cleanly
+uv run spechunter harness --junit-xml artifacts/boom_security_junit.xml  # Native CI export
 
 uv run pytest
 ```

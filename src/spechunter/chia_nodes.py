@@ -264,3 +264,63 @@ class SpecHunterSecurityAuditBlock:
             "vulnerable_benchmarks": vulnerable,
             "all_clean": len(vulnerable) == 0,
         }
+
+    def execute_agent(self, local: bool = True) -> dict:
+        """Execute the 4-agent closed-loop via CHIA autonomous agent provider."""
+        return run_autonomous_agent_local(
+            self.config,
+            recon_cycles=1,
+            attack_limit=8,
+            repair_limit=2,
+            benchmark_id=self.benchmark_id,
+        )
+
+
+def run_autonomous_agent_local(
+    config: BackendConfig,
+    recon_cycles: int = 1,
+    attack_limit: int = 8,
+    repair_limit: int = 2,
+    benchmark_id: str | None = None,
+) -> dict:
+    """Execute the 4-stage closed loop locally using the autonomous agent provider."""
+    from spechunter.agent_loop import agent_experiment
+    from spechunter.autonomous_agent import AutonomousAgentProvider
+
+    provider = AutonomousAgentProvider()
+    try:
+        import ray
+
+        owned = not ray.is_initialized()
+        if owned:
+            ray.init(
+                address="local",
+                num_cpus=1,
+                include_dashboard=False,
+                object_store_memory=80 * 1024 * 1024,
+            )
+        try:
+            report = agent_experiment(
+                provider,
+                config,
+                recon_cycles=recon_cycles,
+                attack_limit=attack_limit,
+                repair_limit=repair_limit,
+                benchmark_id=benchmark_id,
+            )
+            report["orchestration"] = _orchestration("run_autonomous_agent")
+            return report
+        finally:
+            if owned:
+                ray.shutdown()
+    except ImportError:
+        report = agent_experiment(
+            provider,
+            config,
+            recon_cycles=recon_cycles,
+            attack_limit=attack_limit,
+            repair_limit=repair_limit,
+            benchmark_id=benchmark_id,
+        )
+        report["orchestration"] = _orchestration("run_autonomous_agent")
+        return report
