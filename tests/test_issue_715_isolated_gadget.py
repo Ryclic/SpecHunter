@@ -143,3 +143,15 @@ def test_only_the_exact_pinned_cycle_bound_counts_as_completion():
     other_bound = baseline_log.replace(b"after 10000 cycles", b"after 150000 cycles")
     assert not RUNNER.reached_trace_bound(2, other_bound, b"")
     assert not RUNNER.reached_trace_bound(2, b"segmentation fault", b"")
+
+
+def test_plain_attachment_run_completes_only_at_its_own_cycle_bound():
+    plain = b"*** FAILED *** via trace_count (timeout, seed 42) after 150000 cycles"
+    bound = RUNNER.PLAIN_MAX_CYCLES
+    assert RUNNER.reached_cycle_bound(2, plain, b"", bound)
+    assert RUNNER.reached_cycle_bound(2, b"", plain, bound)
+    assert not RUNNER.reached_cycle_bound(2, plain, b"", RUNNER.TRACE_MAX_CYCLES)
+    assert not RUNNER.reached_cycle_bound(2, plain, b"", bound, seed=RUNNER.TRACE_SEED)
+    assert not RUNNER.reached_cycle_bound(1, plain, b"", bound)
+    assert not RUNNER.reached_cycle_bound(2, plain + b"\n" + plain, b"", bound)
+    assert not RUNNER.reached_cycle_bound(2, b"*** FAILED *** (code = 3)", b"", bound)
