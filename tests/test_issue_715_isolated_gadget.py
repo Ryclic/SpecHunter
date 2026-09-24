@@ -127,3 +127,19 @@ def test_diagnostic_witness_is_scanned_and_bound_to_raw_waveform(tmp_path):
     assert json.loads(destination.read_text()) == json.loads(checked.read_text())
     assert RUNNER.digest(destination) == witness_sha
     assert json.loads(destination.read_text())["trace_sha256"] == RUNNER.digest(waveform)
+
+
+def test_only_the_exact_pinned_cycle_bound_counts_as_completion():
+    baseline_log = (
+        Path(__file__).parents[1]
+        / "docs/evidence/boom-issue-715-attachment-baseline-seed-1789717734-2026-09-17.log"
+    ).read_bytes()
+    assert RUNNER.reached_trace_bound(2, baseline_log, b"")
+    assert not RUNNER.reached_trace_bound(0, baseline_log, b"")
+    assert not RUNNER.reached_trace_bound(1, baseline_log, b"")
+    assert not RUNNER.reached_trace_bound(None, baseline_log, b"")
+    other_seed = baseline_log.replace(b"seed 1789717734", b"seed 1")
+    assert not RUNNER.reached_trace_bound(2, other_seed, b"")
+    other_bound = baseline_log.replace(b"after 10000 cycles", b"after 150000 cycles")
+    assert not RUNNER.reached_trace_bound(2, other_bound, b"")
+    assert not RUNNER.reached_trace_bound(2, b"segmentation fault", b"")
