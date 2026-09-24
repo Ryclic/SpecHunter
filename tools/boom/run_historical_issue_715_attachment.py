@@ -6,22 +6,46 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-TRACE_BOUND_MARKER = b"*** FAILED *** via trace_count (timeout, seed 1789717734) after 10000 cycles"
+TRACE_SEED = 1789717734
+TRACE_MAX_CYCLES = 10000
+PLAIN_MAX_CYCLES = 150000
+CYCLE_BOUND = re.compile(
+    rb"\*\*\* FAILED \*\*\* via trace_count \(timeout, seed (\d+)\) after (\d+) cycles"
+)
+
+
+def reached_cycle_bound(
+    returncode: int | None,
+    stdout: bytes,
+    stderr: bytes,
+    max_cycles: int,
+    seed: int | None = None,
+) -> bool:
+    """Return whether a run stopped only at its configured cycle bound.
+
+    The attachment has no HTIF symbols, so it can never exit cleanly: every run ends
+    with exactly one ``trace_count`` timeout message and exit status 2. The message
+    must name the configured bound and, when the run pins one, the configured seed.
+    Any other exit status or message is an error.
+    """
+    if returncode != 2:
+        return False
+    matches = CYCLE_BOUND.findall(stdout + stderr)
+    if len(matches) != 1:
+        return False
+    observed_seed, observed_cycles = (int(value) for value in matches[0])
+    return observed_cycles == max_cycles and (seed is None or observed_seed == seed)
 
 
 def reached_trace_bound(returncode: int | None, stdout: bytes, stderr: bytes) -> bool:
-    """Return whether a trace run stopped only at its pinned 10,000-cycle bound.
-
-    The attachment has no HTIF symbols, so it can never exit cleanly; the preserved
-    baseline also ends with this exact marker, and the simulator then exits with code 2.
-    Any other exit status or message is an error.
-    """
-    return returncode == 2 and TRACE_BOUND_MARKER in stdout + stderr
+    """Return whether a trace run stopped only at its pinned seed and cycle bound."""
+    return reached_cycle_bound(returncode, stdout, stderr, TRACE_MAX_CYCLES, TRACE_SEED)
 
 
 def digest(path: Path) -> str:
@@ -174,17 +198,18 @@ def main() -> int:
     loadmem.write_bytes(converted.stdout)
     if len(loadmem.read_text().splitlines()) != 16384:
         raise RuntimeError("issue #715 attachment produced an unexpected loadmem image")
+    max_cycles = TRACE_MAX_CYCLES if trace else PLAIN_MAX_CYCLES
     argv = [
         str(simulators[0]),
         *(
-            ["--seed=1789717734", f"-v{output.with_suffix('.vcd')}"]
+            [f"--seed={TRACE_SEED}", f"-v{output.with_suffix('.vcd')}"]
             if candidate_manifest_sha256
             else []
         ),
         "+permissive",
         "+dramsim",
         f"+dramsim_ini_dir={dramsim}",
-        "+max-cycles=10000" if trace else "+max-cycles=150000",
+        f"+max-cycles={max_cycles}",
         f"+loadmem={loadmem}",
         "+loadmem_addr=80000000",
         "+permissive-off",
@@ -211,7 +236,9 @@ def main() -> int:
     except subprocess.TimeoutExpired as exc:
         timed_out = True
         stdout, stderr, returncode = exc.stdout or b"", exc.stderr or b"", None
-    bounded = trace and not timed_out and reached_trace_bound(returncode, stdout, stderr)
+    bounded = not timed_out and reached_cycle_bound(
+        returncode, stdout, stderr, max_cycles, TRACE_SEED if trace else None
+    )
     completed = returncode == 0 or bounded
     log = output.with_suffix(".log")
     log.parent.mkdir(parents=True, exist_ok=True)
@@ -249,11 +276,12 @@ def main() -> int:
             3,
         ),
         "log_sha256": digest(log),
+        "termination": "max-cycles-bound" if bounded else "exit",
+        "max_cycles": max_cycles,
         "completed_at": datetime.now(timezone.utc).isoformat(),  # noqa: UP017
     }
     if candidate_manifest_sha256:
         waveform = output.with_suffix(".vcd")
-        evidence["termination"] = "max-cycles-bound" if bounded else "exit"
         if completed and (not waveform.is_file() or waveform.stat().st_size == 0):
             raise RuntimeError("diagnostic simulator did not produce a waveform")
         if waveform.is_file() and waveform.stat().st_size:
@@ -263,8 +291,7 @@ def main() -> int:
                 witness_path = output.with_suffix(".witness.json")
                 evidence["witness_sha256"] = write_diagnostic_witness(waveform, witness_path)
                 evidence["witness_path"] = str(witness_path)
-        evidence["seed"] = 1789717734
-        evidence["max_cycles"] = 10000
+        evidence["seed"] = TRACE_SEED
         evidence["executed_elf_sha256"] = digest(attachment)
         evidence["candidate_manifest_sha256"] = candidate_manifest_sha256
     output.write_text(json.dumps(evidence, indent=2) + "\n")
