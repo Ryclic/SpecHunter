@@ -1,4 +1,8 @@
-"""Autonomous Offline Agent Provider for Closed-Loop Hardware Security Research.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Autonomous Offline Agent Provider for Closed-Loop Hardware Security Research.
 
 Implements the 4-agent closed loop (Recon -> Attacker -> Validator -> Repair)
 entirely offline, without external cloud dependencies, with deterministic

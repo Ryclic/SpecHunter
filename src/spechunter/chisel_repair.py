@@ -1,4 +1,8 @@
-"""Chisel RTL patch generator and AST verification engine for Berkeley BOOM.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Chisel RTL patch generator and AST verification engine for Berkeley BOOM.
 
 Synthesizes verified Chisel 3 / Scala microarchitectural hardware patches
 for transient execution vulnerabilities in Berkeley BOOM cores, targeting

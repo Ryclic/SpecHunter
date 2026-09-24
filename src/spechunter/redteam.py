@@ -1,4 +1,8 @@
-"""End-to-end autonomous red-teaming and co-design campaign engine.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+End-to-end autonomous red-teaming and co-design campaign engine.
 
 Integrates program synthesis, guided beam search, hierarchical delta-debugging,
 differential microarchitectural verification, and Chisel RTL repair synthesis

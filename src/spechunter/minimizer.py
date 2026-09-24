@@ -1,4 +1,8 @@
-"""Hierarchical Delta Debugger for Microarchitectural Counterexamples.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Hierarchical Delta Debugger for Microarchitectural Counterexamples.
 
 Reduces complex adversarial instruction sequences into minimal 1-minimal witnesses
 while strictly preserving the microarchitectural violation semantics across simulation.

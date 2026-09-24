@@ -1,4 +1,8 @@
-"""Microarchitectural Waveform Witness & Pipeline Race Condition Analyzer.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Microarchitectural Waveform Witness & Pipeline Race Condition Analyzer.
 
 Models cycle-accurate digital signal transitions (PC, BPU, LSU, DTLB, D-Cache, ROB),
 detects microarchitectural Time-of-Check to Time-of-Use (TOCTOU) race conditions,

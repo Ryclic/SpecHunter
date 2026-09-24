@@ -1,4 +1,8 @@
-"""Ablation study engine evaluating microarchitectural search strategies.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Ablation study engine evaluating microarchitectural search strategies.
 
 Quantifies discovery rates, Wilson 95% confidence intervals, time-to-first-exploit
 (TTFE), simulation throughput, and statistical significance across search strategies:

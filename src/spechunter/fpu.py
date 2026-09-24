@@ -1,4 +1,8 @@
-"""Speculative Floating-Point Unit (FPU) & Cryptographic Constant-Time Oracle.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Speculative Floating-Point Unit (FPU) & Cryptographic Constant-Time Oracle.
 
 Models speculative floating-point execution, variable-latency multi-cycle divider timing
 channels, and transient FCSR exception flag leakage in out-of-order cores such as Berkeley BOOM.

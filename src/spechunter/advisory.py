@@ -1,4 +1,8 @@
-"""Formal Hardware Security Advisory (HSA) generation for Berkeley BOOM.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Formal Hardware Security Advisory (HSA) generation for Berkeley BOOM.
 
 Generates CVE/HSA-grade security advisories detailing speculative execution
 and transient privilege boundary analysis on the Berkeley Out-of-Order Machine (BOOM).

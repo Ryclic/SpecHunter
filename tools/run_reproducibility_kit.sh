@@ -1,23 +1,20 @@
 #!/usr/bin/env bash
+# Offline reproduction of every checked-in result that does not need a BOOM worker.
 set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-echo "================================================================="
-echo "  SpecHunter: MICRO 2026 A³ CHIA Hackathon Reproducibility Kit   "
-echo "================================================================="
+echo "[1/4] Lint and format"
+uv run ruff check .
+uv run ruff format --check .
 
-# 1. Environment and Code Quality
-echo "[1/4] Checking code quality and running test suite..."
-PYTHONPATH=src .venv/bin/ruff check .
-PYTHONPATH=src .venv/bin/ruff format --check .
-PYTHONPATH=src .venv/bin/pytest -q -m 'not chia'
+echo "[2/4] Tests (includes rescans of the four raw issue #715 waveforms)"
+uv run pytest -q -m 'not chia'
 
-# 2. Comprehensive Artifact Verification
-echo "[2/4] Verifying all cryptographic seals and paper deliverables..."
-PYTHONPATH=src .venv/bin/python tools/verify_all_artifacts.py
+echo "[3/4] Recompute every evidence seal"
+uv run python tools/verify_evidence.py
 
-# 3. Generate Interactive Presentation
-echo "[3/4] Generating sealed interactive demonstration viewer..."
-PYTHONPATH=src .venv/bin/python -m spechunter.cli present \
+echo "[4/4] Rebuild the sealed evidence viewer"
+uv run spechunter present \
   --input docs/evidence/vertex-boom-demo-2026-09-11.json \
   --seal docs/evidence/vertex-boom-demo-seal-2026-09-11.json \
   --corpus docs/evidence/boom-attack-corpus-2026-09-16.json \
@@ -32,19 +29,4 @@ PYTHONPATH=src .venv/bin/python -m spechunter.cli present \
   --issue-715-seal docs/evidence/boom-issue-715-assessment-seal-2026-09-16.json \
   --issue-715-attachment-seal docs/evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json \
   --output artifacts/demo.html
-
-# 4. HotCRP Submission Packaging
-echo "[4/5] Packaging all deliverables and evidence for HotCRP submission..."
-PYTHONPATH=src .venv/bin/python tools/package_submission.py
-
-# 5. Summary
-echo "[5/5] Reproducibility verification complete!"
-echo "-----------------------------------------------------------------"
-echo "Deliverables Ready for Submission:"
-echo "  1. 4-Page Paper PDF:      paper/spechunter_micro2026.pdf"
-echo "  2. Paper LaTeX Source:    paper/spechunter.tex"
-echo "  3. Interactive Demo:      artifacts/demo.html (also at docs/demo.html)"
-echo "  4. Composable CHIA Block: spechunter.chia_nodes.SpecHunterSecurityAuditBlock"
-echo "  5. Cryptographic Seals:   docs/evidence/*"
-echo "  6. HotCRP Bundles:        artifacts/spechunter_micro2026_submission.tar.gz (.zip)"
-echo "================================================================="
+cmp artifacts/demo.html docs/demo.html && echo "docs/demo.html matches a fresh render"

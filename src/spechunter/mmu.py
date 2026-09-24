@@ -1,4 +1,8 @@
-"""Microarchitectural Virtual Memory & Speculative Page Table Walker (PTW) Side-Channel Oracle.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Microarchitectural Virtual Memory & Speculative Page Table Walker (PTW) Side-Channel Oracle.
 
 Audits Sv39 multi-level hardware address translation, speculative DTLB refill memory
 transactions, accessed/dirty (A/D) bit hardware updates, and Issue #715 translation-order

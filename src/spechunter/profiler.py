@@ -1,4 +1,8 @@
-"""Hardware Performance Overhead Profiler and Co-Design Tradeoff Analyzer.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Hardware Performance Overhead Profiler and Co-Design Tradeoff Analyzer.
 
 Quantifies IPC overhead, pipeline stall penalties, FPGA LUT area delta, and
 Pareto efficiency ratios for SpecHunter microarchitectural hardware patches

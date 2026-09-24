@@ -25,15 +25,9 @@ def test_live_evidence_renders_self_contained_demo(tmp_path):
     assert "Find. Repair." in page
     assert "No network requests or external assets" in page
     assert "<script" not in page
-    assert "Microarchitectural Spectre taxonomy" in page
-    assert "spectre-v1-bcb" in page
-    assert "spectre-v4-ssb" in page
-    assert "Microarchitectural search performance" in page
-    assert "Hardware security advisory: HSA-2026-0001" in page
-    assert "Proof-of-Concept exploit disassembly" in page
-    assert "transient-cache" in page
-    assert "issue-715" in page
-    assert "CVSS 7.4" in page
+    # Unsealed illustrative panels must not appear next to sealed evidence.
+    for unsealed in ("HSA-2026-0001", "CVSS", "89,200", "Spectre taxonomy"):
+        assert unsealed not in page
 
 
 def test_renderer_adds_hash_bound_attack_corpus(tmp_path):

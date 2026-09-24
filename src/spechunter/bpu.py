@@ -1,4 +1,8 @@
-"""Microarchitectural Branch Prediction Unit (BPU) & Branch History Injection (BHI) Oracle.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Microarchitectural Branch Prediction Unit (BPU) & Branch History Injection (BHI) Oracle.
 
 Audits cross-privilege branch history register (GHR) pollution, branch target buffer (BTB)
 aliasing, Spectre-v2 (BTI), and Spectre-BHB (BHI, CVE-2022-0001) in superscalar out-of-order

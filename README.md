@@ -1,12 +1,11 @@
 # SpecHunter
 
-> **MICRO 2026 A³ Workshop — CHIA Hackathon Submission**
-> **Track:** *Discovery and resolution of architectural and microarchitectural bugs in widely-used open-source designs such as the BOOM core.*
+> **A³ CHIA Hackathon (MICRO 2026) submission.** Track: microarchitectural bugs in BOOM.
 >
-> 📄 **4-Page Submission Paper:** [`paper/spechunter_micro2026.pdf`](paper/spechunter_micro2026.pdf) (LaTeX: [`paper/spechunter.tex`](paper/spechunter.tex))
-> 🖥️ **Interactive Sealed Evidence Demo:** [`docs/demo.html`](docs/demo.html)
-> 🚀 **Push-Button Reproducibility Kit:** `./tools/run_reproducibility_kit.sh`
-> 🧩 **Composable CHIA Block:** [`spechunter.chia_nodes.SpecHunterSecurityAuditBlock`](src/spechunter/chia_nodes.py) (See [`examples/run_chia_pipeline.py`](examples/run_chia_pipeline.py))
+> - Paper: [`paper/spechunter_a3_2026.pdf`](paper/spechunter_a3_2026.pdf) (source [`paper/main.tex`](paper/main.tex))
+> - Highlights and evidence index: [`SUBMISSION.md`](SUBMISSION.md)
+> - Verify every sealed artifact: `uv run python tools/verify_evidence.py`
+> - Sealed evidence viewer: [`docs/demo.html`](docs/demo.html)
 
 An LLM-driven microarchitectural security system that attacks a real RISC-V BOOM RTL
 simulation, validates observations, minimizes a witness, selects a bounded repair, and
@@ -100,30 +99,7 @@ uv run spechunter compare --iterations 32 --seed 42 --output artifacts/compariso
 uv run spechunter evaluate --trials 1000 --iterations 16 \
   --output artifacts/fixture-evaluation.json
 
-# Interactive engineering and verification subcommands
-uv run spechunter verify           # Cryptographic verification of all 8 seals & paper
-uv run spechunter waveform         # Terminal cycle-accurate hazard timing explorer
-uv run spechunter taxonomy         # Formal Spectre microarchitectural taxonomy table
-uv run spechunter taxonomy --json  # Machine-readable JSON taxonomy export
-uv run spechunter audit --benchmark transient-cache --iterations 4 --json
-uv run spechunter audit --suite    # Multi-benchmark audit across all threat models
-uv run spechunter audit --suite --json  # Machine-readable suite summary & findings
-uv run spechunter benchmark        # Microarchitectural latency, throughput & memory profiler
-uv run spechunter benchmark --json # Machine-readable performance metrics export
-uv run spechunter benchmark --svg artifacts/benchmark_comparison.svg  # Dark-mode SVG chart export
-uv run spechunter advisory        # Hardware Security Advisory (HSA-2026-0001) in Markdown
-uv run spechunter advisory --html artifacts/advisory.html  # Dark-mode standalone HTML advisory
-uv run spechunter advisory --json  # Machine-readable security advisory JSON schema
-uv run spechunter poc             # Disassembled PoC exploit gadgets & microarchitectural phases
-uv run spechunter poc --name issue-715  # Specific BOOM issue #715 translation gadget disassembly
-uv run spechunter poc --export artifacts/pocs  # Export standalone RISC-V assembly (.s) & JSON
-uv run spechunter ablation           # Statistical ablation study across 4 search strategies
-uv run spechunter ablation --json    # Machine-readable ablation metrics & Wilson 95% CIs
-uv run spechunter ablation --markdown --output artifacts/ablation.md  # GitHub Markdown report
-uv run spechunter harness            # Upstream BOOM microarchitectural security test harness
-uv run spechunter harness --verify-mitigations  # Verify RTL gating mitigations pass cleanly
-uv run spechunter harness --junit-xml artifacts/boom_security_junit.xml  # Native CI export
-
+uv run python tools/verify_evidence.py
 uv run pytest
 ```
 
@@ -176,6 +152,15 @@ result and CLI exit code 2; a finding is a valid experiment result (exit code 0)
 The guided baseline knows the benchmark templates; its results do not establish LLM
 performance. Mitigation verification selects the secure fixture variant; it does not
 apply or verify a BOOM RTL patch. Candidate assembly requires a trusted runtime harness.
+
+## Not evidence
+
+Modules and CLI subcommands added on 2026-09-23 (`ablation`, `matrix`, `profiler`, `advisory`,
+`poc`, `harness`, `taxonomy`, `waveform`, `benchmark`, and the per-subsystem "oracles" such as
+`fpu`, `vector`, `ras`, `pmp`, `mds`, `stlf`, `bpu`, `mmu`, `coherence`, `rollback`, `taint`,
+`formal`, `contract`) are not part of the evaluated loop. Several return fixed illustrative
+values instead of measurements. The paper, `SUBMISSION.md`, and the sealed evidence don't use
+them. See [`SUBMISSION.md`](SUBMISSION.md#limitations-stated-up-front).
 
 See [development](docs/DEVELOPMENT.md), [BOOM integration](docs/BOOM.md),
 [cloud policy](docs/CLOUD.md), and [remaining research work](docs/ROADMAP.md).

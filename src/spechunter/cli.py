@@ -12,6 +12,44 @@ from spechunter.evaluation import evaluate
 from spechunter.loop import experiment
 from spechunter.presentation import render
 
+_ILLUSTRATIVE_COMMANDS = frozenset(
+    {
+        "waveform",
+        "audit",
+        "taxonomy",
+        "benchmark",
+        "advisory",
+        "poc",
+        "ablation",
+        "harness",
+        "search",
+        "synthesize",
+        "minimize",
+        "patch",
+        "differential",
+        "redteam",
+        "sva",
+        "profile",
+        "taint",
+        "testbench",
+        "coherence",
+        "formal",
+        "fuzz",
+        "mcts",
+        "contract",
+        "rollback",
+        "mmu",
+        "bpu",
+        "stlf",
+        "mds",
+        "matrix",
+        "pmp",
+        "ras",
+        "fpu",
+        "vector",
+    }
+)
+
 
 def _run_waveform(args: argparse.Namespace | None = None) -> int:
     if args is not None and (
@@ -99,133 +137,11 @@ def _run_waveform(args: argparse.Namespace | None = None) -> int:
 
 
 def _run_verify() -> int:
-    import re
+    from spechunter.evidence_check import verify_evidence
 
-    from spechunter.attachment_case import verify_seal
-
-    evidence = Path("docs/evidence")
-    pdf_path = Path("paper/spechunter_micro2026.pdf")
-    output_demo = Path("artifacts/cli_verify_demo.html")
-    output_demo.parent.mkdir(parents=True, exist_ok=True)
-    errors: list[str] = []
-
-    print("=== SpecHunter Cryptographic Artifact & Deliverable Verification ===")
-
-    seals = [
-        ("boom-issue-715-attachment-demo-seal-2026-09-20.json", "Historical Issue #715 Attachment"),
-        ("boom-issue-715-assessment-seal-2026-09-16.json", "Historical Issue #715 Assessment"),
-        ("vertex-boom-demo-seal-2026-09-11.json", "Live Vertex BOOM Demo Seal"),
-        ("boom-attack-corpus-seal-2026-09-16.json", "BOOM Attack Corpus Seal"),
-        ("boom-load-gate-regression-seal-2026-09-16.json", "RTL Repair Build Regression Seal"),
-        ("vertex-fixture-repeatability-seal-2026-09-16.json", "Vertex Fixture Repeatability Seal"),
-        ("chia-vertex-loop-seal-2026-09-16.json", "CHIA Vertex Loop Seal"),
-        ("fixture-guided-vs-random-seal-2026-09-19.json", "Fixture Evaluation Seal"),
-    ]
-
-    for filename, label in seals:
-        seal_file = evidence / filename
-        if not seal_file.exists():
-            errors.append(f"Missing {seal_file}")
-            print(f"[-] {label}: MISSING")
-            continue
-        try:
-            if "attachment" in filename:
-                verify_seal(seal_file.resolve())
-            else:
-                json.loads(seal_file.read_text())
-            print(f"[✓] {label}: VERIFIED")
-        except Exception as exc:
-            errors.append(f"{label} failed: {exc}")
-            print(f"[-] {label}: FAILED ({exc})")
-
-    try:
-        render(
-            report_path=evidence / "vertex-boom-demo-2026-09-11.json",
-            seal_path=evidence / "vertex-boom-demo-seal-2026-09-11.json",
-            output=output_demo,
-            corpus_path=evidence / "boom-attack-corpus-2026-09-16.json",
-            corpus_seal_path=evidence / "boom-attack-corpus-seal-2026-09-16.json",
-            evaluation_path=evidence / "fixture-guided-vs-random-2026-09-19.json",
-            evaluation_seal_path=evidence / "fixture-guided-vs-random-seal-2026-09-19.json",
-            repeatability_path=evidence / "vertex-fixture-repeatability-2026-09-16.json",
-            repeatability_seal_path=evidence / "vertex-fixture-repeatability-seal-2026-09-16.json",
-            chia_path=evidence / "chia-vertex-loop-2026-09-16.json",
-            chia_seal_path=evidence / "chia-vertex-loop-seal-2026-09-16.json",
-            rtl_repair_seal_path=evidence / "boom-load-gate-regression-seal-2026-09-16.json",
-            issue_715_seal_path=evidence / "boom-issue-715-assessment-seal-2026-09-16.json",
-            issue_715_attachment_seal_path=(
-                evidence / "boom-issue-715-attachment-demo-seal-2026-09-20.json"
-            ),
-        )
-        print("[✓] Interactive Presentation Demo Render: VERIFIED")
-        if output_demo.exists():
-            output_demo.unlink()
-    except Exception as exc:
-        errors.append(f"Presentation rendering failed: {exc}")
-        print(f"[-] Interactive Presentation Demo Render: FAILED ({exc})")
-
-    if pdf_path.exists():
-        content = pdf_path.read_bytes()
-        pages = len(re.findall(rb"/Type\s*/Page\b", content))
-        if pages == 4:
-            print(f"[✓] Paper PDF ({pages} pages, IEEE/ACM format): VERIFIED")
-        else:
-            errors.append(f"Paper PDF page count mismatch: expected 4, got {pages}")
-            print(f"[-] Paper PDF: FAILED ({pages} pages != 4)")
-    else:
-        errors.append(f"Missing {pdf_path}")
-        print(f"[-] Paper PDF: MISSING ({pdf_path})")
-
-    sub_path = Path("SUBMISSION.md")
-    if (
-        sub_path.exists()
-        and "MICRO 2026 A³ CHIA Hackathon Submission Dossier"
-        in sub_path.read_text(encoding="utf-8")
-    ):
-        print("[✓] Submission Dossier (SUBMISSION.md): VERIFIED")
-    else:
-        errors.append("Missing or incomplete SUBMISSION.md")
-        print("[-] Submission Dossier: MISSING or INCOMPLETE (SUBMISSION.md)")
-
-    demo_path = Path("docs/demo.html")
-    if demo_path.exists():
-        demo_content = demo_path.read_text(encoding="utf-8")
-        if "<script" in demo_content:
-            errors.append("docs/demo.html contains disallowed <script> tag")
-            print("[-] Interactive Demo (docs/demo.html): FAILED (<script> detected)")
-        elif "Microarchitectural Spectre taxonomy" not in demo_content:
-            errors.append("docs/demo.html missing microarchitectural taxonomy")
-            print("[-] Interactive Demo (docs/demo.html): FAILED (missing taxonomy)")
-        else:
-            print("[✓] Interactive Demo (docs/demo.html, zero scripts, taxonomy): VERIFIED")
-    else:
-        errors.append(f"Missing {demo_path}")
-        print(f"[-] Interactive Demo: MISSING ({demo_path})")
-
-    tex_path = Path("paper/spechunter.tex")
-    typ_path = Path("paper/spechunter.typ")
-    if tex_path.exists() and typ_path.exists():
-        print("[✓] Paper Sources (LaTeX & Typst): VERIFIED")
-    else:
-        errors.append("Missing paper sources")
-        print("[-] Paper Sources: MISSING")
-
-    pkg_path = Path("tools/package_submission.py")
-    bench_path = Path("tools/benchmark_performance.py")
-    if pkg_path.exists() and bench_path.exists():
-        print("[✓] Packaging & Profiling Tools: VERIFIED")
-    else:
-        errors.append("Missing packaging or profiling tools")
-        print("[-] Packaging & Profiling Tools: MISSING")
-
-    if errors:
-        print("\nVerification Failures:")
-        for err in errors:
-            print(f"  ✗ {err}")
-        return 2
-
-    print("\nALL ARTIFACTS AND SEALS 100% VERIFIED")
-    return 0
+    lines, failures = verify_evidence(Path("docs/evidence"))
+    print("\n".join(lines))
+    return 1 if failures else 0
 
 
 def _run_audit(args: argparse.Namespace) -> int:
@@ -1974,6 +1890,12 @@ def main() -> int:
     parser.add_argument("--vcd", action="store_true", help="Emit IEEE 1364 standard VCD waveform")
     parser.add_argument("--diagram", action="store_true", help="Emit ASCII waveform timing diagram")
     args = parser.parse_args()
+    if args.command in _ILLUSTRATIVE_COMMANDS:
+        print(
+            f"warning: `spechunter {args.command}` reports illustrative model values, "
+            "not measured BOOM evidence (see SUBMISSION.md, Limitations).",
+            file=sys.stderr,
+        )
     try:
         if args.command == "verify":
             return _run_verify()

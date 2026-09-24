@@ -1,4 +1,8 @@
-"""Speculative Information Flow Tracking (IFT) & Microarchitectural Non-Interference Analyzer.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Speculative Information Flow Tracking (IFT) & Microarchitectural Non-Interference Analyzer.
 
 Performs cycle-accurate microarchitectural taint propagation analysis on candidate
 exploit sequences. Computes exact Shannon mutual information leakage H(Secret | State)

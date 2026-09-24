@@ -27,11 +27,10 @@ def test_package_submission_builds_archives():
 
     assert manifest_path.is_file()
     manifest_text = manifest_path.read_text(encoding="utf-8")
-    assert "spechunter_micro2026.pdf" in manifest_text
+    assert "spechunter_a3_2026.pdf" in manifest_text
     assert "SUBMISSION.md" in manifest_text
     assert "demo.html" in manifest_text
-    assert "spechunter.tex" in manifest_text
-    assert "spechunter.typ" in manifest_text
+    assert "main.tex" in manifest_text
 
 
 def test_sha256_file_consistency(tmp_path):

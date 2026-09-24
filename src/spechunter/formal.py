@@ -1,4 +1,8 @@
-"""Formal SMT-LIB2 Bounded Model Checker & Relational Non-Interference Prover.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Formal SMT-LIB2 Bounded Model Checker & Relational Non-Interference Prover.
 
 Translates out-of-order pipeline execution traces, speculative load gating,
 and translation order constraints into formal SMT-LIB2 quantifier-free bitvector

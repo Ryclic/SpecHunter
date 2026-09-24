@@ -1,4 +1,8 @@
-"""Microarchitectural State-Transition Graph (MSTG) Coverage & Invariant Fuzzer.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Microarchitectural State-Transition Graph (MSTG) Coverage & Invariant Fuzzer.
 
 Explores the out-of-order microarchitectural state space (branch predictor
 saturation counters, ROB occupancy bins, LSU store forwarding, and DTLB

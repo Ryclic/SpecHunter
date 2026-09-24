@@ -1,4 +1,8 @@
-"""Speculative Return Address Stack (RAS) & Speculative Call-Return Oracle.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Speculative Return Address Stack (RAS) & Speculative Call-Return Oracle.
 
 Models superscalar Return Address Stack underflow, speculative return prediction,
 and RETbleed (CVE-2022-29968) microarchitectural vulnerability dynamics in out-of-order

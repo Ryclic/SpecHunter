@@ -1,4 +1,8 @@
-"""Feedback-Driven Microarchitectural Guided Search Engine.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Feedback-Driven Microarchitectural Guided Search Engine.
 
 Implements state-space exploration guided by microarchitectural simulator feedback
 (speculative branch depth, cache set allocation, probe timing differentials) to

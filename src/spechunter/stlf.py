@@ -1,4 +1,8 @@
-"""Microarchitectural Store-to-Load Forwarding (STLF) & Speculative Store Bypass Oracle.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Microarchitectural Store-to-Load Forwarding (STLF) & Speculative Store Bypass Oracle.
 
 Audits False Store Forwarding (12-bit page offset aliasing), Speculative Store Bypass
 (SSB / Spectre-v4 / CVE-2018-3639), and partial store forwarding corruption in the Load-Store Unit

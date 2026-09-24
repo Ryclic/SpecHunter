@@ -1,4 +1,8 @@
-"""Microarchitectural Data Sampling (MDS) & Line Fill Buffer (LFB) Oracle.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Microarchitectural Data Sampling (MDS) & Line Fill Buffer (LFB) Oracle.
 
 Audits Rogue In-Flight Data Load (RIDL), ZombieLoad, and MSHR residual buffer sampling
 in superscalar out-of-order processors like Berkeley BOOM (CVE-2019-11091, CVE-2019-11135).

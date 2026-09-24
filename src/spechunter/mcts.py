@@ -1,4 +1,8 @@
-"""Monte Carlo Tree Search (MCTS) for Microarchitectural Exploit Program Synthesis.
+"""ILLUSTRATIVE MODEL - NOT EVIDENCE. This module was added on 2026-09-23 and is not
+part of the evaluated SpecHunter loop. Its reported figures are fixed or modelled
+values, not measurements from BOOM RTL; see SUBMISSION.md (Limitations).
+
+Monte Carlo Tree Search (MCTS) for Microarchitectural Exploit Program Synthesis.
 
 Implements Upper Confidence bounds applied to Trees (UCT) to guide asymmetric
 state-space exploration of out-of-order transient execution gadgets and invariant

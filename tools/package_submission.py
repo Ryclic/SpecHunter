@@ -13,14 +13,12 @@ ARTIFACTS_DIR = REPO_ROOT / "artifacts"
 DIST_DIR = ARTIFACTS_DIR / "submission_dist"
 
 DELIVERABLES = [
-    ("paper/spechunter_micro2026.pdf", "spechunter_micro2026.pdf"),
-    ("paper/spechunter.tex", "spechunter.tex"),
-    ("paper/spechunter.typ", "spechunter.typ"),
-    ("paper/references.bib", "references.bib"),
+    ("paper/spechunter_a3_2026.pdf", "spechunter_a3_2026.pdf"),
+    ("paper/main.tex", "main.tex"),
+    ("paper/main.bib", "main.bib"),
     ("docs/demo.html", "demo.html"),
     ("SUBMISSION.md", "SUBMISSION.md"),
     ("README.md", "README.md"),
-    ("tools/benchmark_performance.py", "tools/benchmark_performance.py"),
 ]
 
 

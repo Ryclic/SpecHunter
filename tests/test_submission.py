@@ -1,22 +1,28 @@
 from pathlib import Path
 
+ROOT = Path(__file__).parents[1]
 
-def test_submission_dossier_complete():
-    submission_path = Path(__file__).parents[1] / "SUBMISSION.md"
-    assert submission_path.is_file(), f"Expected submission dossier at {submission_path}"
-    content = submission_path.read_text(encoding="utf-8")
+# Figures produced only by modules that return fixed illustrative values.
+UNSEALED_CLAIMS = ("1091", "1095", "HSA-CERT", "HSA-2026", "CVSS", "89,200", "0.05%")
 
-    assert "MICRO 2026 A³ CHIA Hackathon Submission Dossier" in content
-    assert "Discovery and resolution of architectural and microarchitectural bugs" in content
-    assert "1. Author-Identified Highlights" in content
-    assert "2. Abstract" in content
-    assert "3. Quickstart Reproducibility" in content
-    assert "4. Interactive Command Line Tools" in content
-    assert "5. Deliverable Inventory" in content
-    assert "6. Cryptographic Provenance Manifest" in content
-    assert "tools/run_reproducibility_kit.sh" in content
-    assert "paper/spechunter_micro2026.pdf" in content
-    assert "docs/demo.html" in content
-    assert "spechunter taxonomy" in content
-    assert "spechunter ablation" in content
-    assert "spechunter harness" in content
+
+def test_submission_points_to_sealed_evidence_and_limitations():
+    content = (ROOT / "SUBMISSION.md").read_text(encoding="utf-8")
+    assert "paper/spechunter_a3_2026.pdf" in content
+    assert "tools/verify_evidence.py" in content
+    assert "## Limitations" in content
+    assert "No new BOOM vulnerability was found" in content
+    for seal in sorted((ROOT / "docs/evidence").glob("*seal*.json")):
+        if "2026-09-16" in seal.name and "fixture-guided" in seal.name:
+            continue  # superseded by the 2026-09-19 evaluation seal
+        if "issue-715" in seal.name:
+            continue  # indexed by the issue #715 wildcard row
+        assert seal.name in content, seal.name
+    for claim in UNSEALED_CLAIMS:
+        assert claim not in content, claim
+
+
+def test_readme_does_not_repeat_unsealed_claims():
+    content = (ROOT / "README.md").read_text(encoding="utf-8")
+    for claim in UNSEALED_CLAIMS:
+        assert claim not in content, claim
