@@ -28,6 +28,7 @@ jobs:
       - run: uv sync --locked --group dev
       - run: uv run ruff check . && uv run ruff format --check .
       - run: uv run pytest -q
+      - run: uv run python tools/verify_evidence.py
       - run: uv run spechunter compare --backend rtl --iterations 16 --output artifacts/comparison.json
       - run: uv build
       - uses: actions/upload-artifact@v4

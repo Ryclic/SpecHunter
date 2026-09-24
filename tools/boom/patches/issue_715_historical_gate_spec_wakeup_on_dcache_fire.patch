@@ -1,0 +1,10 @@
+--- a/src/main/scala/lsu/lsu.scala
++++ b/src/main/scala/lsu/lsu.scala
+@@ -1259,6 +1259,7 @@
+   for (w <- 0 until memWidth) {
+     io.core.spec_ld_wakeup(w).valid := enableFastLoadUse.B          &&
+                                        fired_load_incoming(w)       &&
++                                       RegNext(dmem_req_fire(w))     &&
+                                        !mem_incoming_uop(w).fp_val  &&
+                                        mem_incoming_uop(w).pdst =/= 0.U
+     io.core.spec_ld_wakeup(w).bits  := mem_incoming_uop(w).pdst

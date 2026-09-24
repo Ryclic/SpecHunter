@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SpecHunter · Verified Agent Loop</title>
+<style>
+:root{--ink:#eef4ff;--muted:#9cafca;--panel:#111b2e;--line:#263754;--cyan:#55d8ff;--green:#67eda7;--amber:#ffc66d;--red:#ff7d8a}
+*{box-sizing:border-box} body{margin:0;background:#07101f;color:var(--ink);font:16px/1.55 ui-sans-serif,system-ui,sans-serif}
+main{max-width:1080px;margin:auto;padding:48px 24px 80px} .eyebrow{color:var(--cyan);font-weight:750;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:clamp(2.5rem,7vw,5.8rem);line-height:.92;margin:.25em 0} .lede{font-size:1.25rem;color:var(--muted);max-width:760px}
+.verified{display:inline-flex;gap:.5rem;align-items:center;background:#123b31;color:var(--green);padding:.45rem .8rem;border-radius:999px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:36px 0} .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.card b{font-size:1.8rem;display:block} .card span{color:var(--muted)} h2{margin-top:54px;font-size:1.75rem}
+.witness{font:700 1.1rem ui-monospace,monospace;color:var(--amber);overflow-wrap:anywhere}
+.timeline{list-style:none;padding:0;display:grid;gap:10px} .stage{display:grid;grid-template-columns:44px 1fr;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.step{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#1d3150;color:var(--cyan);font:700 .8rem ui-monospace,monospace}
+.stage strong{font-size:1.05rem} .stage p{margin:.15rem 0 0;color:var(--muted)} .stage-repair{border-color:#735b28} .stage-validator{border-color:#285d50}
+.proof{display:grid;grid-template-columns:1fr 1fr;gap:12px} code{color:var(--cyan);overflow-wrap:anywhere} details{margin-top:24px} pre{white-space:pre-wrap;background:#040a14;padding:18px;border-radius:12px;max-height:480px;overflow:auto;color:#bfd0e8}
+footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted)}
+@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.proof{grid-template-columns:1fr}}
+</style></head><body><main>
+<span class="verified">✓ Cryptographically sealed evidence</span><p class="eyebrow">SpecHunter · Vertex AI × RISC-V BOOM</p>
+<h1>Find. Repair.<br>Attack again.</h1>
+<p class="lede">An LLM-driven security loop found a controlled cache leak on a cycle-accurate BOOM CPU simulation, selected a bounded repair, retested the exact exploit, and returned control to the attacker until its supported search was exhausted.</p>
+<section class="grid" aria-label="Experiment metrics">
+<div class="card"><b>28</b><span>BOOM executions</span></div>
+<div class="card"><b>4</b><span>Vertex calls</span></div>
+<div class="card"><b>$0.0006038</b><span>Accounted LLM cost</span></div>
+<div class="card"><b>Yes</b><span>Attacker exhausted</span></div>
+</section>
+<section><h2>Minimal validated witness</h2><div class="card"><p class="witness">enter_user → load_secret → probe</p><p>The protected user load remains in the minimized experiment. The finding is explicitly classified as an intentional harness mutation used to prove the end-to-end workflow, not an upstream BOOM vulnerability.</p></div></section>
+<section><h2>Agent and validator timeline</h2><ol class="timeline"><li class="stage stage-recon"><span class="step">01</span><div><strong>Recon</strong><p>A transient load of the secret, followed by encoding its value into the cache, and then a subsequent fence operation, will allow the secret to be observed via the probe.</p></div></li><li class="stage stage-attacker"><span class="step">02</span><div><strong>Attacker</strong><p>Candidate: enter_user → train → load_secret → encode → fence → probe</p></div></li><li class="stage stage-validator"><span class="step">03</span><div><strong>Validator</strong><p>Violation: secret-dependent observer output</p></div></li><li class="stage stage-repair"><span class="step">04</span><div><strong>Repair</strong><p>Selected closed repair: remove-seeded-cache-leak</p></div></li><li class="stage stage-attacker"><span class="step">05</span><div><strong>Attacker</strong><p>Candidate: enter_user → load_secret → probe</p></div></li><li class="stage stage-validator"><span class="step">06</span><div><strong>Validator</strong><p>Clean: observer outputs agree</p></div></li><li class="stage stage-attacker"><span class="step">07</span><div><strong>Attacker</strong><p>No materially different supported attack remained.</p></div></li></ol></section>
+<section><h2>Held-out repair gate</h2>
+<p>The same repair was challenged with eight distinct supported programs on the identical simulator.</p>
+<div class="grid"><div class="card"><b>8</b><span>Attack programs</span></div>
+<div class="card"><b>64</b><span>BOOM executions</span></div>
+<div class="card"><b>100%</b><span>Mutation detection</span></div>
+<div class="card"><b>100%</b><span>Repair clean</span></div></div>
+<div class="card"><span>Corpus SHA-256</span><code>0e3ce817cdf65df5c052860c8c61b98ce5f6fa990ae8f0fe61ed9323fc15659d</code></div></section>
+<section><h2>Guided versus random evaluation</h2>
+<p>This separate deterministic fixture benchmark measures search quality; it is not BOOM vulnerability evidence.</p>
+<div class="grid"><div class="card"><b>100%</b><span>Guided discovery</span></div>
+<div class="card"><b>57.25%</b><span>Random discovery</span></div>
+<div class="card"><b>1.5</b><span>Guided mean attempts</span></div>
+<div class="card"><b>8.48</b><span>Random mean attempts</span></div></div>
+<div class="card"><p>Random: 1000 seeds; 95% Wilson interval 55.07%–59.40%; zero false positives and zero inconclusive cases.</p></div></section>
+<section><h2>LLM loop repeatability</h2>
+<p>Ten independent Vertex trials used the fast model fixture to measure orchestration reliability, separately from live BOOM evidence.</p>
+<div class="grid"><div class="card"><b>10/10</b><span>Full loops succeeded</span></div>
+<div class="card"><b>40</b><span>Gemini calls</span></div>
+<div class="card"><b>264</b><span>Fixture executions</span></div>
+<div class="card"><b>$0.0053752</b><span>Accounted cost</span></div></div></section>
+<section><h2>Executed through CHIA</h2>
+<p>The same nested Vertex workflow ran through the decorated CHIA node on an owned local Ray runtime.</p>
+<div class="grid"><div class="card"><b>1.0.1</b><span>CHIA version</span></div>
+<div class="card"><b>2.54.0</b><span>Ray version</span></div>
+<div class="card"><b>4</b><span>Gemini calls</span></div>
+<div class="card"><b>Yes</b><span>Attacker exhausted</span></div></div></section>
+<section><h2>Candidate RTL repair built</h2>
+<p>The source-reviewed LSU patch compiled into a distinct BOOM simulator and passed eight target-regression executions. The baseline was already clean, so this is build and regression evidence, not a validated security fix.</p>
+<div class="grid"><div class="card"><b>8</b><span>Repaired BOOM executions</span></div>
+<div class="card"><b>2/2</b><span>Scenarios clean</span></div>
+<div class="card"><b>Yes</b><span>Distinct binary</span></div>
+<div class="card"><b>No</b><span>Security fix validated</span></div></div>
+<div class="card"><span>Repaired simulator SHA-256</span><code>fd4a264c1499cb2c3614cf05de4533e3b31ce2d921650452bca59072e55179c3</code></div></section>
+<section><h2>Known BOOM issue assessed</h2>
+<p>A reviewed branch-misprediction adaptation of upstream BOOM issue #715 ran against the current pinned simulator. All matched-secret executions were deterministic and clean, so no vulnerability or repair claim is made for this revision.</p>
+<div class="grid"><div class="card"><b>#715</b><span>Upstream issue</span></div>
+<div class="card"><b>4</b><span>BOOM executions</span></div>
+<div class="card"><b>Clean</b><span>Current pin result</span></div>
+<div class="card"><b>No</b><span>Fix claimed</span></div></div></section>
+<section><h2>Original issue #715 attachment on historical BOOM</h2>
+<p>The original upstream ELF ran on the reported Chipyard/BOOM revisions. Its disassembly shows a load into <code>sp</code> followed by a load through <code>sp</code>. However, the waveform attributes the later <code>0x59f</code> requests to a third, independent load at gadget offset <code>+8</code>; the dependent load at <code>+4</code> did not issue a recorded branch-masked translation request. The reported protected-data-dependent mechanism is not reproduced.</p>
+<div class="grid"><div class="card"><b>3769</b><span>Branch frontend PC cycle</span></div>
+<div class="card"><b>0</b><span>Dependent-load requests</span></div>
+<div class="card"><b>3</b><span>RTL candidates assessed</span></div>
+<div class="card"><b>Unresolved</b><span>Fourth candidate verdict</span></div></div>
+<p>The baseline shows a TLB miss and speculative load wakeup one cycle after the protected-page request, with no D-cache request firing. The dependent load issues with a poisoned source operand in baseline and candidates v1/v2; the LSU load-miss signal is high and register-read validity is low at the same cycle. The pinned BOOM source gates register read for that combination. No branch-masked dependent issue is observed for v3. No waveform shows a matching valid LSU execute request or branch-masked TLB request from the dependent load. The independent third load still issued its requests. LSU address fields with a low valid bit do not prove an executed memory request.</p>
+<p>Three candidate repairs have matched traces, but the baseline did not reproduce the target mechanism, so their security effectiveness is inconclusive. The fourth built and ran, but its waveform was not recovered; no security fix is claimed.</p>
+<div class="card"><span>Original waveform SHA-256</span><code>04d4b780a221c6c7793b78c308ba1478c902bb567b83ab35384de5793c87ca34</code></div>
+<div class="card"><span>Case seal SHA-256</span><code>13601d51e60684e2f7b6204af217437b40dac699d18c76604e15ac8de77f037c</code></div></section>
+<section><h2>Evidence integrity</h2><div class="proof"><div class="card"><span>Report SHA-256</span><code>0633c08ba9c242588babde4eb6941233397bc0255d0c87f7b33d77ea91ef2af4</code></div><div class="card"><span>Simulator SHA-256</span><code>230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8</code></div></div>
+<details><summary>Inspect the complete report</summary><pre>{
+  &quot;schema_version&quot;: 2,
+  &quot;strategy&quot;: &quot;llm&quot;,
+  &quot;provider&quot;: &quot;vertex&quot;,
+  &quot;limits&quot;: {
+    &quot;recon_cycles&quot;: 1,
+    &quot;attacks_per_cycle&quot;: 4,
+    &quot;repairs_per_benchmark&quot;: 1
+  },
+  &quot;provenance&quot;: {
+    &quot;kind&quot;: &quot;boom&quot;,
+    &quot;target_revision&quot;: &quot;0acc1e1de2d3284bcd4d876956932a013ffe1949&quot;,
+    &quot;fixture_sha256&quot;: null,
+    &quot;command&quot;: [
+      &quot;/tmp/spechunter-boom-runner/tools/boom/gcp_runner.py&quot;,
+      &quot;--project=spechunter&quot;,
+      &quot;--zone=us-central1-a&quot;,
+      &quot;--instance=spechunter-boom-agent-1&quot;,
+      &quot;--gcloud-config=/home/ryclic/.config/gcloud&quot;,
+      &quot;--ssh-key-file=/home/ryclic/.ssh/google_compute_engine&quot;
+    ],
+    &quot;is_boom_evidence&quot;: true,
+    &quot;simulator_sha256&quot;: &quot;230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8&quot;
+  },
+  &quot;metrics&quot;: {
+    &quot;discovered&quot;: 1,
+    &quot;positive_cases&quot;: 1,
+    &quot;false_positives&quot;: 0,
+    &quot;inconclusive_cases&quot;: 0,
+    &quot;repairs_attacker_exhausted&quot;: 1,
+    &quot;executions&quot;: 28,
+    &quot;llm_calls&quot;: 4
+  },
+  &quot;results&quot;: [
+    {
+      &quot;benchmark&quot;: {
+        &quot;id&quot;: &quot;boom-positive-control&quot;,
+        &quot;description&quot;: &quot;A seeded cache-state mutation exposes the protected secret on real BOOM&quot;,
+        &quot;bug&quot;: &quot;seeded-cache-leak&quot;,
+        &quot;invariant&quot;: &quot;observable-isolation&quot;,
+        &quot;positive&quot;: true
+      },
+      &quot;transcript&quot;: [
+        {
+          &quot;stage&quot;: &quot;recon&quot;,
+          &quot;cycle&quot;: 1,
+          &quot;output&quot;: {
+            &quot;hypothesis&quot;: &quot;A transient load of the secret, followed by encoding its value into the cache, and then a subsequent fence operation, will allow the secret to be observed via the probe.&quot;,
+            &quot;rationale&quot;: &quot;The invariant is observable isolation. The benchmark is a seeded cache-state mutation exposing the protected secret. The bug is a seeded cache leak. The positive control indicates that the secret should be observable. The hypothesis leverages the supported operations to achieve this. Specifically, `train` is used to set up a misprediction, `load_secret` attempts to transiently access the protected data, `encode` maps the loaded secret value to observable cache lines, and `probe` measures the resulting cache state. A `fence` is included to ensure that the speculative execution path leading to the secret leak is properly managed before observation, although the core leak mechanism relies on transient execution bypassing the fence&#x27;s protection for the load itself. The `enter_user` operation is not strictly necessary for this hypothesis as the initial state is assumed to be capable of initiating speculative execution that can access the secret, and the focus is on the transient leak, not privilege escalation.&quot;,
+            &quot;provider&quot;: &quot;vertex&quot;,
+            &quot;scope&quot;: &quot;agent-generated&quot;
+          }
+        },
+        {
+          &quot;stage&quot;: &quot;attacker&quot;,
+          &quot;cycle&quot;: 1,
+          &quot;attempt&quot;: 1,
+          &quot;testing_repair&quot;: false,
+          &quot;outcome&quot;: &quot;candidate&quot;,
+          &quot;rationale&quot;: &quot;The previous hypothesis was a good starting point, but it did not explicitly include the `enter_user` operation before `load_secret` as required by the benchmark constraints. This new candidate incorporates `enter_user` to satisfy the constraint, while maintaining the core logic of training the predictor, loading the secret transiently, encoding its value, and probing the cache. The `fence` is kept to ensure proper state management, although the transient load is expected to bypass its protection for the leak itself.&quot;,
+          &quot;program&quot;: [
+            &quot;enter_user&quot;,
+            &quot;train&quot;,
+            &quot;load_secret&quot;,
+            &quot;encode&quot;,
+            &quot;fence&quot;,
+            &quot;probe&quot;
+          ]
+        },
+        {
+          &quot;stage&quot;: &quot;validator&quot;,
+          &quot;cycle&quot;: 1,
+          &quot;attempt&quot;: 1,
+          &quot;status&quot;: &quot;violation&quot;,
+          &quot;reason&quot;: &quot;secret-dependent observer output&quot;,
+          &quot;observations&quot;: [
+            {
+              &quot;architectural&quot;: [],
+              &quot;probes&quot;: [
+                1
+              ],
+              &quot;events&quot;: [
+                &quot;load-access-fault&quot;
+              ],
+              &quot;completed&quot;: true
+            },
+            {
+              &quot;architectural&quot;: [],
+              &quot;probes&quot;: [
+                0
+              ],
+              &quot;events&quot;: [
+                &quot;load-access-fault&quot;
+              ],
+              &quot;completed&quot;: true
+            },
+            {
+              &quot;architectural&quot;: [],
+              &quot;probes&quot;: [
+                1
+              ],
+              &quot;events&quot;: [
+                &quot;load-access-fault&quot;
+              ],
+              &quot;completed&quot;: true
+            },
+            {
+              &quot;architectural&quot;: [],
+              &quot;probes&quot;: [
+                0
+              ],
+              &quot;events&quot;: [
+                &quot;load-access-fault&quot;
+              ],
+              &quot;completed&quot;: true
+            }
+          ]
+        },
+        {
+          &quot;stage&quot;: &quot;repair&quot;,
+          &quot;round&quot;: 1,
+          &quot;status&quot;: &quot;trusted-candidate-repair&quot;,
+          &quot;diagnosis&quot;: &quot;The validation failed because the secret-dependent observer output was observed. This indicates that the secret value was successfully leaked and observed through the probes. The history shows that the attacker attempted to exploit a transient load of the secret, encode its value into the cache, and then probe the cache state. The `enter_user` operation was included to satisfy benchmark constraints, and a `fence` was used for state management, though the transient load is expected to bypass its protection for the leak itself.&quot;,
+          &quot;proposal&quot;: &quot;The `remove-seeded-cache-leak` repair is the most appropriate for this benchmark. It directly addresses the bug by removing the explicitly seeded cache-state injection from the BOOM positive-control harness, which is the root cause of the observed violation. This repair is specifically designed for the `boom-positive-control` benchmark.&quot;,
+          &quot;repair_id&quot;: &quot;remove-seeded-cache-leak&quot;,
+          &quot;active_variant&quot;: &quot;remove-seeded-cache-leak&quot;,
+          &quot;rtl_patch_applied&quot;: false
+        },
+        {
+          &quot;stage&quot;: &quot;attacker&quot;,
+          &quot;cycle&quot;: 1,
+          &quot;attempt&quot;: 2,
+          &quot;testing_repair&quot;: true,
+          &quot;outcome&quot;: &quot;candidate&quot;,
+          &quot;rationale&quot;: &quot;mandatory minimized-exploit repair retest&quot;,
+          &quot;program&quot;: [
+            &quot;enter_user&quot;,
+            &quot;load_secret&quot;,
+            &quot;probe&quot;
+          ]
+        },
+        {
+          &quot;stage&quot;: &quot;validator&quot;,
+          &quot;cycle&quot;: 1,
+          &quot;attempt&quot;: 2,
+          &quot;status&quot;: &quot;clean&quot;,
+          &quot;reason&quot;: &quot;observer outputs agree&quot;,
+          &quot;observations&quot;: [
+            {
+              &quot;architectural&quot;: [],
+              &quot;probes&quot;: [
+                0
+              ],
+              &quot;events&quot;: [
+                &quot;load-access-fault&quot;
+              ],
+              &quot;completed&quot;: true
+            },
+            {
+              &quot;architectural&quot;: [],
+              &quot;probes&quot;: [
+                0
+              ],
+              &quot;events&quot;: [
+                &quot;load-access-fault&quot;
+              ],
+              &quot;completed&quot;: true
+            },
+            {
+              &quot;architectural&quot;: [],
+              &quot;probes&quot;: [
+                0
+              ],
+              &quot;events&quot;: [
+                &quot;load-access-fault&quot;
+              ],
+              &quot;completed&quot;: true
+            },
+            {
+              &quot;architectural&quot;: [],
+              &quot;probes&quot;: [
+                0
+              ],
+              &quot;events&quot;: [
+                &quot;load-access-fault&quot;
+              ],
+              &quot;completed&quot;: true
+            }
+          ]
+        },
+        {
+          &quot;stage&quot;: &quot;attacker&quot;,
+          &quot;cycle&quot;: 1,
+          &quot;attempt&quot;: 3,
+          &quot;testing_repair&quot;: true,
+          &quot;outcome&quot;: &quot;exhausted&quot;,
+          &quot;rationale&quot;: &quot;The previous candidate was a repair attempt that successfully passed validation. Since the goal is to propose a *new* attack candidate, and no further materially different candidates can be generated from the history, the agent is exhausted.&quot;,
+          &quot;program&quot;: null
+        }
+      ],
+      &quot;findings&quot;: [
+        {
+          &quot;cycle&quot;: 1,
+          &quot;program&quot;: [
+            &quot;enter_user&quot;,
+            &quot;load_secret&quot;,
+            &quot;probe&quot;
+          ],
+          &quot;sha256&quot;: &quot;13227cb44a11fcfdabf177ae739b689589599f091ca6b6ef1fccbd4ed23da544&quot;,
+          &quot;assembly&quot;: &quot;# RV64 harness-linked candidate; see docs/BOOM.md.\n.section .text\n.globl spechunter_candidate\nspechunter_candidate:\n  addi sp, sp, -16\n  sd ra, 8(sp)\n  call spechunter_enter_user\n  call spechunter_load_secret\n  call spechunter_probe\n  ld ra, 8(sp)\n  addi sp, sp, 16\n  ret\n&quot;,
+          &quot;validation&quot;: {
+            &quot;status&quot;: &quot;violation&quot;,
+            &quot;reason&quot;: &quot;secret-dependent observer output&quot;,
+            &quot;observations&quot;: [
+              {
+                &quot;architectural&quot;: [],
+                &quot;probes&quot;: [
+                  1
+                ],
+                &quot;events&quot;: [
+                  &quot;load-access-fault&quot;
+                ],
+                &quot;completed&quot;: true
+              },
+              {
+                &quot;architectural&quot;: [],
+                &quot;probes&quot;: [
+                  0
+                ],
+                &quot;events&quot;: [
+                  &quot;load-access-fault&quot;
+                ],
+                &quot;completed&quot;: true
+              },
+              {
+                &quot;architectural&quot;: [],
+                &quot;probes&quot;: [
+                  1
+                ],
+                &quot;events&quot;: [
+                  &quot;load-access-fault&quot;
+                ],
+                &quot;completed&quot;: true
+              },
+              {
+                &quot;architectural&quot;: [],
+                &quot;probes&quot;: [
+                  0
+                ],
+                &quot;events&quot;: [
+                  &quot;load-access-fault&quot;
+                ],
+                &quot;completed&quot;: true
+              }
+            ]
+          },
+          &quot;variant&quot;: &quot;seeded-cache-leak&quot;
+        }
+      ],
+      &quot;repair&quot;: {
+        &quot;attempted&quot;: true,
+        &quot;attacker_exhausted&quot;: true,
+        &quot;verified&quot;: true,
+        &quot;final_variant&quot;: &quot;remove-seeded-cache-leak&quot;,
+        &quot;rtl_patch_applied&quot;: false
+      }
+    }
+  ],
+  &quot;cost&quot;: {
+    &quot;budget_usd&quot;: &quot;0.02&quot;,
+    &quot;accounted_usd&quot;: &quot;0.0006038&quot;,
+    &quot;remaining_usd&quot;: &quot;0.0193962&quot;,
+    &quot;calls&quot;: 4,
+    &quot;ledger&quot;: &quot;vertex-boom-demo-cost-2026-09-11.json&quot;
+  }
+}</pre></details></section>
+<footer>Generated locally from the sealed SpecHunter report. No network requests or external assets are required.</footer>
+</main></body></html>

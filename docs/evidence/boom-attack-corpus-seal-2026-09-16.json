@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-held-out-attack-corpus-repair-evaluation",
+  "classification": "intentional-harness-mutation-not-upstream-boom-vulnerability",
+  "attack_corpus": "boom-attack-corpus-2026-09-16.json",
+  "attack_corpus_sha256": "0e3ce817cdf65df5c052860c8c61b98ce5f6fa990ae8f0fe61ed9323fc15659d",
+  "positive_control": "boom-positive-control.json",
+  "positive_control_sha256": "ba36634474064712c66bd7816859afdd7bcbdb0b0b843fb086c61bbcd8cebd24",
+  "vertex_report": "vertex-boom-demo-2026-09-11.json",
+  "vertex_report_sha256": "0633c08ba9c242588babde4eb6941233397bc0255d0c87f7b33d77ea91ef2af4",
+  "simulator_sha256": "230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8",
+  "scorecard": {
+    "attack_programs": 8,
+    "mutation_detection_rate": 1.0,
+    "repair_clean_rate": 1.0,
+    "inconclusive_programs": 0,
+    "simulator_executions": 64
+  }
+}

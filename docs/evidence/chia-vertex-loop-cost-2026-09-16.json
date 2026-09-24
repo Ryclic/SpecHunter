@@ -1,0 +1,65 @@
+{
+  "entries": [
+    {
+      "amount_usd": "0.0000938",
+      "created_at": "2026-09-16T04:59:32.273895+00:00",
+      "id": "4e18e25cb3d84d20bbd805052542a0a1",
+      "input_tokens": 270,
+      "model": "gemini-2.5-flash-lite",
+      "outcome": "success",
+      "output_tokens": 167,
+      "pricing_source": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+      "pricing_verified_on": "2026-09-10",
+      "provider": "vertex",
+      "role": "recon",
+      "settled_at": "2026-09-16T04:59:34.155176+00:00",
+      "state": "settled"
+    },
+    {
+      "amount_usd": "0.0001174",
+      "created_at": "2026-09-16T04:59:34.155548+00:00",
+      "id": "26baf963cae6435b8ddd6492c89f3b9b",
+      "input_tokens": 646,
+      "model": "gemini-2.5-flash-lite",
+      "outcome": "success",
+      "output_tokens": 132,
+      "pricing_source": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+      "pricing_verified_on": "2026-09-10",
+      "provider": "vertex",
+      "role": "attacker",
+      "settled_at": "2026-09-16T04:59:35.131798+00:00",
+      "state": "settled"
+    },
+    {
+      "amount_usd": "0.0001428",
+      "created_at": "2026-09-16T04:59:35.132532+00:00",
+      "id": "cc4000b4486f4194b9b24f194f7b447b",
+      "input_tokens": 736,
+      "model": "gemini-2.5-flash-lite",
+      "outcome": "success",
+      "output_tokens": 173,
+      "pricing_source": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+      "pricing_verified_on": "2026-09-10",
+      "provider": "vertex",
+      "role": "repair",
+      "settled_at": "2026-09-16T04:59:36.238971+00:00",
+      "state": "settled"
+    },
+    {
+      "amount_usd": "0.000159",
+      "created_at": "2026-09-16T04:59:36.239500+00:00",
+      "id": "327577ac34d64236b5dfa19234b4e310",
+      "input_tokens": 1202,
+      "model": "gemini-2.5-flash-lite",
+      "outcome": "success",
+      "output_tokens": 97,
+      "pricing_source": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+      "pricing_verified_on": "2026-09-10",
+      "provider": "vertex",
+      "role": "attacker",
+      "settled_at": "2026-09-16T04:59:37.187927+00:00",
+      "state": "settled"
+    }
+  ],
+  "schema_version": 1
+}

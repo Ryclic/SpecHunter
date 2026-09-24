@@ -12,7 +12,8 @@ script_directory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=pins.env
 source "$script_directory/pins.env"
 
-[[ "$(git -C "$chipyard_directory" rev-parse HEAD)" == "$CHIPYARD_REVISION" ]] || {
+[[ "$(git -c safe.directory="$chipyard_directory" -C "$chipyard_directory" rev-parse HEAD)" \
+  == "$CHIPYARD_REVISION" ]] || {
   echo "Chipyard revision does not match pins.env" >&2
   exit 2
 }
@@ -55,7 +56,13 @@ grep -Fq "Hello world from core 0, a sonicboom" "$smoke_log" || {
 export EVIDENCE_FILE="$evidence_file" SMOKE_LOG="$smoke_log" SIMULATOR="$simulator"
 export HELLO_BINARY="$hello_binary" START_SECONDS="$start_seconds"
 export CHIPYARD_REVISION BOOM_CONFIG
-export BOOM_REVISION="$(git -C "$chipyard_directory/generators/boom" rev-parse HEAD)"
+actual_boom_revision="$(git -c safe.directory="$chipyard_directory/generators/boom" \
+  -C "$chipyard_directory/generators/boom" rev-parse HEAD)"
+[[ "$actual_boom_revision" == "$BOOM_REVISION" ]] || {
+  echo "BOOM revision does not match pins.env" >&2
+  exit 2
+}
+export BOOM_REVISION
 export VERILATOR_VERSION="$(verilator --version)"
 export RISCV_GCC_VERSION="$(riscv64-unknown-elf-gcc --version | head -1)"
 python - <<'PY'

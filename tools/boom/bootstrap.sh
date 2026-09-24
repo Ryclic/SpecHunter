@@ -9,12 +9,16 @@ usage() {
 [[ $# -eq 1 ]] || usage
 chipyard_directory=$1
 [[ "$chipyard_directory" = /* ]] || { echo "CHIPYARD_DIRECTORY must be absolute" >&2; exit 2; }
+[[ $EUID -ne 0 ]] || {
+  echo "run bootstrap as an unprivileged build user in a user-owned parent directory" >&2
+  exit 2
+}
 
 script_directory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=pins.env
 source "$script_directory/pins.env"
 
-for command in curl git sha256sum gcc g++ make dtc ldd; do
+for command in curl git sha256sum gcc g++ make dtc ldd wget; do
   command -v "$command" >/dev/null || { echo "missing host command: $command" >&2; exit 2; }
 done
 
@@ -25,6 +29,10 @@ fi
 
 parent_directory=$(dirname -- "$chipyard_directory")
 mkdir -p "$parent_directory"
+[[ -w "$parent_directory" ]] || {
+  echo "parent directory is not writable: $parent_directory" >&2
+  exit 2
+}
 miniforge_directory="$parent_directory/miniforge3"
 installer="$parent_directory/Miniforge3-${MINIFORGE_VERSION}-Linux-x86_64.sh"
 installer_url="https://github.com/conda-forge/miniforge/releases/download/${MINIFORGE_VERSION}/Miniforge3-Linux-x86_64.sh"
@@ -67,8 +75,16 @@ cd "$chipyard_directory"
 # is deferred until after the pinned BOOM configuration passes environment checks.
 ./build-setup.sh --use-lean-conda --skip-precompile
 
+set +u
+# Chipyard's generated activation hook reads RISCV before defining it.
 source env.sh
+set -u
 printf 'chipyard_revision=%s\n' "$(git rev-parse HEAD)"
-printf 'boom_revision=%s\n' "$(git -C generators/boom rev-parse HEAD)"
+actual_boom_revision=$(git -C generators/boom rev-parse HEAD)
+[[ "$actual_boom_revision" == "$BOOM_REVISION" ]] || {
+  echo "BOOM revision mismatch: $actual_boom_revision" >&2
+  exit 2
+}
+printf 'boom_revision=%s\n' "$actual_boom_revision"
 printf 'verilator_version=%s\n' "$(verilator --version)"
 printf 'riscv_gcc=%s\n' "$(riscv64-unknown-elf-gcc --version | head -1)"

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-seeded-cache-leak-positive-control",
+  "classification": "intentional-harness-mutation-not-upstream-boom-vulnerability",
+  "mutated_variant": "seeded-cache-leak",
+  "repaired_variant": "remove-seeded-cache-leak",
+  "mutated_evidence": "boom-positive-control-mutated.json",
+  "mutated_evidence_sha256": "0fea3d882d3a5bb8bed9db21ac0d03745e648fd7fd662917d9259edcd98d892a",
+  "repaired_evidence": "boom-positive-control-repaired.json",
+  "repaired_evidence_sha256": "6c881d7d2494631c02161b998f46f414c3b33ce798229c0c9d15b178bda09f33",
+  "matrix_runner_sha256": "21cc78a1a6a3987a1637e440ec3a9b3a18f378528b823df63588e200a39c8d72",
+  "trusted_runner_sha256": "d7c183e9da5ef022b3cd63aff4c5ab613a93e0a22c4fa2916cdcc9eb88754a4d",
+  "simulator_sha256": "230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8",
+  "completed_at": "2026-09-11T06:30:02.685697+00:00"
+}

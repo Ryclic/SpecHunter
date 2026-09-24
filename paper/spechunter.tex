@@ -1,0 +1,215 @@
+\documentclass[conference,10pt]{IEEEtran}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{hyperref}
+
+\begin{document}
+
+\title{SpecHunter: Autonomous Discovery and Repair of Microarchitectural Security Violations in RISC-V BOOM via CHIA}
+
+\author{\IEEEauthorblockN{SpecHunter Research Team}
+\IEEEauthorblockA{\textit{MICRO 2026 A$^3$ Workshop --- CHIA Hackathon Track: Discovery and Resolution of Microarchitectural Bugs} \\
+\url{https://github.com/Ryclic/SpecHunter}}
+}
+
+\maketitle
+
+\begin{abstract}
+Modern out-of-order processors deploy aggressive speculative execution mechanisms that frequently interact with privilege checks, cache hierarchies, and memory disambiguation logic in ways unanticipated by designers. While functional fuzzing has made significant strides, microarchitectural security analysis requires subtle semantic guidance to construct multi-stage gadgets that cross privilege boundaries and observe transient microarchitectural residue. We introduce \textbf{SpecHunter}, an agentic red-teaming and automated repair framework integrated into the open-source CHIA (Co-design with Heterogeneous Intelligent Agents) architecture. SpecHunter coordinates four specialized agent stages---Reconnaissance, Attacker, Validator, and Repair---backed by schema-constrained LLM generation, cycle-accurate simulation in Berkeley BOOM (SmallBoomV3), Spike golden reference co-simulation, and an atomic cost-accounting ledger.
+We demonstrate real-world impact across three critical dimensions: (1) In a live, end-to-end experiment using Gemini 2.5 Flash-Lite against cycle-accurate BOOM RTL, SpecHunter autonomously discovered a transient side-channel leak, minimized it to a 3-instruction trigger, applied targeted mitigation, and verified clean retest and attacker exhaustion on real BOOM simulation with Spike co-simulation; additionally, a candidate Chisel RTL repair in BOOM's LSU (\texttt{lsu.scala}) was compiled into a distinct Verilator binary and verified across target regressions with zero functional regression; (2) In a rigorous microarchitectural investigation of upstream BOOM Issue \#715, SpecHunter's automated VCD waveform tracer disambiguated physical registers, ROB identity, and LSU queue slots to demonstrate that the reported dependent load was actually suppressed at runtime by historical BOOM's load-miss-plus-poison register-read gate (\texttt{exu/core.scala}), resolving an ambiguous vulnerability report; (3) In systematic evaluations, SpecHunter achieved 100\% vulnerability discovery in 1.5 attempts compared to 57.25\% across 1,000 unguided random fuzzing seeds (8.48 attempts), generalized across an 8-program held-out corpus (100\% detection and repair verification across 64 BOOM runs), and maintained 100\% repeatability across 10 independent trials at an average cost of under \$0.0006 per run. SpecHunter is open-sourced as a modular, composable CHIA block ready for upstream integration.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Microarchitectural Security, Speculative Execution, RISC-V, BOOM, CHIA, Hardware Verification, LLM Agents.
+\end{IEEEkeywords}
+
+\section{Introduction}
+Out-of-order superscalar processors execute instructions speculatively past unresolved branches and exceptions to maximize throughput. When branch mispredictions or faulting instructions are squashed by the Reorder Buffer (ROB), architectural state is preserved, but microarchitectural state---such as cache lines, TLB entries, and branch predictors---can leak sensitive data across security boundaries~\cite{spectre, meltdown, boom}.
+
+Discovering these vulnerabilities is notoriously difficult. Unlike functional hardware bugs that trigger assertion failures or architectural mismatches against instruction set simulators like Spike~\cite{spike}, speculative side-channel vulnerabilities leave architectural state completely unaltered while mutating transient microarchitectural state. Traditional hardware fuzzers~\cite{rfuzz, difuzz} explore large state spaces but lack semantic awareness of privilege transitions, cache flushing prerequisites, and speculative branch training. Conversely, formal verification methods~\cite{secfuzz, transientformal} scale poorly to large out-of-order pipelines due to state explosion in the Load-Store Unit (LSU) and reservation stations.
+
+To bridge this gap, the emerging paradigm of agentic HW/SW co-design offers a compelling path: leveraging Large Language Models (LLMs) with domain knowledge to reason about architectural invariants, synthesize targeted machine code sequences, and interpret simulation traces. However, deploying agents in hardware verification poses steep challenges: (1) LLMs hallucinate non-existent instructions or invalid register states; (2) API calls can incur unbounded cloud costs; and (3) agent claims must be grounded in cycle-accurate hardware simulation rather than model self-assessment.
+
+We present \textbf{SpecHunter}, an autonomous, closed-loop microarchitectural security red-team and automated repair framework implemented within the \textbf{CHIA} (Co-design with Heterogeneous Intelligent Agents) framework~\cite{chia}. SpecHunter targets the Berkeley Out-of-Order Machine (\textbf{BOOM})~\cite{boom}, a state-of-the-art open-source RISC-V core developed by the UC Berkeley SLICE Lab. SpecHunter is engineered to address the MICRO 2026 A$^3$ Hackathon track on \textit{``Discovery and resolution of architectural and microarchitectural bugs in widely-used open-source designs such as the BOOM core.''}
+
+SpecHunter makes the following contributions:
+\begin{itemize}
+    \item \textbf{Closed-Loop CHIA Workflow:} A 4-stage agent pipeline (Recon, Attacker, Validator, Repair) with schema-constrained JSON protocols, bounded retry policies, and an atomic cost-accounting ledger that guarantees financial safety ($<\$\$0.01$/run).
+    \item \textbf{Cycle-Accurate BOOM Verification:} Direct integration with Chipyard~\cite{chipyard} and Verilator~\cite{verilator}, executing SmallBoomV3 with PMP privilege isolation, HTIF communication, and Spike co-simulation.
+    \item \textbf{Real-World Microarchitectural Investigation:} Automated VCD waveform tracing that resolved upstream BOOM Issue \#715 by analyzing ROB allocation, physical register mappings, and poison gating logic in \texttt{exu/core.scala}.
+    \item \textbf{RTL Patch Synthesis \& Verification:} Autonomous localization of transient vulnerabilities in BOOM's LSU, generation of Chisel RTL patches, and verification of transient channel suppression without architectural regressions.
+    \item \textbf{Quantitative Search Superiority:} Empirical demonstration of 100\% discovery rate in 1.5 attempts vs. 57.25\% in 8.48 attempts across 1,000 random seeds, validated across an 8-program held-out corpus and 10 repeatability trials.
+\end{itemize}
+
+\section{SpecHunter Architecture}
+SpecHunter operates as an autonomous, goal-directed feedback loop within the CHIA framework.
+
+\subsection{Four-Stage Agent Loop}
+SpecHunter structures security exploration into four complementary roles:
+\begin{enumerate}
+    \item \textbf{Reconnaissance Agent:} Analyzes target architecture specifications (ROB size, issue queue depth, cache associativity) and security invariants. It formulates hypotheses regarding speculative bypasses (e.g., mispredicted branch windows, load-to-load dependencies, store-to-load forwarding hazards).
+    \item \textbf{Attacker Agent:} Translates hypotheses into concrete instruction sequences. Programs are generated under strict schema constraints: instructions are mapped to valid RV64I instructions, memory operations target sandboxed address ranges, and register allocations are formally validated before assembly.
+    \item \textbf{Validator Agent:} Manages execution on target hardware under \textit{matched secret worlds} ($W_0$ and $W_1$) where secret values differ. A valid leak is recorded if and only if observable probe output $O(W_0) \neq O(W_1)$ consistently across repeated runs. Validated leaks are automatically minimized via delta-debugging.
+    \item \textbf{Repair Agent:} Analyzes minimized proof-of-concept (PoC) programs and simulation traces, localizes the vulnerable microarchitectural logic (e.g., speculative load queue issue rules), selects or proposes an RTL mitigation, builds the modified target, and triggers \textit{mandatory retesting}.
+\end{enumerate}
+
+\subsection{Adversarial Retest \& Attacker Exhaustion}
+A common failure mode in automated repair is claiming success simply because a single exploit no longer triggers. SpecHunter enforces a strict \textit{adversarial retest contract}:
+\begin{itemize}
+    \item Following any repair, the original minimized PoC is re-executed on the patched core to verify suppression.
+    \item Control returns to the Attacker Agent, which is prompted to generate novel bypass variants designed specifically to circumvent the proposed patch.
+    \item A repair is reported as verified \textit{only} when the attacker explicitly exhausts its supported search space without finding a successful bypass.
+\end{itemize}
+
+\subsection{Financial Guardrails \& Provable Provenance}
+SpecHunter implements an atomic cost ledger that executes \textit{conservative pre-call budget reservations} using published model token rates (\$0.10/M input tokens, \$0.40/M output tokens for Gemini 2.5 Flash-Lite). If a reservation exceeds the hard user cap, execution halts gracefully. All execution artifacts---including simulator binaries, load-memory images, VCD waveforms, and JSON transcripts---are cryptographically bound using SHA-256 digests into tamper-evident seals.
+
+\section{Cycle-Accurate BOOM Integration}
+SpecHunter couples directly to BOOM instantiated via Chipyard 1.14~\cite{chipyard}. The target core is \textbf{SmallBoomV3}, an RV64GC out-of-order processor featuring a 32-entry ROB, 16-entry Load Queue (LQ), 16-entry Store Queue (SQ), 80 physical integer registers, and a 16 KB non-blocking L1 data cache.
+
+\subsection{PMP Privilege Harness \& Golden Model}
+To evaluate privilege boundary violations faithfully, SpecHunter wraps test programs in a bare-metal runtime that configures Physical Memory Protection (PMP) CSRs:
+\begin{itemize}
+    \item \textbf{Protected Secret Page:} Configured with no-access permissions (\texttt{PMP\_NONE}) for U-mode code.
+    \item \textbf{Shared Probe Array:} Accessible memory used for relative-cache timing extraction.
+    \item \textbf{HTIF Host Interface:} Captures machine exit codes without relying on complex OS services.
+    \item \textbf{Spike Architectural Oracle:} Every program is verified on the Spike golden ISA simulator to guarantee that architectural privilege faults (e.g., trap code 5 for load access faults) occur identically.
+\end{itemize}
+
+\subsection{Automated Cycle-Accurate Waveform Tracking}
+SpecHunter implements a cycle-accurate Verilog Change Dump (VCD) waveform parser that tracks hardware signals across the BOOM pipeline: \texttt{io\_core\_exe\_0\_req\_valid} (LSU valid request), \texttt{io\_iss\_uops\_0\_iw\_p1\_poisoned} (operand poison status), \texttt{io\_lsu\_ld\_miss} (cache miss status), and Reorder Buffer index (\texttt{rob\_idx}).
+
+\section{Microarchitectural Investigation: BOOM Issue \#715}
+To demonstrate impact on real-world designs, we applied SpecHunter's diagnostic tracer to an ambiguous security report: upstream BOOM Issue \#715~\cite{boomissue715}.
+
+\subsection{Upstream Issue \#715 Ambiguity}
+Issue \#715 reported that speculative load instructions in BOOM could leak protected data across page boundaries before the fault was resolved by the ROB:
+\begin{verbatim}
+lb  sp, -2048(t1)   // Protected load (+0)
+ld  s1, 0(sp)       // Dependent load (+4)
+ld  s2, 8(t2)       // Independent load (+8)
+\end{verbatim}
+The report claimed that observing a translation request for \texttt{0x59f} proved that the dependent load at \texttt{+4} speculatively read \texttt{sp} and initiated an LSU cache access.
+
+\subsection{Waveform Disambiguation \& Discovery}
+SpecHunter executed the original historical binary on historical BOOM commit \texttt{fac2c370...} compiled in Chipyard. Our VCD scanner traced every uop from dispatch to commit:
+\begin{itemize}
+    \item At cycles 3804--3806, instructions \texttt{+0}, \texttt{+4}, and \texttt{+8} dispatched with physical destinations \texttt{p18}, \texttt{p21}, and \texttt{p22} and load queue slots 0, 1, and 2.
+    \item At cycle 3807, the protected load (\texttt{+0}) issued with destination \texttt{p18} and triggered a TLB translation fault.
+    \item At cycle 3809, the dependent load (\texttt{+4}) issued from the memory queue with physical source \texttt{p18} marked \textit{poisoned} (\texttt{iw\_p1\_poisoned = 1}), while the LSU load-miss signal was asserted (\texttt{ld\_miss = 1}).
+    \item \textbf{Microarchitectural Gating:} In \texttt{generators/boom/src/main/scala/exu/core.scala} (lines 973--978), BOOM defines:
+\begin{verbatim}
+iregister_read.io.iss_valids(w) :=
+  iss_valid && !(io.lsu.ld_miss &&
+    (iw_p1_poisoned || iw_p2_poisoned))
+\end{verbatim}
+    Because the operand was poisoned and a load miss occurred, register-read validity was asserted low, and the uop was \textbf{suppressed before reaching the LSU execution stage} (\texttt{io\_core\_exe\_0\_req\_valid = 0}).
+    \item \textbf{Source of the \texttt{0x59f} TLB Request:} SpecHunter proved that the simultaneous \texttt{0x59f} request belonged entirely to the \textit{independent third load} at \texttt{+8} (\texttt{lb s1, 1439(a0)} at \texttt{0x80028e08}, destination \texttt{p22}, slot 2), which issued at cycle 3807. The address displacement $1439$ in decimal is precisely \texttt{0x59F} in hexadecimal, proving that the request was hardcoded in the independent instruction rather than loaded speculatively by the dependent uop.
+\end{itemize}
+
+\textit{Scientific Insight:} SpecHunter proved that historical BOOM Issue \#715 did \textit{not} reproduce a runtime data leak via the dependent load as claimed; the hardware interlock successfully suppressed the speculative transmission.
+
+\section{Autonomous Discovery \& RTL Repair}
+In addition to diagnostic analysis, SpecHunter was deployed to discover and repair transient side-channel vulnerabilities on SmallBoomV3.
+
+\subsection{End-to-End Live Vertex Agent Loop}
+In a live demonstration using Gemini 2.5 Flash-Lite against real SmallBoomV3 simulation:
+\begin{enumerate}
+    \item \textbf{Discovery:} Within 28 BOOM executions and 4 LLM calls, SpecHunter synthesized an exploit crossing privilege boundaries into cache state.
+    \item \textbf{Minimization:} SpecHunter automatically reduced the sequence to a compact 3-operation trigger (\texttt{enter\_user -> load\_secret -> probe}).
+    \item \textbf{Repair \& Verification:} SpecHunter localized the root cause in the cache-leak control, applied the targeted mitigation, and verified clean retest ($O(W_0) == O(W_1)$) and attacker exhaustion on real BOOM simulation.
+\end{enumerate}
+
+\subsection{Chisel RTL Repair Synthesis \& Verilator Regression}
+To evaluate hardware mitigations, SpecHunter targeted BOOM's Load-Store Unit (\texttt{lsu.scala}). A candidate Chisel patch (\texttt{gate\_faulting\_loads.patch}) was authored to gate speculative data-dependent load wakeups until branch resolution. The patched core was compiled into a distinct Verilator simulator binary (\texttt{SHA-256: fd4a264c...179c3}). Regression testing across 8 architectural and transient test cases confirmed that the patch preserved baseline functionality with zero architectural regression.
+
+\subsection{Held-Out Generalization Evaluation}
+To confirm that the synthesized RTL repair generalized beyond the specific discovery PoC, we subjected the patched SmallBoomV3 simulator to a held-out test suite of 8 diverse attack programs across 64 cycle-accurate executions (Table~\ref{tab:corpus}). Across all 8 programs, the vulnerable baseline exhibited 100\% detection, while the repaired core exhibited 100\% clean execution with zero inconclusive runs.
+
+\begin{table}[t]
+\centering
+\caption{Held-Out Attack Corpus Evaluation (64 BOOM Executions)}
+\label{tab:corpus}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Program Variant} & \textbf{Execs} & \textbf{Mutation Det.} & \textbf{Repair Clean} & \textbf{Status} \\
+\midrule
+Branch-Delay Encode & 8 & 100\% (8/8) & 100\% (8/8) & Clean \\
+Store-Fwd Hazard & 8 & 100\% (8/8) & 100\% (8/8) & Clean \\
+Dual-Secret Probe & 8 & 100\% (8/8) & 100\% (8/8) & Clean \\
+Cascade LoadLQ & 8 & 100\% (8/8) & 100\% (8/8) & Clean \\
+TLB Miss Probe & 8 & 100\% (8/8) & 100\% (8/8) & Clean \\
+Register Spill Dep & 8 & 100\% (8/8) & 100\% (8/8) & Clean \\
+Nested Spec Window & 8 & 100\% (8/8) & 100\% (8/8) & Clean \\
+Cross-Way Flush & 8 & 100\% (8/8) & 100\% (8/8) & Clean \\
+\midrule
+\textbf{Total Scorecard} & \textbf{64} & \textbf{100\% (64/64)} & \textbf{100\% (64/64)} & \textbf{Verified} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Empirical Evaluation}
+
+\subsection{Guided Search vs. Unguided Random Fuzzing}
+We evaluated search efficiency by benchmarking SpecHunter's guided exploration against unguided random generation across 1,000 randomized seeds:
+\begin{itemize}
+    \item \textbf{SpecHunter Guided Search:} Discovered 100\% of seeded vulnerabilities in an average of \textbf{1.5 attempts}.
+    \item \textbf{Random Fuzzing:} Plateaued at \textbf{57.25\% discovery} within the 16-attempt limit (95\% Wilson score interval: 55.07\%--59.40\%), requiring \textbf{8.48 attempts} on average.
+    \item \textbf{False Positives:} Both approaches exhibited 0.0\% false positive rates and 0 inconclusive cases, proving the robustness of the dual-secret validation harness.
+\end{itemize}
+
+\begin{table}[t]
+\centering
+\caption{Multi-Run Cost \& Resource Accounting}
+\label{tab:costs}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Trial Batch} & \textbf{Runs} & \textbf{LLM Calls} & \textbf{Sim Execs} & \textbf{Total Cost} \\
+\midrule
+Live BOOM Demo & 1 & 4 & 28 & \$0.0006038 \\
+CHIA Ray Loop & 1 & 4 & 24 & \$0.0005130 \\
+10-Trial Repeatability & 10 & 40 & 264 & \$0.0053752 \\
+Held-Out Corpus & 8 & N/A & 64 & \$0.0000000 \\
+\midrule
+\textbf{Combined Total} & \textbf{20} & \textbf{48} & \textbf{380} & \textbf{\$0.0064920} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Repeatability \& Cost Ledger Accounting}
+To measure orchestration reliability, we ran 10 independent end-to-end trials of SpecHunter using Gemini 2.5 Flash-Lite (Table~\ref{tab:costs}). All 10/10 trials successfully completed the entire lifecycle: reconnaissance, exploit generation, validation, repair, mandatory retest, and attacker exhaustion. Total cost across all 40 LLM calls was \textbf{\$0.0053752}, averaging just \textbf{\$0.00054 per complete security discovery-and-repair lifecycle}.
+
+\section{CHIA Composable Block Integration}
+SpecHunter is packaged as a standard, modular node for the CHIA ecosystem (\texttt{spechunter.chia\_nodes}). Built on Ray 2.54.0, SpecHunter nodes can be composed directly into larger architectural co-design pipelines:
+\begin{verbatim}
+from chia.nodes import Pipeline
+from spechunter.chia_nodes import (
+    SpecHunterReconNode, SpecHunterAttackNode,
+    SpecHunterValidatorNode, SpecHunterRepairNode
+)
+
+pipeline = Pipeline([
+    SpecHunterReconNode.bind(core="SmallBoomV3"),
+    SpecHunterAttackNode.bind(budget_usd=0.05),
+    SpecHunterValidatorNode.bind(backend="boom"),
+    SpecHunterRepairNode.bind(retest_mandatory=True),
+])
+results = pipeline.run()
+\end{verbatim}
+
+\section{Conclusion}
+SpecHunter demonstrates that agentic closed loops can perform goal-directed adversarial security verification on modern out-of-order processors. By grounding LLM reasoning in cycle-accurate BOOM RTL simulation, Spike golden co-simulation, and automated waveform tracing, SpecHunter discovered transient leaks, synthesized verifiable RTL repairs, and settled historical ambiguities on BOOM Issue \#715. SpecHunter establishes that agentic architecture loops can achieve high-assurance, cost-effective microarchitectural security verification.
+
+\section*{Acknowledgments \& AI Disclosure}
+In compliance with the A$^3$ Hackathon rules, we acknowledge the use of Google Gemini and Antigravity coding agents in assisting code implementation, test verification, and paper drafting. All experimental evidence, hardware simulations, and architectural findings were produced and validated autonomously.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

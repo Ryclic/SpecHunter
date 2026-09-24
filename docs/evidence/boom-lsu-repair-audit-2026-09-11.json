@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "evidence_type": "source-repair-audit",
+  "target": "boom-v3-lsu",
+  "boom_revision": "5223e44cfeb26f41380057a2eb4d651197475f69",
+  "source_path": "src/main/scala/v3/lsu/lsu.scala",
+  "pristine_source_sha256": "f39a77a6a1b24ce8cd5fb49045978315bc53ea104b54432167216e21c0ff971d",
+  "repaired_source_sha256": "c6099e3a2e0a222dc4b77a747a23ecc3a8635fba3736d703a62569f43d9cdee7",
+  "patch_path": "tools/boom/patches/gate_faulting_loads.patch",
+  "patch_sha256": "aacee831e6ed999e406805e7a0de8e29b3ba478b847cadaf61f4e4e90c64df28",
+  "patch_applies_cleanly": true,
+  "gated_fault_signals": [
+    "ae_ld",
+    "pf_ld",
+    "ma_ld"
+  ],
+  "gated_request_paths": [
+    "will_fire_load_incoming",
+    "will_fire_load_retry"
+  ],
+  "rtl_before_after_validated": false,
+  "claim_boundary": "Source-level repair hypothesis only; no vulnerability or fix claim without repeatable before/after RTL evidence.",
+  "completed_at": "2026-09-11T00:21:11Z"
+}

@@ -40,10 +40,17 @@ class RepairDecision:
     diagnosis: str
     proposal: str
     fixture_variant: str | None = None
+    repair_id: str | None = None
 
     def __post_init__(self):
         if self.fixture_variant not in {None, "none"}:
             raise ValueError("invalid fixture repair variant")
+        if self.repair_id not in {
+            None,
+            "gate-faulting-loads",
+            "remove-seeded-cache-leak",
+        }:
+            raise ValueError("invalid trusted repair id")
 
 
 class AgentProvider(Protocol):
@@ -226,18 +233,34 @@ class VertexAgentProvider:
         history: list[dict],
         repaired: bool,
     ) -> AttackDecision:
+        benchmark_constraints = []
+        if benchmark.id == "boom-positive-control":
+            benchmark_constraints = [
+                "Every candidate must contain enter_user before load_secret.",
+                "Every candidate must contain load_secret and a later probe.",
+                (
+                    "Do not return exhausted merely because an earlier candidate violated "
+                    "these constraints."
+                ),
+            ]
         data = self._generate(
             "attacker",
             {
                 "task": (
                     "Propose a new attack candidate, or return exhausted only after the history "
-                    "provides no materially different supported candidate."
+                    "provides no materially different supported candidate. When testing a "
+                    "repair, propose at least one candidate distinct from the mandatory "
+                    "minimized-exploit replay before returning exhausted. That candidate "
+                    "must exercise a protected user load and, for observable isolation, "
+                    "a later observer probe; prioritize candidates that would still "
+                    "violate the original vulnerable variant."
                 ),
                 "benchmark": asdict(benchmark),
                 "hypothesis": hypothesis,
                 "testing_repair": repaired,
                 "supported_operations": [op.value for op in Op],
                 "operation_semantics": OPERATION_SEMANTICS,
+                "benchmark_constraints": benchmark_constraints,
                 "history": history,
             },
             {
@@ -275,6 +298,16 @@ class VertexAgentProvider:
                     "For the test fixture, fixture_variant must be none to select the secure "
                     "candidate mitigation. For a real BOOM target it must be null."
                 ),
+                "trusted_repairs": {
+                    "gate-faulting-loads": (
+                        "Block incoming and retried D-cache requests when ae_ld, pf_ld, or "
+                        "ma_ld is asserted. Select only when the trace supports this LSU boundary."
+                    ),
+                    "remove-seeded-cache-leak": (
+                        "Remove the explicitly seeded cache-state injection from the BOOM "
+                        "positive-control harness. Select only for benchmark boom-positive-control."
+                    ),
+                },
             },
             {
                 "type": "object",
@@ -285,9 +318,19 @@ class VertexAgentProvider:
                         "type": ["string", "null"],
                         "enum": ["none", None],
                     },
+                    "repair_id": {
+                        "type": ["string", "null"],
+                        "enum": [
+                            "gate-faulting-loads",
+                            "remove-seeded-cache-leak",
+                            None,
+                        ],
+                    },
                 },
-                "required": ["diagnosis", "proposal", "fixture_variant"],
+                "required": ["diagnosis", "proposal", "fixture_variant", "repair_id"],
                 "additionalProperties": False,
             },
         )
-        return RepairDecision(data["diagnosis"], data["proposal"], data["fixture_variant"])
+        return RepairDecision(
+            data["diagnosis"], data["proposal"], data["fixture_variant"], data["repair_id"]
+        )

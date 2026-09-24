@@ -24,11 +24,16 @@ def validate(
             return Validation("inconclusive", "secret load outside user threat model", ())
     observations = []
     try:
-        for _ in range(repeats):
-            for secret in (0, 1):
+        secrets = [secret for _ in range(repeats) for secret in (0, 1)]
+        if hasattr(backend, "execute_many"):
+            observations.extend(backend.execute_many(program, secrets, bug or benchmark.bug))
+        else:
+            for secret in secrets:
                 observations.append(backend.execute(program, secret, bug or benchmark.bug))
     except (ExecutionError, ValueError) as exc:
         return Validation("inconclusive", str(exc), tuple(observations))
+    if len(observations) != len(secrets):
+        return Validation("inconclusive", "execution batch size differs", tuple(observations))
     if any(not o.completed for o in observations):
         return Validation("inconclusive", "incomplete execution", tuple(observations))
     for world in (0, 1):
@@ -80,6 +85,8 @@ def minimize(
         changed = False
         for i in range(len(program.ops)):
             candidate = Program(program.ops[:i] + program.ops[i + 1 :])
+            if benchmark.id == "boom-positive-control" and Op.LOAD_SECRET not in candidate.ops:
+                continue
             if validate(backend, candidate, benchmark, bug=bug).violation:
                 program, changed = candidate, True
                 break
@@ -113,15 +120,21 @@ def experiment(
     strategy: str = "guided",
     iterations: int = 16,
     seed: int = 0,
+    benchmark_id: str | None = None,
 ) -> dict:
     if not 1 <= iterations <= 1000:
         raise ValueError("iterations must be 1..1000")
     if strategy not in {"guided", "random"}:
         raise ValueError("unknown strategy")
+    benchmarks = BENCHMARKS
+    if benchmark_id is not None:
+        benchmarks = tuple(benchmark for benchmark in BENCHMARKS if benchmark.id == benchmark_id)
+        if not benchmarks:
+            raise ValueError("unknown benchmark")
     rng = random.Random(seed)
     results = []
     with Backend(config or BackendConfig()) as backend:
-        for benchmark in BENCHMARKS:
+        for benchmark in benchmarks:
             attempts = []
             finding = None
             for iteration in range(iterations):
@@ -136,11 +149,16 @@ def experiment(
                 )
                 if result.violation:
                     reduced = minimize(backend, program, benchmark)
+                    reduced_result = validate(backend, reduced, benchmark)
+                    attempts[-1]["minimized_validation"] = asdict(reduced_result)
+                    if not reduced_result.violation:
+                        # An unstable or broken reduction is not a counterexample.
+                        break
                     finding = {
                         "program": list(reduced.ops),
                         "sha256": reduced.digest,
                         "assembly": reduced.assembly(),
-                        "validation": asdict(validate(backend, reduced, benchmark)),
+                        "validation": asdict(reduced_result),
                         "repair": repair(backend, reduced, benchmark),
                     }
                     break
@@ -167,7 +185,14 @@ def experiment(
                 "positive_cases": len(positives),
                 "false_positives": sum(r["finding"] is not None for r in negatives),
                 "inconclusive_cases": sum(
-                    any(a["validation"]["status"] == "inconclusive" for a in r["attempts"])
+                    any(
+                        a["validation"]["status"] == "inconclusive"
+                        or (
+                            "minimized_validation" in a
+                            and a["minimized_validation"]["status"] != "violation"
+                        )
+                        for a in r["attempts"]
+                    )
                     for r in results
                 ),
                 "executions": backend.executions,

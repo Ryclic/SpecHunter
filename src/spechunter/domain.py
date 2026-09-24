@@ -86,6 +86,13 @@ BENCHMARKS = (
         "observable-isolation",
         False,
     ),
+    Benchmark(
+        "boom-positive-control",
+        "A seeded cache-state mutation exposes the protected secret on real BOOM",
+        "seeded-cache-leak",
+        "observable-isolation",
+        True,
+    ),
 )
 
 

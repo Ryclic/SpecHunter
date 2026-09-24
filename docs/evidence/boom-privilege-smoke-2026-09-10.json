@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "target": "boom",
+  "experiment": "pmp-user-load-denial",
+  "chipyard_revision": "0acc1e1de2d3284bcd4d876956932a013ffe1949",
+  "boom_revision": "5223e44cfeb26f41380057a2eb4d651197475f69",
+  "config": "SmallBoomV3Config",
+  "verilator_version": "Verilator 5.022 2024-02-24 rev conda-forge build 1",
+  "spike_sha256": "4e5a3ea98f65733361c349002f4d5ef4819be97f236cb80238d5a34028f77e4f",
+  "source_sha256": "92cfd67af5ec0ebb549093117d86b2778bee7cec2a5b396ef928d4223d0d6222",
+  "payload_sha256": "c95caae10815145350b4087d7e3d74f4512a1edecf78112163210da0553c47e5",
+  "simulator_sha256": "230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8",
+  "spike_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "boom_log_sha256": "efb6a624dd9d12c64e118d4a2faf382333df0b2ea2e42fa1962ef85ba9a28343",
+  "spike_passed": true,
+  "boom_passed": true,
+  "elapsed_seconds": 150,
+  "completed_at": "2026-09-10T19:21:01.112970+00:00"
+}

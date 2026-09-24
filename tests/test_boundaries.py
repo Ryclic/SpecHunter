@@ -1,5 +1,6 @@
 import json
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -47,7 +48,8 @@ def test_boom_provenance_and_failure(tmp_path):
     runner.write_text("""import json, sys
 r = json.load(open(sys.argv[1]))
 r.update(target="boom", observation={"architectural": [], "probes": [],
-                                    "events": [], "completed": True})
+                                    "events": [], "completed": True},
+         simulator_sha256="0" * 64)
 print(json.dumps(r))
 """)
     config = BackendConfig("boom", (sys.executable, str(runner)), target_revision="test-revision")
@@ -56,6 +58,42 @@ print(json.dumps(r))
     runner.write_text("print('{}')")
     with Backend(config) as backend:
         assert validate(backend, Program((Op.NOP,)), BENCHMARKS[0]).status == "inconclusive"
+
+
+def test_boom_provenance_pins_each_repair_variant_independently(monkeypatch):
+    def fake_run(command, work, timeout):
+        request = json.loads(Path(command[-1]).read_text())
+        variant = request["variant"]
+        return json.dumps(
+            {
+                **request,
+                "target": "boom",
+                "observation": {"architectural": [], "probes": [], "events": [], "completed": True},
+                "simulator_sha256": ("0" if variant == "none" else "1") * 64,
+            }
+        )
+
+    monkeypatch.setattr("spechunter.backends.run", fake_run)
+    config = BackendConfig("boom", ("trusted-runner",), target_revision="test-revision")
+    with Backend(config) as backend:
+        program = Program((Op.NOP,))
+        backend.execute(program, 0, "none")
+        backend.execute(program, 0, "gate-faulting-loads")
+        provenance = backend.provenance()
+        assert provenance["simulator_sha256"] == "0" * 64
+        assert provenance["simulator_sha256_by_variant"] == {
+            "none": "0" * 64,
+            "gate-faulting-loads": "1" * 64,
+        }
+
+        def drifted_run(command, work, timeout):
+            data = json.loads(fake_run(command, work, timeout))
+            data["simulator_sha256"] = "2" * 64
+            return json.dumps(data)
+
+        monkeypatch.setattr("spechunter.backends.run", drifted_run)
+        with pytest.raises(ExecutionError, match="within variant"):
+            backend.execute(program, 0, "gate-faulting-loads")
 
 
 def test_cli_report(tmp_path, monkeypatch):
@@ -72,3 +110,93 @@ def test_cli_llm_requires_explicit_model(monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", ["spechunter", "run", "--strategy", "llm"])
     assert main() == 2
     assert "--llm-model is required" in capsys.readouterr().err
+
+
+def test_cli_presents_sealed_live_evidence(tmp_path, monkeypatch):
+    root = Path(__file__).parents[1]
+    output = tmp_path / "demo.html"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "spechunter",
+            "present",
+            "--input",
+            str(root / "docs/evidence/vertex-boom-demo-2026-09-11.json"),
+            "--seal",
+            str(root / "docs/evidence/vertex-boom-demo-seal-2026-09-11.json"),
+            "--output",
+            str(output),
+        ],
+    )
+    assert main() == 0
+    assert "Cryptographically sealed evidence" in output.read_text()
+
+
+def test_cli_requires_corpus_and_seal_together(tmp_path, monkeypatch, capsys):
+    root = Path(__file__).parents[1]
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "spechunter",
+            "present",
+            "--input",
+            str(root / "docs/evidence/vertex-boom-demo-2026-09-11.json"),
+            "--seal",
+            str(root / "docs/evidence/vertex-boom-demo-seal-2026-09-11.json"),
+            "--corpus",
+            str(tmp_path / "corpus.json"),
+        ],
+    )
+    assert main() == 2
+    assert "--corpus and --corpus-seal together" in capsys.readouterr().err
+
+
+def test_cli_boom_defaults_to_secure_control_and_long_timeout(tmp_path, monkeypatch):
+    captured = {}
+
+    def fake_experiment(config, strategy, iterations, seed, benchmark_id):
+        captured.update(
+            timeout=config.timeout_seconds, benchmark=benchmark_id, command=config.command
+        )
+        return {"strategy": strategy, "metrics": {"inconclusive_cases": 0}}
+
+    runner = tmp_path / "runner"
+    runner.write_text("")
+    monkeypatch.setattr("spechunter.cli.experiment", fake_experiment)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "spechunter",
+            "run",
+            "--backend",
+            "boom",
+            "--runner",
+            str(runner),
+            "--runner-arg=--project=spechunter",
+            "--target-revision",
+            "revision",
+            "--output",
+            str(tmp_path / "report.json"),
+        ],
+    )
+    assert main() == 0
+    assert captured == {
+        "timeout": 900,
+        "benchmark": "secure-control",
+        "command": (str(runner), "--project=spechunter"),
+    }
+
+
+def test_parallel_boom_execution_preserves_secret_order(monkeypatch):
+    def fake_boom(self, program, secret, bug):
+        return Observation((), (secret,), ())
+
+    monkeypatch.setattr(Backend, "_boom", fake_boom)
+    config = BackendConfig("boom", ("/trusted/runner",), target_revision="revision")
+    with Backend(config) as backend:
+        observations = backend.execute_many(Program((Op.NOP,)), [0, 1, 0, 1], "none")
+        assert [observation.probes for observation in observations] == [(0,), (1,), (0,), (1,)]
+        assert backend.executions == 4

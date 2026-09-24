@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-issue-715-current-pin-assessment",
+  "classification": "upstream-issue-715-not-reproduced-on-current-pin",
+  "upstream_issue": "riscv-boom/riscv-boom#715",
+  "vulnerability_reproduced": false,
+  "security_fix_validated": false,
+  "reason": "the reviewed adaptation was deterministic and clean on the current pin",
+  "source_provenance": "boom-issue-715-source-2026-09-16.json",
+  "source_provenance_sha256": "bac0c0de8943b08d5a4d7951190be10ceb91d322406ded601c81850844acc9c8",
+  "smoke_evidence": "boom-issue-715-smoke-2026-09-16.json",
+  "smoke_evidence_sha256": "283b34d8f1d1fb22f644aac4c3859afec3251e7e7a0d5d28aa8b7a2c123e3bd6",
+  "assessment_matrix": "boom-issue-715-current-pin-2026-09-16.json",
+  "assessment_matrix_sha256": "229821216df4f1a90f8458e53f948bd7dcf7230554c7564911dc9115b2035bf8",
+  "program_sha256": "13227cb44a11fcfdabf177ae739b689589599f091ca6b6ef1fccbd4ed23da544",
+  "simulator_sha256": "230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8",
+  "runner_sha256": "3648c1621d6ec005cd1789b665dce150837e3f8dfb83f16eee71a58f7e01dd10",
+  "executions": 4
+}

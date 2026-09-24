@@ -19,6 +19,71 @@ build and smoke evidence is recorded in `docs/evidence/boom-smoke-2026-09-10.jso
 No Compute Engine or Cloud Storage resources remain. GitHub workflows have no GCP
 credentials and deliver Python packages as workflow artifacts.
 
+A later privilege-gate run used another e2-standard-8 worker with the same 200 GB
+balanced boot disk from approximately 18:52 to 19:22 UTC on 2026-09-10. It rebuilt the
+pinned toolchain and simulator, ran the identical privilege payload on Spike and BOOM,
+and was explicitly deleted after the hash-bound evidence was recovered. The instance
+had no service account or API scopes and also carried a six-hour automatic deletion
+limit. No Compute Engine instance remained after deletion.
+
+The trusted-runner validation used an e2-standard-8 worker with a 200 GB balanced boot
+disk from 04:33 to 05:51 UTC on 2026-09-11. It rebuilt the pinned simulator, exposed and
+fixed the initial runtime integration, and ran the final eight-case matrix with four
+parallel Verilator processes. The final baseline was clean. Evidence was recovered and
+hash-verified before the worker and disk were explicitly deleted. No repaired simulator
+was built because the baseline produced no repeatable violation. No Compute Engine
+instance remained after deletion.
+
+The seeded positive-control gate used another identically constrained e2-standard-8 worker
+from 06:01 to 06:31 UTC on 2026-09-11. It rebuilt the same pinned simulator, ran 16 total
+SmallBoomV3 executions across the mutated and repaired matrices with four parallel workers,
+and produced deterministic violation-to-clean evidence. The recovered simulator hash
+matched the prior privilege and secure-control evidence. The worker and 200 GB disk were
+explicitly deleted after hash verification; no Compute Engine instance remained.
+
+The live Vertex-agent demonstration used one identically constrained worker from
+approximately 17:53 to 18:34 UTC on 2026-09-11. It rebuilt the pinned simulator, passed
+the BOOM smoke test, and served the trusted runner for the discovery, minimization, repair
+retest, and attacker-exhaustion loop. The successful evidence run made four Gemini 2.5
+Flash-Lite calls accounting for $0.0006038 and 28 BOOM executions. Development for this
+gate made 17 Vertex calls accounting for $0.0023706 in total, including preflights and one
+failed-closed transport attempt. The worker and its 200 GB disk were explicitly deleted
+after the evidence was sealed, and no Compute Engine instance remained.
+
+The held-out attack-corpus gate used one identically constrained worker on 2026-09-16.
+The pinned build and smoke gate took 575 seconds, then eight programs ran under both the
+intentional mutation and repaired harness for 64 SmallBoomV3 executions. The recovered
+evidence matched the previously validated simulator hash. The worker and 200 GB disk were
+deleted immediately after artifact verification; the subsequent instance listing was empty.
+
+On 2026-09-16, ten independent Gemini 2.5 Flash-Lite fixture-loop trials made 40 calls
+under a shared $0.05 application ledger. Every call settled successfully, accounting for
+$0.0053752; all ten trials completed discovery, repair, mandatory retest, and attacker
+exhaustion. This evaluation used no Compute Engine resource. Its transcript, ledger, and
+seal are under `docs/evidence/`; delayed Cloud Billing remains authoritative for charges.
+
+The local CHIA integration run on 2026-09-16 made four additional Gemini 2.5 Flash-Lite
+calls under a $0.01 ledger and accounted for $0.0005130. CHIA 1.0.1 executed the decorated
+agent node on an owned local Ray 2.54.0 runtime; no CHIA or Compute Engine cluster was
+created. The report, ledger, adapter-source binding, and seal are under `docs/evidence/`.
+
+The candidate RTL repair gate used one identically constrained e2-standard-8 worker on
+2026-09-16. The pristine smoke build completed in 700 seconds and reproduced simulator
+SHA-256 `230de62a…cfcaa8`. The isolated patched build completed in 329 seconds and produced
+distinct simulator SHA-256 `fd4a264c…179c3`. Eight repaired-target executions then passed
+the architectural-denial and transient-window matrices deterministically. A fail-closed
+runner check exposed and prompted a tested fix for preservation of Git porcelain's leading
+status column before the successful matrix. All raw artifacts were recovered and sealed;
+the worker and 200 GB disk were explicitly deleted, and the subsequent instance listing
+was empty.
+
+The upstream issue #715 assessment used one identically constrained worker on 2026-09-16.
+The pristine build and smoke gate completed in 776 seconds and reproduced the established
+simulator hash. Four parallel runs of the reviewed misprediction adaptation completed with
+deterministic clean observations. Because the baseline did not reproduce the older issue,
+the repaired build was deliberately skipped. Evidence was recovered and sealed, then the
+worker and 200 GB disk were deleted; the subsequent instance listing was empty.
+
 Before a future paid experiment: verify the current free-trial status, remaining
 credit and expiry in the console; consult current official SKU/model pricing;
 record region, machine/model, maximum duration/tokens, disk/storage costs and a
@@ -27,6 +92,23 @@ usage before expanding. The official Vertex pricing page listed standard Gemini 
 Flash-Lite text prices on 2026-09-10 as $0.10 per million input tokens and $0.40 per
 million output tokens. Recheck after 30 days. Do not treat ordinary budget alerts as
 hard spending limits.
+
+The prepared issue #715 diagnostic has a provisional **$8 maximum planning
+estimate for one worker**, pending verification of the actual billing account
+and current SKU prices immediately before launch. As reviewed 2026-09-20, a
+single `e2-standard-8` in `us-central1-a` costs [$0.26804568/hour](https://cloud.google.com/products/compute/pricing/general-purpose)
+on demand. A 200 GiB balanced persistent disk costs
+[$0.000136986/GiB-hour](https://cloud.google.com/compute/disks-image-pricing).
+Six hours of both would cost about $1.77; the worker has a six-hour automatic
+deletion limit. Allow up to 20 GiB of recovered waveform/artifacts at the
+[North America Premium Tier rate](https://cloud.google.com/vpc/network-pricing)
+of at most $0.12/GiB ($2.40), with the remaining ~$3.83 margin for IP, other
+network usage, pricing variation, and cleanup delay. Recover less or compress
+large traces; if the artifacts would exceed 20 GiB, stop and reassess. This
+estimate does not authorize launch until the billing console confirms an
+active free trial, remaining credit greater than $8, and enough time before
+expiry; do not upgrade billing. The current `gcloud` token could not refresh
+noninteractively on 2026-09-20, so that verification is still outstanding.
 Do not run `chia up` until its complete resource plan and cleanup behavior have
 been reviewed. Keep all paid integrations disabled until those checks are complete.
 

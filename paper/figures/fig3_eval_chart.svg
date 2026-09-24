@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 280" width="100%" height="100%" style="background:#ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <rect x="5" y="5" width="590" height="270" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="20" y="26" font-size="12" font-weight="700" fill="#1e293b">SEARCH EFFICIENCY: SPECHUNTER GUIDED VS. UNGUIDED RANDOM (1,000 SEEDS)</text>
+
+  <!-- Axes -->
+  <line x1="60" y1="220" x2="560" y2="220" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="60" y1="50" x2="60" y2="220" stroke="#94a3b8" stroke-width="1.5"/>
+
+  <!-- Y-Axis labels (Discovery Rate) -->
+  <text x="50" y="224" font-size="9" fill="#64748b" text-anchor="end">0%</text>
+  <text x="50" y="180" font-size="9" fill="#64748b" text-anchor="end">25%</text>
+  <text x="50" y="135" font-size="9" fill="#64748b" text-anchor="end">50%</text>
+  <text x="50" y="90" font-size="9" fill="#64748b" text-anchor="end">75%</text>
+  <text x="50" y="55" font-size="9" fill="#64748b" text-anchor="end">100%</text>
+
+  <!-- Grid lines -->
+  <line x1="60" y1="177" x2="560" y2="177" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="60" y1="135" x2="560" y2="135" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="60" y1="92" x2="560" y2="92" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="60" y1="55" x2="560" y2="55" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3"/>
+
+  <!-- X-Axis labels (Attempts) -->
+  <text x="91" y="235" font-size="8.5" fill="#64748b" text-anchor="middle">1</text>
+  <text x="153" y="235" font-size="8.5" fill="#64748b" text-anchor="middle">3</text>
+  <text x="215" y="235" font-size="8.5" fill="#64748b" text-anchor="middle">5</text>
+  <text x="277" y="235" font-size="8.5" fill="#64748b" text-anchor="middle">7</text>
+  <text x="339" y="235" font-size="8.5" fill="#64748b" text-anchor="middle">9</text>
+  <text x="401" y="235" font-size="8.5" fill="#64748b" text-anchor="middle">11</text>
+  <text x="463" y="235" font-size="8.5" fill="#64748b" text-anchor="middle">13</text>
+  <text x="525" y="235" font-size="8.5" fill="#64748b" text-anchor="middle">16</text>
+  <text x="300" y="252" font-size="9.5" font-weight="600" fill="#475569" text-anchor="middle">Search Attempts / Budget</text>
+
+  <!-- Guided Curve (Rapid convergence to 100% at attempt 2) -->
+  <!-- At attempt 1: 50%, attempt 2: 100% -->
+  <polyline points="60,220 91,135 122,55 525,55" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+  <circle cx="122" cy="55" r="4.5" fill="#2563eb"/>
+  <text x="135" y="50" font-size="9" font-weight="700" fill="#2563eb">SpecHunter Guided: 100% (Mean 1.5 attempts)</text>
+
+  <!-- Random Curve (Logarithmic climb to 57.25% at attempt 16) -->
+  <polyline points="60,220 91,208 122,197 153,186 184,177 215,168 246,160 277,153 308,147 339,142 370,137 401,133 432,129 463,126 494,124 525,122" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-dasharray="4 2"/>
+  <circle cx="525" cy="122" r="4" fill="#dc2626"/>
+  <text x="390" y="115" font-size="9" font-weight="700" fill="#dc2626">Random: 57.25% [55.1%-59.4%]</text>
+
+  <!-- Legend Card -->
+  <rect x="230" y="150" width="220" height="42" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
+  <line x1="240" y1="162" x2="265" y2="162" stroke="#2563eb" stroke-width="2.5"/>
+  <text x="272" y="165" font-size="8.5" fill="#1e293b">SpecHunter Agentic Search</text>
+  <line x1="240" y1="178" x2="265" y2="178" stroke="#dc2626" stroke-width="2" stroke-dasharray="4 2"/>
+  <text x="272" y="181" font-size="8.5" fill="#1e293b">Unguided Random Fuzzing (N=1000)</text>
+</svg>

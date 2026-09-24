@@ -7,22 +7,58 @@ from decimal import Decimal
 from pathlib import Path
 
 from spechunter.backends import BackendConfig
+from spechunter.domain import BENCHMARKS
+from spechunter.evaluation import evaluate
 from spechunter.loop import experiment
+from spechunter.presentation import render
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["run", "compare"])
+    parser.add_argument("command", choices=["run", "compare", "present", "evaluate"])
     parser.add_argument("--backend", choices=["model", "rtl", "boom"], default="model")
     parser.add_argument("--strategy", choices=["guided", "random", "llm"], default="guided")
     parser.add_argument("--iterations", type=int, default=16)
+    parser.add_argument("--trials", type=int, default=100)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output", type=Path, default=Path("artifacts/run.json"))
+    parser.add_argument("--input", type=Path, help="Sealed experiment report for present")
+    parser.add_argument("--seal", type=Path, help="Evidence seal for present")
+    parser.add_argument("--corpus", type=Path, help="Optional sealed BOOM attack corpus")
+    parser.add_argument("--corpus-seal", type=Path, help="Seal for --corpus")
+    parser.add_argument("--evaluation", type=Path, help="Optional sealed fixture evaluation")
+    parser.add_argument("--evaluation-seal", type=Path, help="Seal for --evaluation")
+    parser.add_argument(
+        "--repeatability", type=Path, help="Optional sealed Vertex repeatability evidence"
+    )
+    parser.add_argument("--repeatability-seal", type=Path, help="Seal for --repeatability")
+    parser.add_argument("--chia-evidence", type=Path, help="Optional sealed CHIA/Vertex evidence")
+    parser.add_argument("--chia-seal", type=Path, help="Seal for --chia-evidence")
+    parser.add_argument(
+        "--rtl-repair-seal", type=Path, help="Optional sealed BOOM RTL repair regression"
+    )
+    parser.add_argument(
+        "--issue-715-seal", type=Path, help="Optional sealed BOOM issue #715 assessment"
+    )
+    parser.add_argument(
+        "--issue-715-attachment-seal",
+        type=Path,
+        help="Optional sealed original issue #715 attachment case",
+    )
     parser.add_argument(
         "--runner", type=Path, help="Trusted BOOM runner executable (absolute path)"
     )
+    parser.add_argument(
+        "--runner-arg",
+        action="append",
+        default=[],
+        help="Argument passed to the trusted runner before the request path (repeatable)",
+    )
     parser.add_argument("--target-revision", default="")
-    parser.add_argument("--timeout", type=int, default=30)
+    parser.add_argument(
+        "--timeout", type=int, help="per-execution seconds (default: 900 for BOOM, 30 otherwise)"
+    )
+    parser.add_argument("--benchmark", choices=[benchmark.id for benchmark in BENCHMARKS])
     parser.add_argument("--chia", action="store_true", help="Run through optional local CHIA node")
     parser.add_argument("--llm-provider", choices=["vertex"], default="vertex")
     parser.add_argument("--llm-project", default="spechunter")
@@ -38,14 +74,67 @@ def main() -> int:
     parser.add_argument("--repair-limit", type=int, default=4)
     args = parser.parse_args()
     try:
+        if args.command == "present":
+            if args.input is None or args.seal is None:
+                raise ValueError("present requires --input and --seal")
+            if (args.corpus is None) != (args.corpus_seal is None):
+                raise ValueError("present requires --corpus and --corpus-seal together")
+            if (args.evaluation is None) != (args.evaluation_seal is None):
+                raise ValueError("present requires --evaluation and --evaluation-seal together")
+            if (args.repeatability is None) != (args.repeatability_seal is None):
+                raise ValueError(
+                    "present requires --repeatability and --repeatability-seal together"
+                )
+            if (args.chia_evidence is None) != (args.chia_seal is None):
+                raise ValueError("present requires --chia-evidence and --chia-seal together")
+            print(
+                json.dumps(
+                    render(
+                        args.input,
+                        args.seal,
+                        args.output,
+                        corpus_path=args.corpus,
+                        corpus_seal_path=args.corpus_seal,
+                        evaluation_path=args.evaluation,
+                        evaluation_seal_path=args.evaluation_seal,
+                        repeatability_path=args.repeatability,
+                        repeatability_seal_path=args.repeatability_seal,
+                        chia_path=args.chia_evidence,
+                        chia_seal_path=args.chia_seal,
+                        rtl_repair_seal_path=args.rtl_repair_seal,
+                        issue_715_seal_path=args.issue_715_seal,
+                        issue_715_attachment_seal_path=args.issue_715_attachment_seal,
+                    ),
+                    indent=2,
+                )
+            )
+            return 0
+        if args.command == "evaluate":
+            if args.backend != "model" or args.strategy != "guided":
+                raise ValueError("evaluate uses the fixed model benchmark and strategy pair")
+            report = evaluate(args.trials, args.iterations)
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            temporary = args.output.with_suffix(args.output.suffix + ".tmp")
+            temporary.write_text(json.dumps(report, indent=2) + "\n")
+            temporary.replace(args.output)
+            print(json.dumps({key: report[key] for key in ("guided", "random")}, indent=2))
+            return 0
         if args.runner and not args.runner.is_absolute():
             raise ValueError("runner must be an absolute executable path")
+        if args.runner_arg and not args.runner:
+            raise ValueError("--runner-arg requires --runner")
+        timeout = (
+            args.timeout if args.timeout is not None else (900 if args.backend == "boom" else 30)
+        )
         config = BackendConfig(
             args.backend,
-            (str(args.runner),) if args.runner else (),
-            args.timeout,
+            (str(args.runner), *args.runner_arg) if args.runner else (),
+            timeout,
             args.target_revision,
         )
+        benchmark_id = args.benchmark
+        if args.backend == "boom" and benchmark_id is None:
+            benchmark_id = "secure-control"
         execute = experiment
         if args.chia:
             from spechunter.chia_nodes import run_local
@@ -71,6 +160,7 @@ def main() -> int:
                     args.llm_ledger,
                     args.llm_max_output_tokens,
                     args.llm_retries,
+                    benchmark_id,
                 )
             else:
                 from spechunter.agent_loop import agent_experiment
@@ -92,11 +182,13 @@ def main() -> int:
                     args.recon_cycles,
                     args.attack_limit,
                     args.repair_limit,
+                    benchmark_id,
                 )
             reports = [report]
         else:
             reports = [
-                execute(config, strategy, args.iterations, args.seed) for strategy in strategies
+                execute(config, strategy, args.iterations, args.seed, benchmark_id)
+                for strategy in strategies
             ]
         args.output.parent.mkdir(parents=True, exist_ok=True)
         temporary = args.output.with_suffix(args.output.suffix + ".tmp")

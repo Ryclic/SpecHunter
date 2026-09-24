@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "experiment": "boom-historical-issue-715",
+  "classification": "historical-vulnerability-not-reproduced",
+  "vulnerability_reproduced": false,
+  "security_fix_validated": false,
+  "source_provenance": "boom-issue-715-source-2026-09-16.json",
+  "source_provenance_sha256": "bac0c0de8943b08d5a4d7951190be10ceb91d322406ded601c81850844acc9c8",
+  "baseline_build": "boom-issue-715-historical-build-2026-09-17.json",
+  "baseline_build_sha256": "2f0d82b86d1e61943efeab9a7737d6a89c7bd560ca6713f02aca4ec310cebd43",
+  "baseline_matrix": "boom-issue-715-historical-matrix-2026-09-17.json",
+  "baseline_matrix_sha256": "669f36792bb71cffed087d86d615a3c09f02b90133464c4c6bfd31a3bba386db",
+  "pins_sha256": "5655da5c138276fa7cd409da2c84e12855e0d913dee84a65af2deed24795f5e0",
+  "sealed_at": "2026-09-17T06:29:32.150157+00:00"
+}
