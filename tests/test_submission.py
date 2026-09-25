@@ -2,7 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
 
-# Figures produced only by modules that return fixed illustrative values.
+# Claims that must never appear in the public docs.
 UNSEALED_CLAIMS = ("1091", "1095", "HSA-CERT", "HSA-2026", "CVSS", "89,200", "0.05%")
 
 

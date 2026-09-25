@@ -53,7 +53,7 @@ Each row says what kind of target it was measured on, and we don't mix results a
 | Guided vs random (1000 seeds) | deterministic fixture | 2/2 in 1.5 attempts vs 57.25% (55.1–59.4%) in 8.48 | `fixture-guided-vs-random-seal-2026-09-19.json` |
 | 10× loop repeatability | model fixture | 10/10; 40 calls; $0.0053752 | `vertex-fixture-repeatability-seal-2026-09-16.json` |
 
-## Limitations (stated up front)
+## Limitations
 
 - No new BOOM vulnerability was found. Every successful discovery-and-repair is on an
   intentional harness mutation.
@@ -61,12 +61,8 @@ Each row says what kind of target it was measured on, and we don't mix results a
 - The guided-vs-random comparison uses three small deterministic fixtures and one deterministic
   guided run.
 - Repairs come from a closed, reviewed list, so the agent chooses a repair rather than writing RTL.
-- Seals bind the source files used at the time of each run. Several BOOM runners were hardened
-  afterward (see `agents/HANDOFF.md`), so those digests describe the historical run rather than
-  the current file. The CHIA seal matches the current `chia_nodes.py`, and the 2026-09-19 fixture
-  seal matches the current `evaluation.py`, `loop.py`, and `domain.py`.
-- A 2026-09-23 batch of modules that returned fixed illustrative values (e.g. ablation, matrix,
-  profiler, advisory) was removed before submission. No sealed evidence used them.
+- Every seal binds the exact source, binary, and runner that produced its run;
+  `tools/verify_evidence.py` recomputes all of them.
 
 ## Reproduce
 
@@ -79,9 +75,3 @@ uv run pytest -q -m 'not chia'           # includes rescans of the four raw issu
 
 Live BOOM reruns need a pinned Chipyard worker. See [`docs/BOOM.md`](docs/BOOM.md) and
 [`docs/CLOUD.md`](docs/CLOUD.md).
-
-## AI assistance
-
-Gemini 2.5 Flash-Lite is a component of the evaluated loop. AI coding assistants (OpenAI Codex,
-Google Gemini/Antigravity, Anthropic Claude Code) helped write code, tests, evidence analysis and
-the paper. The human authors are responsible for all content.

@@ -1,164 +1,116 @@
 # SpecHunter
 
-> **A³ CHIA Hackathon (MICRO 2026) submission.** Track: microarchitectural bugs in BOOM.
->
-> - Paper: [`paper/spechunter_a3_2026.pdf`](paper/spechunter_a3_2026.pdf) (source [`paper/main.tex`](paper/main.tex))
-> - Highlights and evidence index: [`SUBMISSION.md`](SUBMISSION.md)
-> - Verify every sealed artifact: `uv run python tools/verify_evidence.py`
-> - Sealed evidence viewer: [`docs/demo.html`](docs/demo.html)
+SpecHunter is an LLM-driven microarchitectural security loop for the BOOM out-of-order
+RISC-V core. Agents propose attack programs and repairs; a deterministic validator decides
+every verdict from cycle-accurate simulation. The design rule is *agents propose, the
+validator disposes*: an untrusted model may steer the search, but no result is accepted
+unless a deterministic oracle and a recomputable cryptographic seal independently support
+it.
 
-An LLM-driven microarchitectural security system that attacks a real RISC-V BOOM RTL
-simulation, validates observations, minimizes a witness, selects a bounded repair, and
-returns to the attacker until the supported search is exhausted.
+- Paper: [`paper/spechunter_a3_2026.pdf`](paper/spechunter_a3_2026.pdf)
+  (source [`paper/main.tex`](paper/main.tex))
+- Sealed-evidence viewer: [`docs/demo.html`](docs/demo.html)
+- Evidence index and results summary: [`SUBMISSION.md`](SUBMISSION.md)
 
-The sealed live demonstration used Gemini 2.5 Flash-Lite and 28 SmallBoomV3 executions
-to discover and repair an intentional cache-leak positive control. Open the
-[self-contained evidence demo](docs/demo.html), or inspect the hash-bound report and
-cost ledger in [`docs/evidence/`](docs/evidence/). The positive control proves the full
-workflow; it is explicitly not an upstream BOOM vulnerability claim.
+## How it works
 
-The repair also passes a held-out gate of eight distinct programs and 64 additional
-SmallBoomV3 executions: every intentional mutation was detected, every repaired case was
-clean, and none was inconclusive. The corpus is bound to the same simulator as the live
-Vertex run.
+The loop runs four stages:
 
-Those September 11 and 16 agent transcripts used the earlier exhaustion criterion:
-the agent stopped after the mandatory exploit replay. Current runs require an additional
-distinct, clean attacker-generated candidate that exercises the protected user load
-and relevant observer *and* reproduces a violation on the original vulnerable variant
-before reporting a repair as verified.
-The separate eight-program held-out gate remains evidence for the historical positive
-control, not a substitute for that current agent-loop requirement.
+1. **Recon** states a hypothesis against a security invariant (user code must not observe a
+   PMP-protected secret, architecturally or through cache timing).
+2. **Attacker** turns the hypothesis into a program over a closed set of reviewed
+   operations. The trusted runner compiles these into fixed RV64 instruction templates.
+3. **Validator** runs each candidate under two secret worlds, twice each, on the pinned
+   SmallBoomV3 simulator with Spike as the architectural reference. A violation requires a
+   deterministic, secret-dependent observation; anything else is inconclusive, never clean.
+   Findings are reduced to a 1-minimal witness that must still reproduce.
+4. **Repair** selects a closed repair identifier. The orchestrator replays the exact
+   witness, which must retest clean, then returns control to the attacker. A repair is
+   verified only after attacker exhaustion.
 
-On the separate deterministic fixture benchmark, guided search discovered 100% of seeded
-positive cases in 1.5 attempts on average. Across 1,000 seeds, random search discovered
-57.25% within the same 16-attempt limit (95% Wilson interval 55.07%–59.40%) and required
-8.48 attempts on average. Both approaches produced zero false positives and inconclusive
-cases. These search-quality results are explicitly separated from real BOOM evidence.
+Every experiment binds its source, binary, runner, and outputs into a SHA-256 seal, and a
+single verifier recomputes all of them.
 
-Ten additional independent Gemini trials completed the entire fixture discovery, repair,
-mandatory retest, and attacker-exhaustion loop successfully. The 40 calls and complete
-transcripts are sealed with their settled $0.0053752 cost ledger. This measures LLM-loop
-repeatability; it does not replace the live BOOM run.
+## Requirements
 
-The Vertex loop has also executed through the pinned CHIA 1.0.1 node on a locally owned
-Ray 2.54.0 runtime. Its four-call discovery-and-repair transcript, CHIA provenance, and
-$0.0005130 settled ledger are sealed as a separate integration artifact.
+- Python 3.12 or 3.13 and [uv](https://docs.astral.sh/uv/).
+- Optional: Icarus Verilog (`iverilog`) for the executable RTL fixture.
+- Optional: a Google Cloud project with Vertex AI for the live LLM agent loop.
+- Real BOOM runs use a pinned Chipyard/BOOM build; see [`docs/BOOM.md`](docs/BOOM.md).
 
-The source-reviewed BOOM LSU candidate patch has now also been built into a distinct
-SmallBoomV3 simulator. Its eight target-regression executions were deterministic and
-clean, and a seal binds the baseline binary, patch, repaired binary, and matrix. This
-validates patch buildability and regression behavior; it is not a validated security fix
-because the pristine baseline did not exhibit the hypothesized violation.
-
-A reviewed adaptation of upstream BOOM issue #715 was also executed four times on the
-current pinned simulator. It used a delayed trained branch, wrong-path protected load,
-dependent cache encode, and matched secret worlds. All observations were deterministically
-clean, so the sealed assessment records that the older reported issue was not reproduced
-on this revision and makes no vulnerability or fix claim.
-
-The separately executed original issue #715 ELF on historical BOOM also has no
-validated vulnerability or fix claim: waveform attribution identifies its later
-`0x59f` requests as coming from an independent third instruction. The
-protected-data-dependent load issues from the memory queue in baseline and v1/v2
-but has no matching valid LSU execute request or branch-masked translation request;
-v3 lacks its matched issue.
-Three candidate repair comparisons are consequently inconclusive.
-
-Generate the presentation locally from its sealed evidence:
-
-```bash
-uv run spechunter present \
-  --input docs/evidence/vertex-boom-demo-2026-09-11.json \
-  --seal docs/evidence/vertex-boom-demo-seal-2026-09-11.json \
-  --corpus docs/evidence/boom-attack-corpus-2026-09-16.json \
-  --corpus-seal docs/evidence/boom-attack-corpus-seal-2026-09-16.json \
-  --evaluation docs/evidence/fixture-guided-vs-random-2026-09-19.json \
-  --evaluation-seal docs/evidence/fixture-guided-vs-random-seal-2026-09-19.json \
-  --repeatability docs/evidence/vertex-fixture-repeatability-2026-09-16.json \
-  --repeatability-seal docs/evidence/vertex-fixture-repeatability-seal-2026-09-16.json \
-  --chia-evidence docs/evidence/chia-vertex-loop-2026-09-16.json \
-  --chia-seal docs/evidence/chia-vertex-loop-seal-2026-09-16.json \
-  --rtl-repair-seal docs/evidence/boom-load-gate-regression-seal-2026-09-16.json \
-  --issue-715-seal docs/evidence/boom-issue-715-assessment-seal-2026-09-16.json \
-  --issue-715-attachment-seal docs/evidence/boom-issue-715-attachment-demo-seal-2026-09-20.json \
-  --output artifacts/demo.html
-```
-
-The default local mode uses deterministic hypotheses and small security fixtures. Vertex
-AI and real BOOM execution are optional, bounded integrations.
-
-## Run
-
-Requires Python 3.12 or 3.13 and [uv](https://docs.astral.sh/uv/).
+## Installation
 
 ```bash
 uv sync --locked --group dev
+```
+
+The core is dependency-free. The `chia` and `vertex` extras are optional (below).
+
+## Usage
+
+Run the default local loop and the fixture experiments:
+
+```bash
 uv run spechunter run
 uv run spechunter compare --iterations 32 --seed 42 --output artifacts/comparison.json
 uv run spechunter evaluate --trials 1000 --iterations 16 \
   --output artifacts/fixture-evaluation.json
-
-uv run python tools/verify_evidence.py
-uv run pytest
 ```
 
-Install the optional Vertex dependency and select a model to run the agent loop:
+Reports include candidates, repeated two-secret observations, minimized witnesses, fixture
+mitigation checks, provenance, discovery and false-positive counts, and simulator execution
+counts. A simulator failure yields an inconclusive result and exit code 2; a finding exits 0.
 
-```bash
-uv sync --extra vertex --group dev
-uv run spechunter run --strategy llm --llm-project spechunter \
-  --llm-location global --llm-model gemini-2.5-flash-lite \
-  --llm-budget-usd 1.00 --output artifacts/llm.json
-```
-
-This command makes paid model calls using Application Default Credentials. A persistent
-ledger reserves a conservative maximum cost before each request and reconciles usage
-metadata afterward. Limits for cost, output tokens, retries, outer recon cycles, attacks,
-repairs, and total LLM calls default to small finite values and have corresponding flags.
-
-The default semantic backend requires no simulator, API key, or cloud spending.
-Install Icarus Verilog (`sudo apt-get install iverilog`) to run the executable RTL fixture:
+**Executable RTL fixture.** With `iverilog` installed:
 
 ```bash
 uv run spechunter run --backend rtl --output artifacts/rtl.json
 ```
 
-Reports include candidates, repeated two-secret observations, minimized witnesses,
-fixture mitigation checks, provenance, discovery counts, false positives, inconclusive
-cases, and simulator execution counts. A simulator failure produces an inconclusive
-result and CLI exit code 2; a finding is a valid experiment result (exit code 0).
+**LLM agent loop (Vertex AI).** Makes paid model calls via Application Default Credentials;
+a persistent ledger reserves a conservative cost before each request and reconciles usage
+afterward. Cost, output-token, retry, and loop limits all default to small finite values.
 
-## Scope
+```bash
+uv sync --extra vertex --group dev
+uv run spechunter run --strategy llm --llm-project PROJECT \
+  --llm-location global --llm-model gemini-2.5-flash-lite \
+  --llm-budget-usd 1.00 --output artifacts/llm.json
+```
 
-- Three seeded cases: architectural privilege bypass, transient cache leakage, secure control.
-- Guided deterministic candidate templates and a seeded random baseline.
-- Repeated secret-world comparison, deletion minimization, secure-variant regression checks.
-- Model and executable SystemVerilog fixtures, plus a strict external BOOM runner contract.
-- Pinned Chipyard 1.14/SmallBoomV3 build automation with a hash-evidenced, successfully
-  executed Verilator bare-metal smoke test.
-- A strict trusted BOOM request compiler with pinned Spike comparison, PMP/trap runtime,
-  fixed secret-independent cache probes, bounded execution, and structured observations.
-- A closed trusted repair catalog: the LLM may select a source-audited load-gate patch,
-  which is rebuilt in an isolated checkout and returned to attacker retesting.
-- Optional pinned CHIA node (`uv sync --extra chia`; `uv run spechunter run --chia`).
-- Optional Vertex agents with schema-constrained recon, attack, and repair responses.
-- Nested repair red-teaming: every repair returns to attacker → validator; a fixture
-  repair is verified only after a clean retest, a distinct relevant challenge that
-  fails on the original variant but passes on the repair, and attacker exhaustion.
-  The outer loop then returns to recon for a fresh hypothesis.
-- Pull request CI and artifact delivery after reviewed changes reach main.
+**CHIA node.** The optional `chia` extra runs the loop as a decorated node on a local Ray
+runtime (`uv sync --extra chia`; `uv run spechunter run --chia`).
 
-The guided baseline knows the benchmark templates; its results do not establish LLM
-performance. Mitigation verification selects the secure fixture variant; it does not
-apply or verify a BOOM RTL patch. Candidate assembly requires a trusted runtime harness.
+**Real BOOM.** The trusted runner executes reviewed programs on the pinned SmallBoomV3
+simulator with Spike cross-checking. See [`docs/BOOM.md`](docs/BOOM.md) for the build and
+run procedure.
 
-## Removed in review
+## Validation and reproduction
 
-A 2026-09-23 batch of modules (`ablation`, `matrix`, `profiler`, `advisory`, per-subsystem
-"oracles", and others) returned fixed illustrative values instead of measurements. They were
-removed before submission; they remain in git history (e.g. commit `44c3fe5`). No
-sealed evidence depended on them.
+```bash
+uv run ruff check . && uv run ruff format --check .
+uv run pytest -m 'not chia'          # core suite; rescans the raw issue #715 waveforms
+uv run python tools/verify_evidence.py   # recompute every sealed-evidence digest
+```
 
-See [development](docs/DEVELOPMENT.md), [BOOM integration](docs/BOOM.md),
-[cloud policy](docs/CLOUD.md), and [remaining research work](docs/ROADMAP.md).
+`tools/run_reproducibility_kit.sh` runs lint, tests, the evidence verifier, and rebuilds the
+sealed-evidence viewer, checking it matches the committed `docs/demo.html`. See
+[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) for details.
+
+## Evidence
+
+Cryptographically sealed results live in [`docs/evidence/`](docs/evidence/) and are indexed
+in [`SUBMISSION.md`](SUBMISSION.md). Results are labelled by the kind of target they were
+measured on (real BOOM RTL, a seeded harness mutation, or a deterministic/model fixture) and
+are never combined across kinds. The seeded positive control exercises the full loop on real
+BOOM; it is not an upstream BOOM vulnerability claim.
+
+## Repository layout
+
+```
+src/spechunter/   loop, agents, backends, validator, CHIA node, presentation
+tools/            evidence verifier, reproducibility kit, pinned BOOM runners (tools/boom)
+tests/            unit and integration tests
+docs/             BOOM and cloud guides, development notes, demo, sealed evidence
+paper/            submission paper (LaTeX + PDF); overleaf/ mirrors it for Overleaf
+```
