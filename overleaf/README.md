@@ -1,11 +1,12 @@
 # Overleaf submission package
 
-Self-contained copy of the paper for Overleaf or any TeX Live install:
+`main.tex` is self-contained: the bibliography is embedded, so it compiles with a
+plain pdfLaTeX run and needs no BibTeX pass or external `.bib`.
 
-- `main.tex` — the paper source (identical to `../paper/main.tex`).
-- `main.bib` — references.
+- `main.tex` — the paper (identical to `../paper/main.tex`).
 - `IEEEtran.cls` — the IEEE conference class (Overleaf also ships this).
+- `main.bib` — the same references in BibTeX form, kept for convenience; not
+  required to compile.
 
-Upload all three (or just `main.tex` + `main.bib` on Overleaf) and compile
-`main.tex` with pdfLaTeX. It is 4 pages. Fill in the author block before
-submitting.
+Upload `main.tex` (optionally with `IEEEtran.cls`) and compile with pdfLaTeX.
+It is 4 pages.

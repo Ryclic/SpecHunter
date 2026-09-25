@@ -14,9 +14,18 @@
 
 \title{\sh{}: A Fail-Closed Agent Loop for Security Discovery and Repair on BOOM RTL}
 
-\author{\IEEEauthorblockN{Ariel Khais \quad Ryan Chen \quad Cambell Xiao}
-\IEEEauthorblockA{University of Washington\\
-\{akhais, ryanc175, cambell\}@uw.edu}}
+\author{
+\IEEEauthorblockN{Ariel Khais}
+\IEEEauthorblockA{\textit{University of Washington}\\
+akhais@uw.edu}
+\and
+\IEEEauthorblockN{Ryan Chen}
+\IEEEauthorblockA{\textit{University of Washington}\\
+ryanc175@uw.edu}
+\and
+\IEEEauthorblockN{Cambell Xiao}
+\IEEEauthorblockA{\textit{University of Washington}\\
+cambell@uw.edu}}
 
 \maketitle
 
@@ -37,9 +46,7 @@ minimized it, repaired it, and verified attacker exhaustion; a held-out corpus
 separated vulnerable and repaired variants in all 64 executions. The entire study
 ran inside a single \$300 GCP free-trial allocation, requested no additional
 funding, and spent on the order of \$10, with under \$0.05 of model calls exactly
-accounted by sealed ledgers. We report our negative results and eleven verifier
-defects because they are the part most useful to others building agentic
-hardware-security loops.
+accounted by sealed ledgers.
 \end{abstract}
 
 \section{Introduction}
@@ -408,7 +415,20 @@ were used to write and review code and tests, analyze evidence, and draft and
 edit this paper. The human authors reviewed all claims against the sealed
 evidence and are responsible for the paper's content.
 
-\bibliographystyle{IEEEtran}
-\bibliography{main}
+\begin{thebibliography}{99}
+\bibitem{spectre} P.~Kocher \emph{et al.}, ``Spectre attacks: Exploiting speculative execution,'' in \emph{IEEE Symp. Security and Privacy (S\&P)}, 2019.
+\bibitem{meltdown} M.~Lipp \emph{et al.}, ``Meltdown: Reading kernel memory from user space,'' in \emph{USENIX Security Symp.}, 2018.
+\bibitem{chia} A.~Cui \emph{et al.}, ``{CHIA}: An open-source framework for principled, agentic {AI}-driven hardware/software co-design research,'' arXiv:2606.27350, 2026.
+\bibitem{boom} C.~Celio, P.-F.~Chiu, B.~Nikoli\'c, D.~A.~Patterson, and K.~Asanovi\'c, ``{BOOM} v2: An open-source out-of-order {RISC-V} core,'' Univ. California, Berkeley, Tech. Rep. UCB/EECS-2017-157, 2017.
+\bibitem{chipyard} A.~Amid \emph{et al.}, ``Chipyard: Integrated design, simulation, and implementation framework for custom {SoCs},'' \emph{IEEE Micro}, vol.~40, no.~4, pp.~10--21, 2020.
+\bibitem{issue715} T.~Kovats, ``[BUG REPORT] Speculative meltdown-type leakage through the {TLB}, riscv-boom issue \#715,'' 2025. [Online]. Available: \url{https://github.com/riscv-boom/riscv-boom/issues/715}
+\bibitem{spike} RISC-V International, ``Spike {RISC-V} {ISA} simulator.'' [Online]. Available: \url{https://github.com/riscv-software-src/riscv-isa-sim}
+\bibitem{alphaevolve} A.~Novikov \emph{et al.}, ``{AlphaEvolve}: A coding agent for scientific and algorithmic discovery,'' arXiv:2506.13131, 2025.
+\bibitem{vibeserve} K.~Kamahori, S.~Li, S.~Peter, and B.~Kasikci, ``{VibeServe}: Can {AI} agents build bespoke {LLM} serving systems?,'' arXiv:2605.06068, 2026.
+\bibitem{pentestgpt} G.~Deng \emph{et al.}, ``{PentestGPT}: An {LLM}-empowered automatic penetration testing tool,'' in \emph{USENIX Security Symp.}, 2024.
+\bibitem{cybench} A.~K.~Zhang, N.~Perry \emph{et al.}, ``{Cybench}: A framework for evaluating cybersecurity capabilities and risks of language models,'' in \emph{Int. Conf. Learning Representations (ICLR)}, 2025.
+\bibitem{rfuzz} K.~Laeufer, J.~Koenig, D.~Kim, J.~Bachrach, and K.~Sen, ``{RFUZZ}: Coverage-directed fuzz testing of {RTL} on {FPGAs},'' in \emph{IEEE/ACM Int. Conf. Computer-Aided Design (ICCAD)}, 2018.
+\bibitem{contracts} M.~Guarnieri, B.~K\"opf, J.~Reineke, and P.~Vila, ``Hardware-software contracts for secure speculation,'' in \emph{IEEE Symp. Security and Privacy (S\&P)}, 2021.
+\end{thebibliography}
 
 \end{document}
