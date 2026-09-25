@@ -75,3 +75,10 @@ uv run pytest -q -m 'not chia'           # includes rescans of the four raw issu
 
 Live BOOM reruns need a pinned Chipyard worker. See [`docs/BOOM.md`](docs/BOOM.md) and
 [`docs/CLOUD.md`](docs/CLOUD.md).
+
+## AI assistance
+
+Gemini 2.5 Flash-Lite is a component of the evaluated loop. AI coding assistants — OpenAI
+Codex, Google Gemini/Antigravity, and Anthropic Claude Code — were used to write and review
+code, tests, and documentation, analyze evidence, and draft the paper. The human authors
+reviewed all claims against the sealed evidence and are responsible for all content.

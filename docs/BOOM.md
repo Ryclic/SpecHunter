@@ -139,7 +139,7 @@ tools/boom/run_secure_matrix.py /tmp/boom-secure-matrix.json
 
 The command returns zero only when both secure-control scenarios are repeatable and have
 identical architectural and binary probe observations across the two secret worlds.
-The 2026-09-11 live run passed both scenarios on the pinned SmallBoomV3 simulator; all
+The live run passed both scenarios on the pinned SmallBoomV3 simulator; all
 eight executions reported the expected load-access fault, no architectural value, and
 probe bit zero. The evidence is in
 [`docs/evidence/boom-secure-matrix-2026-09-11.json`](evidence/boom-secure-matrix-2026-09-11.json).
@@ -193,7 +193,7 @@ variant and deterministic clean results under the repaired variant. It cross-che
 Chipyard revision, BOOM revision, configuration, simulator hash, repeat count, and program
 hashes, then binds both child matrices into one manifest.
 
-The live 2026-09-11 gate passed all requirements. In both scenarios, the mutated secret
+The live gate passed all requirements. In both scenarios, the mutated secret
 worlds repeated `[1], [0], [1], [0]`; after repair they repeated `[0], [0], [0], [0]`.
 Every execution retained the expected protected-load fault and no architectural secret
 value. Both halves used simulator SHA-256 `230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8`,
@@ -234,7 +234,7 @@ contains discovery, the closed repair selection, mandatory witness retest, retur
 attacker, exhaustion, matching positive-control simulator provenance, and a fully settled
 cost ledger.
 
-The live 2026-09-11 run completed this loop with Gemini 2.5 Flash-Lite and the pinned
+The live run completed this loop with Gemini 2.5 Flash-Lite and the pinned
 SmallBoomV3 simulator. The model proposed a six-operation attack; real BOOM validation
 confirmed the seeded leak, and empirical minimization reduced it to
 `enter_user, load_secret, probe`. The closed harness repair made that identical witness
@@ -260,7 +260,7 @@ programs are repeatable violations and all repaired programs are repeatably clea
 tools/boom/run_attack_corpus.py /tmp/boom-attack-corpus.json
 ```
 
-The 2026-09-16 run passed all eight programs: 100% mutation detection, 100% repair-clean
+The run passed all eight programs: 100% mutation detection, 100% repair-clean
 classification, zero inconclusive programs, and 64 total SmallBoomV3 executions. The
 corpus used the same simulator SHA-256 as the privilege gate, positive control, and live
 Vertex loop. `tools/boom/seal_attack_corpus.py` binds the corpus to those earlier artifacts,
@@ -288,7 +288,7 @@ text. After selection, the orchestrator retests the minimized witness on the rep
 and returns control to the attacker until it reports exhaustion. BOOM repair verification is
 true only after those real repaired-target executions succeed.
 
-The 2026-09-16 live gate rebuilt the pristine baseline, reproduced simulator SHA-256
+The live gate rebuilt the pristine baseline, reproduced simulator SHA-256
 `230de62a46a82fc5f9c92aaf2f6e80893d1379d15952aef927fd0f6c11cfcaa8`, then built the
 isolated patch into distinct simulator SHA-256
 `fd4a264c1499cb2c3614cf05de4533e3b31ce2d921650452bca59072e55179c3` in 329 seconds.
@@ -322,7 +322,7 @@ dependent two-line encode the predicted fall-through of an architecturally taken
 Only the fixed three-operation request is accepted. Spike establishes the architectural
 path while BOOM supplies the cache observation.
 
-On 2026-09-16, four executions on the current pinned BOOM revision `5223e44…` were
+Four executions on the current pinned BOOM revision `5223e44…` were
 deterministic and clean: both secret worlds returned probe bit zero twice, with no
 architectural exception. The reported vulnerable revision is 335 BOOM commits older.
 [`boom-issue-715-assessment-seal-2026-09-16.json`](evidence/boom-issue-715-assessment-seal-2026-09-16.json)
@@ -355,7 +355,7 @@ tools/boom/run_historical_issue_715.py \
 Build and test the repair only if that baseline produces a repeatable secret-dependent
 observation. A clean or unstable baseline cannot validate the patch.
 
-On 2026-09-17 the exact historical simulator built successfully in 685 seconds. Four live
+The exact historical simulator built successfully in 685 seconds. Four live
 executions produced probe sequences `[0, 0]` for both secret worlds, so the result is
 deterministic and clean for this adaptation. The repair was not built because that would
 not establish a security delta. The checked seal independently derives this classification
