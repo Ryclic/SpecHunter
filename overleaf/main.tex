@@ -375,16 +375,23 @@ does not weaken the guarantee that matters: the differential oracle and the
 recomputable seals, not the model, would still decide every verdict.
 
 \section{Related Work}\label{sec:related}
-Hardware fuzzing drives RTL toward coverage without a security oracle:
-RFUZZ~\cite{rfuzz} mutates inputs to maximise mux-toggle coverage on FPGAs.
-Security-oriented differential fuzzing adds an oracle by comparing a design
-against a reference or against itself under different secrets, the strategy our
-validator follows for BOOM. Hardware--software contracts~\cite{contracts} give a
-formal specification for what speculation may and may not expose, and are a
-natural target invariant for a future version of \sh{}. Relative to this line of
-work, \sh{} contributes the agentic control loop and a fail-closed evidence
-discipline: an untrusted model may steer the search, but no claim survives that a
-deterministic oracle and a recomputable seal do not independently support.
+\sh{} sits at the intersection of three lines of work. \emph{Agentic discovery
+loops} such as AlphaEvolve~\cite{alphaevolve} and VibeServe~\cite{vibeserve} show
+that an LLM in an outer search loop with an inner correctness or performance check
+can improve algorithms and build bespoke systems; \sh{} applies the same
+propose-then-check structure to microarchitectural security and runs inside
+CHIA~\cite{chia}, which expresses such flows as directed cyclic graphs over
+hardware tools. \emph{Red-team LLM agents} such as PentestGPT~\cite{pentestgpt}
+and the agents evaluated by Cybench~\cite{cybench} autonomously find and exploit
+software vulnerabilities; \sh{} is a blue-team counterpart at the RTL level, where
+that same autonomy is dangerous unless a deterministic oracle gates every claim.
+\emph{Hardware fuzzing} drives RTL toward coverage without a security oracle
+(RFUZZ~\cite{rfuzz}); differential fuzzing adds one by comparing a design against
+itself under different secrets, the strategy our validator follows, and
+hardware--software contracts~\cite{contracts} formalise what speculation may
+expose. \sh{}'s specific contribution is the fail-closed evidence discipline: an
+untrusted model may steer the search, but no claim survives that a deterministic
+oracle and a recomputable seal do not independently support.
 
 \section{Conclusion}
 \sh{} shows that an LLM-driven security loop on real out-of-order RTL is cheap to
