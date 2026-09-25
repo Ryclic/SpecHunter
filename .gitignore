@@ -26,3 +26,11 @@ paper/*.log
 paper/*.out
 paper/*.fdb_latexmk
 paper/*.fls
+
+# Overleaf build outputs
+overleaf/main.pdf
+overleaf/*.aux
+overleaf/*.bbl
+overleaf/*.blg
+overleaf/*.log
+overleaf/*.out
