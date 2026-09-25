@@ -206,10 +206,9 @@ Offset & Instruction & Observed in waveform \\
 \end{tabular}
 \end{table}
 
-\textbf{Repairs correctly rejected.} Before this attribution was clear, we
-iterated on four hash-pinned candidate LSU patches outside the closed repair
-list, each driven by the previous matched-trace comparison: v1 same-cycle fault
-gates; v2 blocking loads under unresolved branches; v3 suppressing fast wakeup and
+\textbf{Repairs correctly rejected.} Four hash-pinned candidate LSU patches,
+outside the closed repair list, were each evaluated against the matched baseline
+trace: v1 same-cycle fault gates; v2 blocking loads under unresolved branches; v3 suppressing fast wakeup and
 excepting-entry writeback; v4 requiring a registered D-cache fire before
 speculative wakeup. V1--v3 left the \texttt{0x59f} chain cycle-identical to
 baseline, and v4's waveform was not recovered. Because the baseline never
@@ -372,7 +371,7 @@ mechanism, since an untrusted model never executes arbitrary privileged code on
 the core; it also bounds the search space to combinations of primitives the loop
 has been given. Second, general-purpose LLM assistants apply constraints to
 offensive-security tasks, which, together with a hackathon-scale time and compute
-budget, bounded how far we pushed the autonomous attacker within the event. The
+budget, bounded how far the autonomous attacker was pushed. The
 architecture, however, is unchanged by scale: widening the reviewed primitive set
 (more speculation shapes, more covert-channel constructions, a richer observation
 channel) and adding compute is the direct path to exercising broader
