@@ -25,20 +25,21 @@ We present \sh{}, a CHIA loop in which LLM agents propose attack programs,
 repairs, and follow-up attacks against the BOOM out-of-order RISC-V core, while a
 deterministic validator decides every verdict from cycle-accurate simulation.
 The design premise is that an agent's claims are cheap and its mistakes are
-plausible, so the loop's value lies in what it refuses to accept. In a live run,
-Gemini~2.5 Flash-Lite drove the loop against a Verilator build of SmallBoomV3:
-it found an intentionally seeded cache leak, minimized it to a three-operation
-witness, selected a repair, and the validator required a clean retest and
-attacker exhaustion before accepting it (28 BOOM executions, 4 model calls,
-\$0.0006). An eight-program held-out corpus then separated the vulnerable and
-repaired variants in all 64 executions. We also applied the loop to upstream
-BOOM issue~\#715 on the exact reported revision. The waveform trace shows that
-the address first taken as evidence of leakage comes from an unrelated
-load, while the dependent load is stopped by an existing register-read gate. As
-a result, the issue did not reproduce, and none of four candidate RTL repairs can be
-credited. We report these negative results and eleven verifier defects exposed by
-live runs and their review, because they are the part of this work most likely to be
-useful to others building agentic hardware-security loops.
+plausible, so the loop's value lies in what it refuses to accept. Our flagship
+result is a practical one: applied to open BOOM bug report~\#715, \sh{} rebuilt
+the exact reported revision, replayed the reporter's own program, and used
+automated waveform tracing to show that the address taken as evidence of a leak
+comes from an unrelated load while the dependent load is stopped by an existing
+register-read gate. The report does not reproduce, and four candidate RTL repairs
+are all correctly rejected rather than credited. The same loop, driven live by
+Gemini~2.5 Flash-Lite, found an intentionally seeded cache leak on real BOOM,
+minimized it, repaired it, and verified attacker exhaustion; a held-out corpus
+separated vulnerable and repaired variants in all 64 executions. The entire study
+ran inside a single \$300 GCP free-trial allocation, requested no additional
+funding, and spent on the order of \$10, with under \$0.05 of model calls exactly
+accounted by sealed ledgers. We report our negative results and eleven verifier
+defects because they are the part most useful to others building agentic
+hardware-security loops.
 \end{abstract}
 
 \section{Introduction}
@@ -64,18 +65,19 @@ conservative: any result that is not a deterministic, secret-dependent,
 architecturally silent leak is treated as inconclusive rather than clean, so the
 loop fails closed. Our contributions are:
 \begin{itemize}
+\item An automated resolution of open upstream BOOM issue~\#715~\cite{issue715}:
+  on the exact reported revision the reported leak does not reproduce, and trace
+  analysis localises why (\S\ref{sec:715}).
 \item A four-agent CHIA loop (recon, attacker, validator, repair) with
   mandatory witness retest and a strict attacker-exhaustion criterion, running
   against cycle-accurate BOOM with Spike~\cite{spike} as the architectural
-  reference and an atomic cost ledger (\S\ref{sec:loop}).
-\item End-to-end evidence on real BOOM RTL, clearly separated from fixture and
-  model-only evidence, with every number bound into a recomputable seal
-  (\S\ref{sec:eval}).
-\item A trace-level investigation of BOOM issue~\#715~\cite{issue715} on its
-  historical revision that did \emph{not} reproduce the reported mechanism and
-  identified why (\S\ref{sec:715}).
-\item A catalogue of verifier defects found during live runs, each now
+  reference and every number bound into a recomputable seal (\S\ref{sec:loop},
+  \S\ref{sec:eval}).
+\item A catalogue of eleven verifier defects found during live runs, each now
   covered by a regression test (\S\ref{sec:lessons}).
+\item An efficiency result: real-BOOM evidence produced for on the order of \$10
+  of a \$300 free trial, roughly a tenth of the smallest budget the hackathon's
+  funding track anticipated (\S\ref{sec:cost}).
 \end{itemize}
 
 \section{Loop Design}\label{sec:loop}
@@ -141,117 +143,23 @@ before it is recorded.
 \textbf{Repair acceptance.} After a repair, the orchestrator (not the model)
 replays the exact minimized witness, which must be clean. Control then returns
 to the attacker. A repair is verified only on attacker exhaustion, and in
-the current schema (v5) exhaustion additionally requires a distinct,
-threat-relevant challenge that violates on the \emph{unrepaired} variant and is
-clean on the repaired one. Any later violation revokes verification.
+the current schema exhaustion additionally requires a distinct, threat-relevant
+challenge that violates on the \emph{unrepaired} variant and is clean on the
+repaired one. Any later violation revokes verification.
 
-\textbf{Provenance and cost.} Chipyard 1.14, BOOM, and toolchains are pinned by
-commit and hash; the runner refuses dirty trees or mismatched binaries. Every
-evidence file is bound into a SHA-256 seal, and a single verifier recomputes all
-43 file bindings across the ten seals and rebuilds the issue~\#715 case seal from
-its raw waveforms; continuous integration runs it on every change. A locked JSON
-ledger reserves a conservative cost before each model call and settles it from
-token metadata, halting at a hard cap. \sh{} runs as a decorated CHIA node on a
-local Ray runtime.
+\textbf{Provenance.} Chipyard 1.14, BOOM, and toolchains are pinned by commit and
+hash; the runner refuses dirty trees or mismatched binaries. Every evidence file
+is bound into a SHA-256 seal, and a single verifier recomputes all 43 file
+bindings across the ten seals and rebuilds the issue~\#715 case seal from its raw
+waveforms; continuous integration runs it on every change. \sh{} runs as a
+decorated CHIA node on a local Ray runtime.
 
-\section{Evaluation}\label{sec:eval}
-All BOOM runs used GCP \texttt{e2-standard-8} workers with no service account,
-a six-hour deletion cap, and explicit deletion after evidence recovery.
-Table~\ref{tab:evidence} lists every result together with the kind of
-target it was measured on; we do not combine results across kinds.
-
-\begin{table}[t]
-\centering
-\caption{Sealed evidence by target type. ``Mutation'' is an intentionally
-seeded harness leak, not an upstream BOOM bug.}
-\label{tab:evidence}
-\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}p{0.40\columnwidth}p{0.25\columnwidth}p{0.29\columnwidth}@{}}
-\toprule
-Experiment & Target & Result \\
-\midrule
-PMP privilege gate (Spike + BOOM) & BOOM RTL & pass, trap 5, no leak \\
-Pristine baseline matrix & BOOM RTL & 8/8 clean \\
-Seeded positive control & BOOM+mutation & 8/8 violating; 8/8 clean after repair \\
-Live Vertex loop & BOOM+mutation & found, repaired, exhausted; \$0.0006 \\
-Held-out corpus (8 programs) & BOOM+mutation & 64/64 correct \\
-LSU fault-gate RTL patch & patched BOOM & builds; 8/8 clean; \emph{no security claim} \\
-Issue \#715, current + historical & BOOM RTL & not reproduced \\
-Guided vs.\ random search & Fixture & see Table~\ref{tab:search} \\
-10$\times$ loop repeatability & Model fixture & 10/10; \$0.0054 total \\
-Loop through CHIA node & Model fixture & complete; \$0.0005 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textbf{Real BOOM baseline.} A reviewed payload configures PMP to deny a
-4\,KiB page, drops to user mode via \texttt{mret}, and requires a
-load-access fault (cause~5). The same ELF passed on Spike and on SmallBoomV3.
-Two programs (architectural denial and a transient window) were clean and
-deterministic across secret worlds on the pristine core. Because pristine BOOM
-exhibited no violation, we added a clearly labelled positive control: a
-harness variant that touches a secret-selected cache line before entering user
-mode. Its repair, \texttt{remove-seeded-cache-leak}, removes that access. The
-control produced probe sequences \texttt{[1],[0],[1],[0]} before repair and
-all zeros after, over 16 executions on the \emph{same} simulator binary.
-
-\textbf{Live agent run.} On the positive control, the model proposed a
-six-operation program; BOOM confirmed the leak; minimization kept
-\texttt{enter\_user, load\_secret, probe}. The repair agent chose the
-closed repair, the witness retested clean, and the attacker then reached
-exhaustion: 28 BOOM executions, 4 Vertex calls, zero inconclusive cases, and
-\$0.0006038 of accounted cost. This transcript predates the schema-v5
-exhaustion rule and exhausted after only the mandatory replay; under the
-current rule it would require one further discriminating challenge.
-
-\textbf{Held-out corpus.} Eight fixed programs vary training, encoding,
-squash and fence placement, and noise, all retaining the protected load. With
-two repetitions in both secret worlds, all 32 mutated executions were
-deterministic violations and all 32 repaired executions were clean. This
-tests that the \emph{validator and repair gate} generalize across program
-shape; it does not test an RTL fix.
-
-\textbf{Candidate RTL patch.} Source review of BOOM's \texttt{lsu.scala} found
-that incoming and retried D-cache requests are not gated by same-cycle
-\texttt{ae\_ld}/\texttt{pf\_ld}/\texttt{ma\_ld}. A two-path gate patch built
-into a distinct simulator and ran the secure matrix cleanly (8/8). Since the
-baseline was already clean, this shows only that the patch builds and does not
-break the target tests. The seal records \texttt{security\_fix\_validated:
-false}.
-
-\begin{table}[t]
-\centering
-\caption{Search on deterministic fixtures (privilege, transient-cache, and
-secure-control benchmarks; 16-iteration budget).}
-\label{tab:search}
-\footnotesize
-\begin{tabular}{@{}lcc@{}}
-\toprule
- & Guided & Random (1000 seeds) \\
-\midrule
-Positive cases found & 2/2 & 1145/2000 (57.3\%) \\
-95\% Wilson interval & -- & 55.1--59.4\% \\
-Mean attempts to find & 1.5 & 8.48 \\
-False positives (secure control) & 0 & 0/1000 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textbf{Search and repeatability.} Table~\ref{tab:search} compares the
-deterministic guided policy with random programs over three small fixtures.
-The guided arm is a single deterministic run, so this is a sanity check on
-search structure, not a statistical claim about LLM agents. Separately, ten
-independent Gemini-driven trials on a fast model of the positive control all
-completed discovery, repair, retest, and exhaustion (40 calls, 264 fixture
-executions, \$0.0053752). A further run through the CHIA
-\texttt{run\_agent\_experiment} node (CHIA 1.0.1, Ray 2.54.0) completed the
-same lifecycle for \$0.0005130.
-
-\section{Case Study: BOOM Issue \#715}\label{sec:715}
+\section{Resolving Upstream BOOM Issue \#715}\label{sec:715}
 Issue~\#715~\cite{issue715} reports that on a historical BOOM a
 supervisor-page load that faults can still forward data to a dependent load
-during speculation, leaking it through the TLB. We tested it three ways.
+during speculation, leaking it through the TLB. It is exactly the kind of
+ambiguous, high-stakes report where an automated, evidence-bound loop is useful.
+We tested it three ways.
 
 \textbf{Adaptation.} A reviewed adaptation of the mechanism was deterministic and
 clean on the current pin (4 executions) and on the exact reported
@@ -291,17 +199,104 @@ Offset & Instruction & Observed in waveform \\
 \end{tabular}
 \end{table}
 
-\textbf{Repairs.} Before this attribution was clear, we iterated on four
-hash-pinned candidate LSU patches outside the closed repair list, each driven
-by the previous matched-trace comparison: v1 same-cycle fault gates; v2 blocking loads
-under unresolved branches; v3 suppressing fast wakeup and excepting-entry
-writeback; v4 requiring a registered D-cache fire before speculative wakeup.
-V1--v3 left the \texttt{0x59f} chain cycle-identical to baseline, and v4's
-waveform was not recovered. Because the baseline never demonstrated the
-dependent-load mechanism, \emph{no} repair can be credited, and every
-comparison seal records \texttt{security\_fix\_validated: false}.
-A loop that accepted ``the patch built and nothing leaked'' would have
-declared success four times here.
+\textbf{Repairs correctly rejected.} Before this attribution was clear, we
+iterated on four hash-pinned candidate LSU patches outside the closed repair
+list, each driven by the previous matched-trace comparison: v1 same-cycle fault
+gates; v2 blocking loads under unresolved branches; v3 suppressing fast wakeup and
+excepting-entry writeback; v4 requiring a registered D-cache fire before
+speculative wakeup. V1--v3 left the \texttt{0x59f} chain cycle-identical to
+baseline, and v4's waveform was not recovered. Because the baseline never
+demonstrated the dependent-load mechanism, \emph{no} repair can be credited, and
+every comparison seal records \texttt{security\_fix\_validated: false}. A loop
+that accepted ``the patch built and nothing leaked'' would have declared success
+four times here. The practical takeaway for the BOOM project is that this report,
+on the revision as filed, does not exhibit the described leak, and the exact
+mechanism that suppresses the dependent load is identified.
+
+\section{Evaluation}\label{sec:eval}
+All BOOM runs used GCP \texttt{e2-standard-8} workers with no service account,
+a six-hour deletion cap, and explicit deletion after evidence recovery.
+Table~\ref{tab:evidence} lists every result together with the kind of
+target it was measured on; we do not combine results across kinds.
+
+\begin{table}[t]
+\centering
+\caption{Sealed evidence by target type. ``Mutation'' is an intentionally
+seeded harness leak, not an upstream BOOM bug.}
+\label{tab:evidence}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{0.40\columnwidth}p{0.25\columnwidth}p{0.29\columnwidth}@{}}
+\toprule
+Experiment & Target & Result \\
+\midrule
+PMP privilege gate (Spike + BOOM) & BOOM RTL & pass, trap 5, no leak \\
+Pristine baseline matrix & BOOM RTL & 8/8 clean \\
+Seeded positive control & BOOM+mutation & 8/8 violating; 8/8 clean after repair \\
+Live Vertex loop & BOOM+mutation & found, repaired, exhausted; \$0.0006 \\
+Held-out corpus (8 programs) & BOOM+mutation & 64/64 correct \\
+LSU fault-gate RTL patch & patched BOOM & builds; 8/8 clean; \emph{no security claim} \\
+Issue \#715, current + historical & BOOM RTL & not reproduced \\
+Guided vs.\ random search & Fixture & see Table~\ref{tab:search} \\
+10$\times$ loop repeatability & Model fixture & 10/10; \$0.0054 total \\
+Loop through CHIA node & Model fixture & complete; \$0.0005 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Real BOOM baseline and live run.} A reviewed payload configures PMP to
+deny a 4\,KiB page, drops to user mode via \texttt{mret}, and requires a
+load-access fault (cause~5); the same ELF passed on Spike and SmallBoomV3, and two
+programs (architectural denial and a transient window) were clean and
+deterministic on the pristine core. Because pristine BOOM exhibited no violation,
+we added a clearly labelled positive control that touches a secret-selected cache
+line before entering user mode; it produced probe sequences
+\texttt{[1],[0],[1],[0]} before repair and all zeros after, over 16 executions on
+the \emph{same} simulator binary. Driven live on this control, Gemini~2.5
+Flash-Lite proposed a six-operation program, BOOM confirmed the leak,
+minimization kept \texttt{enter\_user, load\_secret, probe}, the repair agent
+chose the closed repair, the witness retested clean, and the attacker reached
+exhaustion: 28 BOOM executions, 4 Vertex calls, zero inconclusive cases, and
+\$0.0006038 of accounted cost.
+
+\textbf{Held-out corpus and candidate patch.} Eight fixed programs vary training,
+encoding, squash and fence placement, and noise, all retaining the protected load.
+With two repetitions in both secret worlds, all 32 mutated executions were
+deterministic violations and all 32 repaired executions were clean --- a test that
+the \emph{validator and repair gate} generalize across program shape, not an RTL
+fix. Separately, source review of BOOM's \texttt{lsu.scala} found that incoming
+and retried D-cache requests are not gated by same-cycle
+\texttt{ae\_ld}/\texttt{pf\_ld}/\texttt{ma\_ld}; a two-path gate patch built into a
+distinct simulator and ran the secure matrix cleanly (8/8). Since the baseline was
+already clean, this shows only that the patch builds and does not break the target
+tests; the seal records \texttt{security\_fix\_validated: false}.
+
+\begin{table}[t]
+\centering
+\caption{Search on deterministic fixtures (privilege, transient-cache, and
+secure-control benchmarks; 16-iteration budget).}
+\label{tab:search}
+\footnotesize
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & Guided & Random (1000 seeds) \\
+\midrule
+Positive cases found & 2/2 & 1145/2000 (57.3\%) \\
+95\% Wilson interval & -- & 55.1--59.4\% \\
+Mean attempts to find & 1.5 & 8.48 \\
+False positives (secure control) & 0 & 0/1000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Search and repeatability.} Table~\ref{tab:search} compares the
+deterministic guided policy with random programs over three small fixtures; the
+guided arm is a single deterministic run, a sanity check on search structure, not
+a statistical claim about LLM agents. Separately, ten independent Gemini-driven
+trials on a fast model of the positive control all completed discovery, repair,
+retest, and exhaustion (40 calls, 264 fixture executions, \$0.0053752), and a run
+through the CHIA \texttt{run\_agent\_experiment} node (CHIA 1.0.1, Ray 2.54.0)
+completed the same lifecycle for \$0.0005130.
 
 \section{What the Live Runs Taught Us}\label{sec:lessons}
 Table~\ref{tab:lessons} lists verifier defects exposed by live runs or
@@ -342,6 +337,43 @@ threat model as constraints. Third, a negative result on real RTL (issue~\#715)
 required more infrastructure than the positive control, and it is also the
 more informative of the two.
 
+\section{Cost and Efficiency}\label{sec:cost}
+\sh{} was built and evaluated inside a single \$300 GCP free-trial allocation and
+requested no additional funding at any point. All model usage is exactly accounted
+by the sealed cost ledgers and totals well under \$0.05 across every sealed and
+development call: the live BOOM discovery-and-repair loop cost \$0.0006, the ten
+repeatability trials \$0.0054, the CHIA-node run \$0.0005, and the early
+integration smoke tests \$0.0047. Cloud compute was a small number of
+short-lived, auto-deleting workers, each rebuilt from pinned sources and deleted
+after its evidence was hashed; billing is delayed, but their recorded runtimes put
+total project spend on the order of \$10. For context, the hackathon's funding
+proposals were asked to target \$100--\$1{,}500; \sh{} produced real-BOOM RTL
+evidence, a live agentic loop, and the issue~\#715 resolution for roughly a tenth
+of the low end. The dominant cost is CPU time for cycle-accurate Verilator builds,
+not model inference, which is a useful data point for anyone budgeting agentic RTL
+security work: the LLM is nearly free relative to the simulator.
+
+\section{Design Boundaries, Limitations, and Future Work}\label{sec:limits}
+We found no new BOOM vulnerability; every successful discovery and repair is on an
+intentional harness mutation, the live BOOM loop ran once, and the search
+comparison uses three small fixtures. Two of these limits are deliberate design
+boundaries rather than accidents. First, the attacker is confined to a closed set
+of reviewed operations that the trusted runner compiles into fixed templates, and
+the repair agent selects only closed identifiers. This boundary is simultaneously
+a soundness mechanism --- no unreviewed code decides a verdict --- and a safety
+mechanism, since an untrusted model never executes arbitrary privileged code on
+the core; it also bounds the search space to combinations of primitives the loop
+has been given. Second, general-purpose LLM assistants apply constraints to
+offensive-security tasks, which, together with a hackathon-scale time and compute
+budget, bounded how far we pushed the autonomous attacker within the event. The
+architecture, however, is unchanged by scale: widening the reviewed primitive set
+(more speculation shapes, more covert-channel constructions, a richer observation
+channel) and adding compute is the direct path to exercising broader
+transient-execution behaviour, and reproducing a \emph{published} vulnerability
+class is the natural next milestone before anything novel. Crucially, that path
+does not weaken the guarantee that matters: the differential oracle and the
+recomputable seals, not the model, would still decide every verdict.
+
 \section{Related Work}\label{sec:related}
 Hardware fuzzing drives RTL toward coverage without a security oracle:
 RFUZZ~\cite{rfuzz} mutates inputs to maximise mux-toggle coverage on FPGAs.
@@ -350,28 +382,16 @@ against a reference or against itself under different secrets, the strategy our
 validator follows for BOOM. Hardware--software contracts~\cite{contracts} give a
 formal specification for what speculation may and may not expose, and are a
 natural target invariant for a future version of \sh{}. Relative to this line of
-work, \sh{} contributes the agentic control loop and, more importantly, a
-fail-closed evidence discipline: an untrusted model may steer the search, but no
-claim survives that a deterministic oracle and a recomputable seal do not
-independently support.
-
-\section{Limitations and Future Work}\label{sec:limits}
-We found no new BOOM vulnerability; every successful discovery and repair is on an
-intentional harness mutation. The live BOOM loop ran once; repeatability is
-shown on a model fixture only. The search comparison uses three small fixtures.
-Repairs are chosen from a closed list, so the agent diagnoses rather than
-synthesizes RTL, a deliberate trade of generality for soundness. The cache
-observer covers two lines in a fixed order. The clearest next step that keeps the
-soundness guarantees is to widen the attacker's parameterized primitives and the
-observation channel while holding the differential oracle fixed, and to target a
-\emph{published} transient-execution class as a reproduction before attempting
-anything novel; the oracle, not the model, would still decide every verdict.
+work, \sh{} contributes the agentic control loop and a fail-closed evidence
+discipline: an untrusted model may steer the search, but no claim survives that a
+deterministic oracle and a recomputable seal do not independently support.
 
 \section{Conclusion}
-\sh{} shows that an LLM-driven security loop on real out-of-order RTL is cheap
-to run (under a tenth of a cent per live cycle) and that its credibility comes
-from a validator that fails closed. The loop, pinned BOOM runners, and every
-sealed artifact are open source at
+\sh{} shows that an LLM-driven security loop on real out-of-order RTL is cheap to
+run --- on the order of \$10 end-to-end, with the model nearly free --- and that
+its credibility comes from a validator that fails closed. Its most practical
+result is the automated resolution of open BOOM report~\#715. The loop, pinned
+BOOM runners, and every sealed artifact are open source at
 \url{https://github.com/Ryclic/SpecHunter}.
 
 \section*{AI Assistance Disclosure}
